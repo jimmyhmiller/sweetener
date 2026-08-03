@@ -39,6 +39,8 @@ jobs:
           cache: pnpm
       - uses: actions/configure-pages@v5
       - run: pnpm install --frozen-lockfile
+      - name: Build workspace packages
+        run: pnpm build
       - name: Build playground
         run: pnpm playground:build
         env:
