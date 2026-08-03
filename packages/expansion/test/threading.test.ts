@@ -229,14 +229,14 @@ function semanticDiagnostics(source: string) {
 
 describe("threading acceptance", () => {
   test("recursively expands every call step to the exact expected initializer", () => {
-    const result = createHarness()(`thread(
+    const result = createHarness()(`(->
       [1, 2, 3],
       map((value) => value + 1),
       filter((value) => value > 2),
     )`);
     expect(result.diagnostics).toEqual([]);
     expect(compact(printLosslessSequence(result.syntax))).toBe(
-      compact(expectedInitializer("expected.ts", "result")),
+      compact(expectedInitializer("expected.ts", "threadFirst")),
     );
     expect(result.traces).toHaveLength(2);
     expect(result.traces.map(({ parent }) => parent)).toEqual([undefined, 1]);
@@ -247,7 +247,7 @@ describe("threading acceptance", () => {
 
   test("retains the exact declarative malformed-step diagnostic", () => {
     const result = createHarness()(
-      "thread([1, 2, 3], map((value) => value), , filter(Boolean))",
+      "(-> [1, 2, 3], map((value) => value), , filter(Boolean))",
     );
     expect(
       result.diagnostics.map(({ code, stage, severity, messageArguments }) => ({
@@ -267,7 +267,7 @@ describe("threading acceptance", () => {
   });
 
   test("preserves call-site identifiers without introducing bindings", () => {
-    const result = createHarness()("thread(2, add(argument))");
+    const result = createHarness()("(-> 2, add(argument))");
     expect(result.diagnostics).toEqual([]);
     expect(compact(printLosslessSequence(result.syntax))).toBe(
       compact(
@@ -282,17 +282,34 @@ describe("threading acceptance", () => {
   });
 
   test("passes strict TypeScript inference and produces the expected runtime export", () => {
-    const result = createHarness()(`thread(
+    const first = createHarness()(`(->
       [1, 2, 3],
       map((value) => value + 1),
       filter((value) => value > 2),
     )`);
-    const expression = printLosslessSequence(result.syntax);
+    const last = createHarness()(`(->>
+      [1, 2, 3],
+      mapLast((value) => value + 1),
+      filterLast((value) => value > 2),
+      append([5]),
+    )`);
+    expect(first.diagnostics).toEqual([]);
+    expect(last.diagnostics).toEqual([]);
+    expect(compact(printLosslessSequence(last.syntax))).toBe(
+      compact(expectedInitializer("expected.ts", "threadLast")),
+    );
+    const firstExpression = printLosslessSequence(first.syntax);
+    const lastExpression = printLosslessSequence(last.syntax);
     const source = `
       const map = <A, B>(values: readonly A[], fn: (value: A) => B): B[] => values.map(fn);
       const filter = <A>(values: readonly A[], predicate: (value: A) => boolean): A[] => values.filter(predicate);
-      export const result = ${expression};
-      result satisfies number[];
+      const mapLast = <A, B>(fn: (value: A) => B, values: readonly A[]): B[] => values.map(fn);
+      const filterLast = <A>(predicate: (value: A) => boolean, values: readonly A[]): A[] => values.filter(predicate);
+      const append = <A>(suffix: readonly A[], values: readonly A[]): A[] => [...values, ...suffix];
+      export const threadFirst = ${firstExpression};
+      export const threadLast = ${lastExpression};
+      threadFirst satisfies number[];
+      threadLast satisfies number[];
     `;
     expect(semanticDiagnostics(source)).toEqual([]);
     const transpiled = ts.transpileModule(source, {
@@ -312,6 +329,7 @@ describe("threading acceptance", () => {
         "utf8",
       ),
     ) as { exports: Record<string, unknown> };
-    expect(exports["result"]).toEqual(expected.exports["result"]);
+    expect(exports["threadFirst"]).toEqual(expected.exports["threadFirst"]);
+    expect(exports["threadLast"]).toEqual(expected.exports["threadLast"]);
   });
 });

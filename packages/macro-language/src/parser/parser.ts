@@ -241,11 +241,28 @@ class Parser {
         next: index + 3,
       };
     }
-    const name = nodes[index];
+    const nameSyntax = nodes[index];
+    const nameGroup = group(nameSyntax, "parenthesis") ? nameSyntax : undefined;
+    const nameIsWord = word(nameSyntax);
     const colon = nodes[index + 1];
     const categoryNode = nodes[index + 2];
-    if (!word(name) || !token(colon, ":") || !token(categoryNode)) {
-      this.#expected(name, "macro name and category");
+    if (
+      (nameGroup === undefined && !nameIsWord) ||
+      !token(colon, ":") ||
+      !token(categoryNode)
+    ) {
+      this.#expected(nameSyntax, "macro name and category");
+      return undefined;
+    }
+    const name =
+      nameGroup !== undefined
+        ? nameGroup.children
+            .filter((child): child is TokenSyntax => child.tag === "token")
+            .map((child) => child.raw)
+            .join("")
+        : (nameSyntax as TokenSyntax).raw;
+    if (name.length === 0) {
+      this.#expected(nameSyntax, "nonempty macro name");
       return undefined;
     }
     const category = this.#category(categoryNode);
@@ -263,10 +280,10 @@ class Parser {
       definition: frozen({
         kind: "syntax",
         id: this.#definitionIds.allocate(),
-        origin: nodes[start - 1]?.origin ?? name.origin,
+        origin: nodes[start - 1]?.origin ?? (nameSyntax as Syntax).origin,
         exported,
         recursive,
-        name: name.raw,
+        name,
         category,
         shadowsCore,
         rules: parsed.rules,

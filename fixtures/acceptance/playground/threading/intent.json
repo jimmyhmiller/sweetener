@@ -4,7 +4,7 @@
   "fixtureId": "playground/threading",
   "status": "proposed",
   "legacySources": ["threading.sweet.js"],
-  "summary": "Thread a value through a comma-separated sequence of calls while preserving expression grouping.",
+  "summary": "Provide Clojure-style thread-first (->) and thread-last (->>) forms over comma-separated calls while preserving expression grouping.",
   "capabilities": [
     {
       "id": "PLAYGROUND-THREADING",
@@ -29,8 +29,10 @@
   ],
   "syntaxNotes": [
     "Commas separate steps and belong to the macro grammar.",
-    "A step without explicit arguments inserts the threaded value as its sole argument.",
-    "The thread form expands as an expression and may appear in an initializer."
+    "Thread-first inserts the value before a step's explicit arguments.",
+    "Thread-last inserts the value after a step's explicit arguments.",
+    "A step without explicit arguments receives the threaded value as its sole argument.",
+    "Both thread forms expand as expressions and may appear in initializers."
   ],
   "artifacts": {
     "definition": "declarative.sts",

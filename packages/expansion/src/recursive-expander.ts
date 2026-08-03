@@ -305,6 +305,60 @@ export function expandMacroSyntax(
           : undefined;
       if (
         resolvedMacro === undefined &&
+        node.tag === "group" &&
+        node.delimiter === "parenthesis"
+      ) {
+        const punctuationHeads = activeModules
+          .flatMap(({ macros }) => macros)
+          .filter(
+            (candidate) =>
+              candidate.category === category &&
+              candidate.binding.kind === "macro" &&
+              operatorWidthAt(node.children, 0, candidate.binding.spelling) !==
+                undefined,
+          )
+          .sort(
+            (left, right) =>
+              right.binding.spelling.length - left.binding.spelling.length,
+          );
+        for (const candidate of punctuationHeads) {
+          const visible = resolveSpelling(
+            candidate.binding.spelling,
+            node.span.start,
+          );
+          if (visible?.binding.id !== candidate.binding.id) continue;
+          resolvedMacro = visible;
+          resolvedSpelling = candidate.binding.spelling;
+          break;
+        }
+      }
+      if (resolvedMacro === undefined && node.tag === "token") {
+        const punctuationHeads = activeModules
+          .flatMap(({ macros }) => macros)
+          .filter(
+            (candidate) =>
+              candidate.category === category &&
+              candidate.binding.kind === "macro" &&
+              operatorWidthAt(input, index, candidate.binding.spelling) !==
+                undefined,
+          )
+          .sort(
+            (left, right) =>
+              right.binding.spelling.length - left.binding.spelling.length,
+          );
+        for (const candidate of punctuationHeads) {
+          const visible = resolveSpelling(
+            candidate.binding.spelling,
+            node.span.start,
+          );
+          if (visible?.binding.id !== candidate.binding.id) continue;
+          resolvedMacro = visible;
+          resolvedSpelling = candidate.binding.spelling;
+          break;
+        }
+      }
+      if (
+        resolvedMacro === undefined &&
         category === "item" &&
         node.tag === "token" &&
         itemDispatchPrefixes.has(node.raw)

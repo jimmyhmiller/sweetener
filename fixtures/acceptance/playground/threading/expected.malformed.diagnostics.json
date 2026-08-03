@@ -3,6 +3,6 @@
     "code": "SWR4001",
     "stage": "expansion",
     "severity": "error",
-    "messageArguments": ["thread", "expression or call step"]
+    "messageArguments": ["->", "expression or call step"]
   }
 ]

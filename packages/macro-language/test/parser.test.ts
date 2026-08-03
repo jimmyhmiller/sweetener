@@ -144,6 +144,22 @@ describe("macro-definition parser", () => {
     });
   });
 
+  it("parses explicitly grouped punctuation syntax names", () => {
+    const result = parse(`
+      export rec syntax (->>):expr {
+        rule { ->> $value:expr } => { $value }
+      }
+    `);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.definitions[0]).toMatchObject({
+      kind: "syntax",
+      name: "->>",
+      category: "expr",
+      exported: true,
+      recursive: true,
+    });
+  });
+
   it("recovers at definition and rule boundaries with structured diagnostics", () => {
     const result = parse(`
       export syntax broken
@@ -261,9 +277,9 @@ describe("macro-definition parser", () => {
     const definitionRead = readSyntax(source, { sourceId, scopes });
     const parsed = parseMacroDefinitions(definitionRead.root, { sourceId });
     const definition = parsed.definitions.find(
-      (candidate) => candidate.kind === "syntax" && candidate.name === "thread",
+      (candidate) => candidate.kind === "syntax" && candidate.name === "->",
     );
-    if (definition?.kind !== "syntax") throw new Error("missing thread macro");
+    if (definition?.kind !== "syntax") throw new Error("missing -> macro");
     const rule = definition.rules[0];
     if (rule === undefined) throw new Error("missing thread base rule");
     const inference = inferCaptureShapes(rule.pattern, {
@@ -278,7 +294,7 @@ describe("macro-definition parser", () => {
       rule: rule.id,
       inference,
     });
-    const invocation = readSyntax("thread(seed)", { sourceId, scopes });
+    const invocation = readSyntax("(-> seed)", { sourceId, scopes });
     const input = invocation.root.children.filter(
       (syntax) => syntax.tag !== "token" || syntax.kind !== "end-of-file",
     );

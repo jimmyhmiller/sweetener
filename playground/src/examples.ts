@@ -56,7 +56,7 @@ export const examples: PlaygroundExample[] = [
   example(
     "threading",
     "Everyday syntax",
-    "Threading",
+    "Thread first / last",
     threadMacros,
     threadMain,
   ),
