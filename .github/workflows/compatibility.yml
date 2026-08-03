@@ -1,0 +1,32 @@
+name: Compatibility
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  supported-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [24.0.0, 24.18.1]
+        typescript: [6.0.0, 6.0.2]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.18.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - name: Select TypeScript compatibility package
+        run: |
+          for package in . packages/cli packages/enforestation packages/expansion packages/reader packages/typescript-host; do
+            pnpm --dir "$package" pkg set "dependencies.typescript=npm:@typescript/typescript6@${{ matrix.typescript }}"
+          done
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm compatibility:probe
+      - run: pnpm check

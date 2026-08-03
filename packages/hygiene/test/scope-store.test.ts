@@ -1,0 +1,135 @@
+import type { ScopeId, ScopeSetId } from "@sweet-rewrite/shared";
+import { describe, expect, it } from "vitest";
+import { createScope, ScopeStore } from "../src/index.js";
+
+describe("scope store", () => {
+  it("allocates fresh scopes with immutable debug metadata", () => {
+    const store = new ScopeStore();
+    const lexical = store.freshScope("lexical", "function body");
+    const introduction = store.freshScope("introduction", "unless invocation");
+    expect(lexical).not.toBe(introduction);
+    expect(store.stats).toEqual({
+      allocatedScopes: 2,
+      internedSets: 1,
+      internHits: 0,
+    });
+    const serialized = JSON.parse(
+      store.serialize(store.add(store.empty(), lexical)),
+    );
+    expect(serialized).toEqual({
+      id: 1,
+      scopes: [{ id: lexical, kind: "lexical", label: "function body" }],
+    });
+    expect(() =>
+      createScope(100 as ScopeId, "generated", "two\nlines"),
+    ).toThrow(/one line/);
+  });
+
+  it("interns canonical sorted sets and preserves idempotent operations", () => {
+    const store = new ScopeStore();
+    const first = store.freshScope();
+    const second = store.freshScope();
+    const empty = store.empty();
+    const one = store.add(empty, first);
+    const two = store.add(store.add(empty, second), first);
+    expect(store.add(one, first)).toBe(one);
+    expect(store.remove(one, second)).toBe(one);
+    expect(store.union(one, empty)).toBe(one);
+    expect(store.union(one, store.singleton(second))).toBe(two);
+    expect(store.debugRecord(two).scopes).toEqual([first, second]);
+    expect(store.size(two)).toBe(2);
+    expect(store.has(two, first)).toBe(true);
+    expect(store.has(two, second)).toBe(true);
+    expect(store.remove(two, first)).toBe(store.singleton(second));
+    expect(store.flip(one, first)).toBe(empty);
+    expect(store.flip(empty, first)).toBe(one);
+    expect(Object.isFrozen(store.debugRecord(two))).toBe(true);
+    expect(Object.isFrozen(store.debugRecord(two).scopes)).toBe(true);
+  });
+
+  it("implements subset including equality and the empty set", () => {
+    const store = new ScopeStore();
+    const first = store.freshScope();
+    const second = store.freshScope();
+    const empty = store.empty();
+    const one = store.singleton(first);
+    const two = store.add(one, second);
+    expect(store.subset(empty, two)).toBe(true);
+    expect(store.subset(one, two)).toBe(true);
+    expect(store.subset(two, two)).toBe(true);
+    expect(store.subset(two, one)).toBe(false);
+    expect(store.subset(one, empty)).toBe(false);
+  });
+
+  it("satisfies union identity, idempotence, commutativity, and associativity", () => {
+    const store = new ScopeStore();
+    const [first, second, third] = Array.from({ length: 3 }, () =>
+      store.freshScope(),
+    );
+    const a = store.singleton(first!);
+    const b = store.singleton(second!);
+    const c = store.singleton(third!);
+    expect(store.union(a, store.empty())).toBe(a);
+    expect(store.union(a, a)).toBe(a);
+    expect(store.union(a, b)).toBe(store.union(b, a));
+    expect(store.union(store.union(a, b), c)).toBe(
+      store.union(a, store.union(b, c)),
+    );
+  });
+
+  it("rejects unknown scope and set IDs", () => {
+    const store = new ScopeStore();
+    const scope = store.freshScope();
+    expect(() => store.add(999 as ScopeSetId, scope)).toThrow(
+      /Unknown scope set/,
+    );
+    expect(() => store.add(store.empty(), 999 as ScopeId)).toThrow(
+      /Unknown scope/,
+    );
+    expect(() => store.size(999 as ScopeSetId)).toThrow(/Unknown scope set/);
+  });
+
+  it("matches JavaScript Set algebra over fixed-seed generated operations", () => {
+    let seed = 0x51c0_5e7;
+    const random = (): number => {
+      seed = (Math.imul(seed, 1_664_525) + 1_013_904_223) >>> 0;
+      return seed;
+    };
+    const store = new ScopeStore();
+    const scopes = Array.from({ length: 24 }, () => store.freshScope());
+    const models: Set<ScopeId>[] = [new Set()];
+    const ids: ScopeSetId[] = [store.empty()];
+    for (let iteration = 0; iteration < 2_000; iteration += 1) {
+      const baseIndex = random() % ids.length;
+      const baseId = ids[baseIndex]!;
+      const baseModel = models[baseIndex]!;
+      const scope = scopes[random() % scopes.length]!;
+      const add = (random() & 1) === 0;
+      const model = new Set(baseModel);
+      if (add) model.add(scope);
+      else model.delete(scope);
+      const id = add ? store.add(baseId, scope) : store.remove(baseId, scope);
+      expect(store.debugRecord(id).scopes).toEqual(
+        [...model].sort((left, right) => left - right),
+      );
+      const comparisonIndex = random() % ids.length;
+      const comparison = models[comparisonIndex]!;
+      expect(store.subset(id, ids[comparisonIndex]!)).toBe(
+        [...model].every((candidate) => comparison.has(candidate)),
+      );
+      ids.push(id);
+      models.push(model);
+    }
+  });
+
+  it("allocates large batches without exposing mutable set storage", () => {
+    const store = new ScopeStore();
+    let set = store.empty();
+    for (let index = 0; index < 2_000; index += 1) {
+      set = store.add(set, store.freshScope("generated"));
+    }
+    expect(store.size(set)).toBe(2_000);
+    expect(store.stats.allocatedScopes).toBe(2_000);
+    expect(store.serialize(set)).toContain('"kind":"generated"');
+  });
+});

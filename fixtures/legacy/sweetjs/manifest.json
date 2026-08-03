@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "importedAt": "2026-08-02",
+  "sourceDirectory": "/Users/jimmyhmiller/Documents/Code/PlayGround/sweetjs",
+  "normalization": "Source bytes preserved except that files without a final newline received one",
+  "entries": [
+    {
+      "file": "adt.sweet.js",
+      "sha256": "15fa857904c4da267567fa22e3bd177ecfd85e015d43ce9844539dddb3b77f99"
+    },
+    {
+      "file": "allen-robert-new-lang.sjs",
+      "sha256": "50b51be872de9a73aeb373dfef577295dbbffd9998f808a44e2bbfac5e326830"
+    },
+    {
+      "file": "csp.sweet.js",
+      "sha256": "8e641f2479804b8dad653f3fe95104476bf819e5cecdd5f70749b3237c23e752"
+    },
+    {
+      "file": "curry.sweet.js",
+      "sha256": "5368857fb828da372c45bbc1fad4ba291e4492a19694eaf2e6b7c8407461bd30"
+    },
+    {
+      "file": "do-notation.sweet.js",
+      "sha256": "0cb46fe990c4e87ba7f4b06e9cbbee56c46ea632c7433ce055528ee47c54db0c"
+    },
+    {
+      "file": "ideas.sjs",
+      "sha256": "cd16d9fa389a70e5dac3d920f698edf5b4420ff89436d827abccebae38026b25"
+    },
+    {
+      "file": "implicit.sweet.js",
+      "sha256": "40e67fb2600d939430823590f94800801b6ddcb062c3ef1448578f75f860519e"
+    },
+    {
+      "file": "methods.sweet.js",
+      "sha256": "f7ac5efab4eb26edfcd49004e497fbad6588c24df9ca4f9eb7f33d0333f808e5"
+    },
+    {
+      "file": "new/helpers.sjs",
+      "sha256": "020e737142855c96eb0c52f3b9e19ca22939e27742598d54d00d492497a779c5"
+    },
+    {
+      "file": "new/if.sjs",
+      "sha256": "57bd712ea57003b39fecb6d29be32145bf76a44f1c3a5939e4faab20a065fcac"
+    },
+    {
+      "file": "newlang.sweet.js",
+      "sha256": "14c58efe0e7cb655bf7bb1943d93b4ffd33cc3883aa12d6428e0f77585291dbd"
+    },
+    {
+      "file": "protocol.sweet.js",
+      "sha256": "3dc6a4ce0f191c641ba0ea5afd9823ac1fa28b1edb3353f05cf56d9732ece037"
+    },
+    {
+      "file": "threading.sweet.js",
+      "sha256": "3ddfc88afaae2c27c8deb725cb3219a8873c1290878b8c1d86c7f62b4a4f04a6"
+    }
+  ]
+}

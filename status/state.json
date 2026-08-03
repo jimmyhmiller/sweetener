@@ -1,0 +1,1515 @@
+{
+  "$schema": "../schemas/status.schema.json",
+  "schemaVersion": 1,
+  "updatedAt": "2026-08-03",
+  "currentPhase": "phase-07",
+  "currentSlice": "Alpha release review and publication",
+  "health": "yellow",
+  "summary": "The default declarative TypeScript macro compiler, CLI, external workflow, and reproducible alpha artifacts are complete and verified locally. npm publication and Git-tag creation are not authorized.",
+  "currentTask": "REL-004",
+  "tasks": [
+    {
+      "id": "FND-001",
+      "title": "Create the workspace",
+      "phase": "phase-00",
+      "status": "done",
+      "order": 1,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": [],
+      "specifications": [
+        "docs/specifications/01-compiler-architecture.md#1-repository-layout"
+      ],
+      "nextAction": "Task complete. Preserve the package boundaries while adding shared infrastructure."
+    },
+    {
+      "id": "FND-002",
+      "title": "Establish shared IDs and results",
+      "phase": "phase-00",
+      "status": "done",
+      "order": 2,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["FND-001"],
+      "specifications": [
+        "docs/specifications/01-compiler-architecture.md#4-core-package-apis"
+      ],
+      "nextAction": "Task complete. Reuse these shared primitives in diagnostics and later compiler packages."
+    },
+    {
+      "id": "FND-003",
+      "title": "Establish diagnostics",
+      "phase": "phase-00",
+      "status": "done",
+      "order": 3,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["FND-002"],
+      "specifications": [
+        "docs/specifications/01-compiler-architecture.md#8-diagnostics-ownership"
+      ],
+      "nextAction": "Task complete. Register package diagnostics through this shared model."
+    },
+    {
+      "id": "FND-004",
+      "title": "Build the fixture harness",
+      "phase": "phase-00",
+      "status": "done",
+      "order": 4,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["FND-001", "FND-003"],
+      "specifications": [
+        "docs/specifications/05-test-architecture.md#2-fixture-layout"
+      ],
+      "nextAction": "Task complete. Use the harness for conformance and playground-derived acceptance cases."
+    },
+    {
+      "id": "FND-005",
+      "title": "Import the legacy corpus",
+      "phase": "phase-00",
+      "status": "done",
+      "order": 5,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["FND-004"],
+      "specifications": ["docs/proposals/00-expressiveness-contract.md"],
+      "nextAction": "Task complete. Keep every acceptance contract and capability mapping current as implementation changes."
+    },
+    {
+      "id": "FND-006",
+      "title": "Resolve blocking decisions",
+      "phase": "phase-00",
+      "status": "done",
+      "order": 6,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["FND-005"],
+      "specifications": ["docs/specifications/README.md#unresolved-decisions"],
+      "nextAction": "Task complete. ADR-0002 through ADR-0006 are accepted; preserve their contracts in specifications and release gates."
+    },
+    {
+      "id": "SYN-001",
+      "title": "Implement syntax primitives",
+      "phase": "phase-01",
+      "status": "done",
+      "order": 101,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["FND-002"],
+      "specifications": [
+        "docs/specifications/02-syntax-objects-hygiene.md#1-syntax-representation"
+      ],
+      "nextAction": "Task complete. Preserve these invariants in reader and template constructors."
+    },
+    {
+      "id": "SYN-002",
+      "title": "Implement origins",
+      "phase": "phase-01",
+      "status": "done",
+      "order": 102,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["SYN-001"],
+      "specifications": [
+        "docs/specifications/02-syntax-objects-hygiene.md#2-origin-model"
+      ],
+      "nextAction": "Task complete. Use this store for reader, template, trace, and diagnostic origins."
+    },
+    {
+      "id": "SYN-003",
+      "title": "Implement syntax cursors",
+      "phase": "phase-01",
+      "status": "done",
+      "order": 103,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["SYN-001"],
+      "specifications": [
+        "docs/specifications/02-syntax-objects-hygiene.md#1-syntax-representation"
+      ],
+      "nextAction": "Task complete. Use cursor location identities and ranges in readers and declarative matchers."
+    },
+    {
+      "id": "RDR-001",
+      "title": "Build the TypeScript scanner adapter",
+      "phase": "phase-01",
+      "status": "done",
+      "order": 104,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["SYN-001"],
+      "specifications": [
+        "docs/proposals/01-syntax-data-reader.md",
+        "docs/tasks/phase-01-reader.md#rdr-001-build-the-typescript-scanner-adapter"
+      ],
+      "nextAction": "Task complete. Keep all TypeScript compiler API and enum dependencies inside the version adapter."
+    },
+    {
+      "id": "RDR-002",
+      "title": "Implement template modes",
+      "phase": "phase-01",
+      "status": "done",
+      "order": 105,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["RDR-001"],
+      "specifications": [
+        "docs/tasks/phase-01-reader.md#rdr-002-implement-template-modes"
+      ],
+      "nextAction": "Task complete. Preserve the iterative substitution stack when JSX expressions embed templates."
+    },
+    {
+      "id": "RDR-003",
+      "title": "Implement JSX modes",
+      "phase": "phase-01",
+      "status": "done",
+      "order": 106,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["RDR-001"],
+      "specifications": [
+        "docs/tasks/phase-01-reader.md#rdr-003-implement-jsx-modes"
+      ],
+      "nextAction": "Task complete. Use the lexical-mode annotations when constructing JSX containers and diagnostics."
+    },
+    {
+      "id": "RDR-004",
+      "title": "Build delimiter trees",
+      "phase": "phase-01",
+      "status": "done",
+      "order": 107,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["RDR-002", "RDR-003", "SYN-002"],
+      "specifications": [
+        "docs/tasks/phase-01-reader.md#rdr-004-build-delimiter-trees"
+      ],
+      "nextAction": "Task complete. Preserve RootSyntax and recovery invariants in printing and incremental reads."
+    },
+    {
+      "id": "RDR-005",
+      "title": "Implement lossless printing",
+      "phase": "phase-01",
+      "status": "done",
+      "order": 108,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["RDR-004"],
+      "specifications": [
+        "docs/tasks/phase-01-reader.md#rdr-005-implement-lossless-printing"
+      ],
+      "nextAction": "Task complete. Use print equality as an invariant for incremental reads and corpus benchmarks."
+    },
+    {
+      "id": "RDR-006",
+      "title": "Add incremental API baseline",
+      "phase": "phase-01",
+      "status": "done",
+      "order": 109,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["RDR-004"],
+      "specifications": [
+        "docs/tasks/phase-01-reader.md#rdr-006-add-incremental-api-baseline"
+      ],
+      "nextAction": "Task complete. Replace clean-read strategy with reuse only after Phase 7 profiling identifies profitable stable subtrees."
+    },
+    {
+      "id": "RDR-007",
+      "title": "Run corpora and benchmark",
+      "phase": "phase-01",
+      "status": "done",
+      "order": 110,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["RDR-005", "RDR-006", "FND-005"],
+      "specifications": [
+        "docs/tasks/phase-01-reader.md#rdr-007-run-corpora-and-benchmark"
+      ],
+      "nextAction": "Task complete. Preserve corpus gates; profile the documented 1.44-3.16 MiB/s baseline in PRF-001 without removing required syntax data."
+    },
+    {
+      "id": "PAT-001",
+      "title": "Define pattern and capture ASTs",
+      "phase": "phase-02",
+      "status": "done",
+      "order": 201,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["SYN-003"],
+      "specifications": [
+        "docs/specifications/03-patterns-templates.md#1-pattern-ast",
+        "docs/tasks/phase-02-patterns.md#pat-001-define-pattern-and-capture-asts"
+      ],
+      "nextAction": "Task complete. Use the constructors in MCL-001 and preserve stable capture and repetition IDs during parsing."
+    },
+    {
+      "id": "MCL-001",
+      "title": "Parse structural macro definitions",
+      "phase": "phase-02",
+      "status": "done",
+      "order": 202,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["PAT-001", "RDR-004"],
+      "specifications": [
+        "docs/tasks/phase-02-patterns.md#mcl-001-parse-structural-macro-definitions"
+      ],
+      "nextAction": "Task complete. Feed parsed rule patterns into PAT-002 while retaining templates and semantic clauses as lossless syntax."
+    },
+    {
+      "id": "PAT-002",
+      "title": "Infer and validate capture shapes",
+      "phase": "phase-02",
+      "status": "done",
+      "order": 203,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["PAT-001", "MCL-001"],
+      "specifications": [
+        "docs/tasks/phase-02-patterns.md#pat-002-infer-and-validate-capture-shapes"
+      ],
+      "nextAction": "Task complete. Compile only diagnostic-free pattern and shape results in PAT-003."
+    },
+    {
+      "id": "PAT-003",
+      "title": "Compile matcher programs",
+      "phase": "phase-02",
+      "status": "done",
+      "order": 204,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["PAT-002"],
+      "specifications": [
+        "docs/specifications/03-patterns-templates.md#7-matcher-program",
+        "docs/tasks/phase-02-patterns.md#pat-003-compile-matcher-programs"
+      ],
+      "nextAction": "Task complete. Execute these immutable programs with cursor and capture rollback in PAT-004."
+    },
+    {
+      "id": "PAT-004",
+      "title": "Execute matcher programs",
+      "phase": "phase-02",
+      "status": "done",
+      "order": 205,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["PAT-003", "SYN-003"],
+      "specifications": [
+        "docs/specifications/03-patterns-templates.md#7-matcher-program",
+        "docs/tasks/phase-02-patterns.md#pat-004-execute-matcher-programs"
+      ],
+      "nextAction": "Task complete. Add failure ranking and failed-state memoization in PAT-005 without changing successful capture semantics."
+    },
+    {
+      "id": "PAT-005",
+      "title": "Add failure ranking and memoization",
+      "phase": "phase-02",
+      "status": "done",
+      "order": 206,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["PAT-004"],
+      "specifications": [
+        "docs/specifications/03-patterns-templates.md#5-rule-and-choice-behavior",
+        "docs/tasks/phase-02-patterns.md#pat-005-add-failure-ranking-and-memoization"
+      ],
+      "nextAction": "Task complete. Reuse ranked matcher failures when user syntax-class alternatives fail in PAT-006."
+    },
+    {
+      "id": "PAT-006",
+      "title": "Implement user syntax classes",
+      "phase": "phase-02",
+      "status": "done",
+      "order": 207,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["PAT-005"],
+      "specifications": [
+        "docs/specifications/03-patterns-templates.md#4-captures-and-syntax-classes",
+        "docs/tasks/phase-02-patterns.md#pat-006-implement-user-syntax-classes"
+      ],
+      "nextAction": "Task complete. Apply PAT-007 refinements to compiled class rules without exposing host-language callbacks."
+    },
+    {
+      "id": "PAT-007",
+      "title": "Add declarative refinements",
+      "phase": "phase-02",
+      "status": "done",
+      "order": 208,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["PAT-006"],
+      "specifications": [
+        "docs/specifications/03-patterns-templates.md#8-refinements",
+        "docs/tasks/phase-02-patterns.md#pat-007-add-declarative-refinements"
+      ],
+      "nextAction": "Task complete. Exercise refinements in structural example ports and preserve fixed evaluation semantics."
+    },
+    {
+      "id": "PAT-008",
+      "title": "Port structural examples",
+      "phase": "phase-02",
+      "status": "done",
+      "order": 209,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["PAT-007", "FND-005"],
+      "specifications": [
+        "docs/specifications/03-patterns-templates.md#14-required-examples",
+        "docs/tasks/phase-02-patterns.md#pat-008-port-structural-examples"
+      ],
+      "nextAction": "Task complete. Replace the recorded grammar placeholders in ENF-003, ENF-005, and ENF-006."
+    },
+    {
+      "id": "HYG-001",
+      "title": "Implement the scope store",
+      "phase": "phase-03",
+      "status": "done",
+      "order": 301,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["FND-002"],
+      "specifications": [
+        "docs/specifications/02-syntax-objects-hygiene.md#3-scopes-and-scope-sets",
+        "docs/tasks/phase-03-hygiene-templates.md#hyg-001-implement-the-scope-store"
+      ],
+      "nextAction": "Task complete. Use canonical scope-set IDs as binding and resolution keys in HYG-002."
+    },
+    {
+      "id": "HYG-002",
+      "title": "Implement bindings and environments",
+      "phase": "phase-03",
+      "status": "done",
+      "order": 302,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["HYG-001"],
+      "specifications": [
+        "docs/specifications/02-syntax-objects-hygiene.md#5-bindings-and-spaces",
+        "docs/tasks/phase-03-hygiene-templates.md#hyg-002-implement-bindings-and-environments"
+      ],
+      "nextAction": "Task complete. Use environment snapshots in the HYG-003 invocation-scope model and HYG-004 resolver."
+    },
+    {
+      "id": "HYG-003",
+      "title": "Resolve introduction and use-site scopes",
+      "phase": "phase-03",
+      "status": "done",
+      "order": 303,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["HYG-002"],
+      "specifications": [
+        "docs/specifications/02-syntax-objects-hygiene.md#7-macro-invocation-scopes",
+        "docs/tasks/phase-03-hygiene-templates.md#hyg-003-resolve-open-hyg-001"
+      ],
+      "nextAction": "Task complete. Implement ADR-0006 through template instantiation and use its scope sets in HYG-004 resolution."
+    },
+    {
+      "id": "HYG-004",
+      "title": "Implement binding resolution",
+      "phase": "phase-03",
+      "status": "done",
+      "order": 304,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["HYG-003"],
+      "specifications": [
+        "docs/specifications/02-syntax-objects-hygiene.md#6-resolution-algorithm",
+        "docs/tasks/phase-03-hygiene-templates.md#hyg-004-implement-resolution"
+      ],
+      "nextAction": "Task complete. Use resolved binding identities in template hygiene operations and later binding contracts."
+    },
+    {
+      "id": "TPL-001",
+      "title": "Parse and validate templates",
+      "phase": "phase-03",
+      "status": "done",
+      "order": 305,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["PAT-002", "MCL-001"],
+      "specifications": [
+        "docs/specifications/03-patterns-templates.md#8-template-ast",
+        "docs/tasks/phase-03-hygiene-templates.md#tpl-001-parse-and-validate-templates"
+      ],
+      "nextAction": "Task complete. Execute this validated IR with capture records in TPL-002."
+    },
+    {
+      "id": "TPL-002",
+      "title": "Implement repetition and conditionals",
+      "phase": "phase-03",
+      "status": "done",
+      "order": 306,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TPL-001"],
+      "specifications": [
+        "docs/specifications/03-patterns-templates.md#10-template-repetition",
+        "docs/specifications/03-patterns-templates.md#11-conditional-templates-and-folds",
+        "docs/tasks/phase-03-hygiene-templates.md#tpl-002-implement-repetition-and-conditionals"
+      ],
+      "nextAction": "Task complete. Extend evaluation with the fixed declarative operations in TPL-003."
+    },
+    {
+      "id": "TPL-003",
+      "title": "Implement declarative operations",
+      "phase": "phase-03",
+      "status": "done",
+      "order": 307,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TPL-002", "HYG-004"],
+      "specifications": [
+        "docs/specifications/02-syntax-objects-hygiene.md#10-explicit-hygiene-operations",
+        "docs/tasks/phase-03-hygiene-templates.md#tpl-003-implement-declarative-operations"
+      ],
+      "nextAction": "Task complete. Materialize deferred operation pieces with scopes and origins in TPL-004."
+    },
+    {
+      "id": "TPL-004",
+      "title": "Instantiate templates",
+      "phase": "phase-03",
+      "status": "done",
+      "order": 308,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TPL-003", "SYN-002"],
+      "specifications": [
+        "docs/specifications/02-syntax-objects-hygiene.md#7-macro-invocation-scopes",
+        "docs/tasks/phase-03-hygiene-templates.md#tpl-004-instantiate-templates"
+      ],
+      "nextAction": "Task complete. Apply binding contracts to captured regions in HYG-005."
+    },
+    {
+      "id": "HYG-005",
+      "title": "Implement binding contracts",
+      "phase": "phase-03",
+      "status": "done",
+      "order": 309,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TPL-004"],
+      "specifications": [
+        "docs/specifications/02-syntax-objects-hygiene.md#8-binding-contracts",
+        "docs/tasks/phase-03-hygiene-templates.md#hyg-005-implement-binding-contracts"
+      ],
+      "nextAction": "Task complete. Assign deterministic printed names by binding identity in HYG-006."
+    },
+    {
+      "id": "HYG-006",
+      "title": "Implement deterministic name assignment",
+      "phase": "phase-03",
+      "status": "done",
+      "order": 310,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["HYG-005"],
+      "specifications": [
+        "docs/specifications/02-syntax-objects-hygiene.md#9-deterministic-name-assignment",
+        "docs/tasks/phase-03-hygiene-templates.md#hyg-006-implement-deterministic-name-assignment"
+      ],
+      "nextAction": "Task complete. Exercise binding identities, scopes, explicit capture, and printed names in TPL-005."
+    },
+    {
+      "id": "TPL-005",
+      "title": "Add hygiene conformance fixtures",
+      "phase": "phase-03",
+      "status": "done",
+      "order": 311,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["HYG-006"],
+      "specifications": [
+        "docs/specifications/02-syntax-objects-hygiene.md#13-required-semantic-examples",
+        "docs/tasks/phase-03-hygiene-templates.md#tpl-005-add-hygiene-conformance-fixtures"
+      ],
+      "nextAction": "Task complete. Use the proven hygiene semantics in Phase 4 expansion environments and invocation."
+    },
+    {
+      "id": "EXP-001",
+      "title": "Implement expansion environments",
+      "phase": "phase-04",
+      "status": "done",
+      "order": 401,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["HYG-002"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#1-phases-and-environments",
+        "docs/tasks/phase-04-expansion.md#exp-001-implement-expansion-environments"
+      ],
+      "nextAction": "Task complete. Process source-ordered macro and runtime declarations in EXP-002."
+    },
+    {
+      "id": "EXP-002",
+      "title": "Implement definition contexts",
+      "phase": "phase-04",
+      "status": "done",
+      "order": 402,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["EXP-001", "MCL-001"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#2-definition-contexts",
+        "docs/tasks/phase-04-expansion.md#exp-002-implement-definition-contexts"
+      ],
+      "nextAction": "Task complete. Consume syntax against these immutable environment snapshots in ENF-001."
+    },
+    {
+      "id": "ENF-001",
+      "title": "Define syntax-consumer infrastructure",
+      "phase": "phase-04",
+      "status": "done",
+      "order": 403,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["EXP-001", "PAT-006"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#3-expansion-categories",
+        "docs/tasks/phase-04-expansion.md#enf-001-define-syntax-consumer-infrastructure"
+      ],
+      "nextAction": "Task complete. Build primary and postfix expression consumers on this dispatch boundary."
+    },
+    {
+      "id": "ENF-002",
+      "title": "Implement primary and call expressions",
+      "phase": "phase-04",
+      "status": "done",
+      "order": 404,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["ENF-001", "RDR-004"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#7-expression-enforestation",
+        "docs/tasks/phase-04-expansion.md#enf-002-implement-primary-and-call-expressions"
+      ],
+      "nextAction": "Task complete. Use protected primaries as Pratt left operands in ENF-003."
+    },
+    {
+      "id": "ENF-003",
+      "title": "Implement Pratt expression parsing",
+      "phase": "phase-04",
+      "status": "done",
+      "order": 405,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["ENF-002"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#7-expression-enforestation",
+        "docs/tasks/phase-04-expansion.md#enf-003-implement-pratt-expression-parsing"
+      ],
+      "nextAction": "Task complete. Use protected expression consumers when recursively expanding macro replacements."
+    },
+    {
+      "id": "EXP-003",
+      "title": "Implement macro invocation",
+      "phase": "phase-04",
+      "status": "done",
+      "order": 406,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["PAT-005", "TPL-004", "EXP-002", "ENF-001"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#5-macro-invocation-algorithm",
+        "docs/tasks/phase-04-expansion.md#exp-003-implement-macro-invocation"
+      ],
+      "nextAction": "Task complete. Enforce recursive progress, resource limits, cancellation, and cache admission in EXP-004."
+    },
+    {
+      "id": "EXP-004",
+      "title": "Add progress and resource checks",
+      "phase": "phase-04",
+      "status": "done",
+      "order": 407,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["EXP-003"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#6-termination-resource-limits-and-caching",
+        "docs/tasks/phase-04-expansion.md#exp-004-add-progress-and-resource-checks"
+      ],
+      "nextAction": "Task complete. Use the guarded macro invocation boundary in statement and item consumers."
+    },
+    {
+      "id": "ENF-004",
+      "title": "Implement statements and items",
+      "phase": "phase-04",
+      "status": "done",
+      "order": 408,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["ENF-003", "EXP-003"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#9-statement-and-item-consumers",
+        "docs/tasks/phase-04-expansion.md#enf-004-implement-statements-and-items"
+      ],
+      "nextAction": "Task complete. Return hygienically registrable binding skeletons from ENF-005."
+    },
+    {
+      "id": "ENF-005",
+      "title": "Implement bindings and parameters",
+      "phase": "phase-04",
+      "status": "done",
+      "order": 409,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["ENF-004"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#10-type-and-binding-consumers",
+        "docs/tasks/phase-04-expansion.md#enf-005-implement-bindings-and-parameters"
+      ],
+      "nextAction": "Task complete. Reuse binding and parameter skeletons in class-element and type consumers."
+    },
+    {
+      "id": "ENF-006",
+      "title": "Implement type and class-element consumers",
+      "phase": "phase-04",
+      "status": "done",
+      "order": 410,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["ENF-004"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#10-type-and-binding-consumers",
+        "docs/tasks/phase-04-expansion.md#enf-006-implement-type-and-class-element-consumers"
+      ],
+      "nextAction": "Task complete. Reuse statement, expression, and terminator extents in ENF-007 composition."
+    },
+    {
+      "id": "ENF-007",
+      "title": "Implement statement-prefix/final-expression class",
+      "phase": "phase-04",
+      "status": "done",
+      "order": 411,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["ENF-004"],
+      "specifications": [
+        "docs/specifications/03-patterns-templates.md#14-required-examples",
+        "docs/tasks/phase-04-expansion.md#enf-007-implement-statement-prefixfinal-expression-class"
+      ],
+      "nextAction": "Task complete. Use the composition result in implicit-return vertical-slice expansion."
+    },
+    {
+      "id": "EXP-005",
+      "title": "Add core shadowing",
+      "phase": "phase-04",
+      "status": "done",
+      "order": 412,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["EXP-003", "ENF-004"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#4-dispatch-algorithm",
+        "docs/tasks/phase-04-expansion.md#exp-005-add-core-shadowing"
+      ],
+      "nextAction": "Task complete. Reuse the authorized dispatch trace when core forms and operators enter macro invocation."
+    },
+    {
+      "id": "EXP-006",
+      "title": "Complete the do vertical slice",
+      "phase": "phase-04",
+      "status": "done",
+      "order": 413,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["HYG-005", "ENF-005", "EXP-004"],
+      "specifications": [
+        "docs/proposals/00-expressiveness-contract.md#capability-matrix",
+        "docs/tasks/phase-04-expansion.md#exp-006-complete-the-do-vertical-slice"
+      ],
+      "nextAction": "Task complete. Preserve the vertical-slice acceptance contract while generalizing local and generated macro composition."
+    },
+    {
+      "id": "CMP-001",
+      "title": "Implement recursive and local syntax bindings",
+      "phase": "phase-05",
+      "status": "done",
+      "order": 501,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["EXP-004", "HYG-003"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#2-definition-contexts",
+        "docs/tasks/phase-05-composition.md#cmp-001-implement-recursive-and-local-syntax-bindings"
+      ],
+      "nextAction": "Task complete. Reuse local context lifetime and lexical resolution when generated definitions re-enter item processing."
+    },
+    {
+      "id": "CMP-002",
+      "title": "Implement generated macro definitions",
+      "phase": "phase-05",
+      "status": "done",
+      "order": 502,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["CMP-001", "TPL-004"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#2-definition-contexts",
+        "docs/tasks/phase-05-composition.md#cmp-002-implement-generated-macro-definitions"
+      ],
+      "nextAction": "Task complete. Feed checked generated modules into following item contexts and later generated-macro composition fixtures."
+    },
+    {
+      "id": "CMP-003",
+      "title": "Implement custom operators",
+      "phase": "phase-05",
+      "status": "done",
+      "order": 503,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["ENF-003", "EXP-001"],
+      "specifications": [
+        "docs/specifications/04-expansion-enforestation.md#8-operator-tables",
+        "docs/tasks/phase-05-composition.md#cmp-003-implement-custom-operators"
+      ],
+      "nextAction": "Task complete. Preserve lexical operator grouping and diagnostics while validating mixfix and combined-language composition."
+    },
+    {
+      "id": "CMP-004",
+      "title": "Validate mixfix composition",
+      "phase": "phase-05",
+      "status": "done",
+      "order": 504,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["ENF-004", "PAT-006"],
+      "specifications": [
+        "docs/tasks/phase-05-composition.md#cmp-004-validate-mixfix-composition"
+      ],
+      "nextAction": "Task complete. Preserve ordinary matcher-based mixfix composition while porting generated multi-part methods."
+    },
+    {
+      "id": "CMP-005",
+      "title": "Port the accepted playground suite",
+      "phase": "phase-05",
+      "status": "done",
+      "order": 505,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["CMP-002", "CMP-003", "CMP-004"],
+      "specifications": [
+        "docs/tasks/phase-05-composition.md#cmp-005-port-the-accepted-playground-suite"
+      ],
+      "nextAction": "Task complete. Preserve all enabled playground evidence while auditing the declarative boundary."
+    },
+    {
+      "id": "CMP-006",
+      "title": "Audit the declarative boundary",
+      "phase": "phase-05",
+      "status": "done",
+      "order": 506,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["CMP-005"],
+      "specifications": [
+        "docs/tasks/phase-05-composition.md#cmp-006-audit-the-declarative-boundary"
+      ],
+      "nextAction": "Task complete. Keep the declarative-boundary audit in the ordinary repository gate."
+    },
+    {
+      "id": "TSH-001",
+      "title": "Resolve macro modules",
+      "phase": "phase-06",
+      "status": "done",
+      "order": 601,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["CMP-006"],
+      "specifications": [
+        "docs/tasks/phase-06-typescript-host.md#tsh-001-resolve-macro-modules"
+      ],
+      "nextAction": "Task complete. Preserve deterministic resolution and graph separation while integrating the compiler host."
+    },
+    {
+      "id": "TSH-002",
+      "title": "Print expanded TypeScript",
+      "phase": "phase-06",
+      "status": "done",
+      "order": 602,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["HYG-006", "EXP-004"],
+      "specifications": [
+        "docs/tasks/phase-06-typescript-host.md#tsh-002-print-expanded-typescript"
+      ],
+      "nextAction": "Task complete. Feed generated virtual files and their maps into the compiler host."
+    },
+    {
+      "id": "TSH-003",
+      "title": "Implement the compiler host",
+      "phase": "phase-06",
+      "status": "done",
+      "order": 603,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TSH-001", "TSH-002"],
+      "specifications": [
+        "docs/tasks/phase-06-typescript-host.md#tsh-003-implement-the-compiler-host"
+      ],
+      "nextAction": "Task complete. Retain virtual-file metadata for diagnostic remapping and map composition."
+    },
+    {
+      "id": "TSH-004",
+      "title": "Remap diagnostics",
+      "phase": "phase-06",
+      "status": "done",
+      "order": 604,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TSH-003", "SYN-002"],
+      "specifications": [
+        "docs/tasks/phase-06-typescript-host.md#tsh-004-remap-diagnostics"
+      ],
+      "nextAction": "Task complete. Reuse origin lookup while composing JavaScript and declaration maps."
+    },
+    {
+      "id": "TSH-005",
+      "title": "Compose source maps",
+      "phase": "phase-06",
+      "status": "done",
+      "order": 605,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TSH-003"],
+      "specifications": [
+        "docs/tasks/phase-06-typescript-host.md#tsh-005-compose-source-maps"
+      ],
+      "nextAction": "Task complete. Preserve composed-map determinism through clean and incremental builds."
+    },
+    {
+      "id": "TSH-006",
+      "title": "Add caches and invalidation",
+      "phase": "phase-06",
+      "status": "done",
+      "order": 606,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TSH-001", "TSH-003"],
+      "specifications": [
+        "docs/tasks/phase-06-typescript-host.md#tsh-006-add-caches-and-invalidation"
+      ],
+      "nextAction": "Task complete. Surface cache and invalidation events through CLI/watch debug output."
+    },
+    {
+      "id": "TSH-007",
+      "title": "Add build, check, and watch CLI commands",
+      "phase": "phase-06",
+      "status": "done",
+      "order": 607,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TSH-004", "TSH-006"],
+      "specifications": [
+        "docs/tasks/phase-06-typescript-host.md#tsh-007-add-build-check-and-watch-cli-commands"
+      ],
+      "nextAction": "Task complete. Preserve command behavior while proving clean and incremental equivalence across edits."
+    },
+    {
+      "id": "TSH-008",
+      "title": "Prove incremental equivalence",
+      "phase": "phase-06",
+      "status": "done",
+      "order": 608,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TSH-007"],
+      "specifications": [
+        "docs/tasks/phase-06-typescript-host.md#tsh-008-prove-incremental-equivalence"
+      ],
+      "nextAction": "Task complete. Keep the equivalence protocol in CI while building tooling surfaces."
+    },
+    {
+      "id": "TSH-009",
+      "title": "Integrate the default project compiler",
+      "phase": "phase-06",
+      "status": "done",
+      "order": 609,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TSH-001", "TSH-002", "TSH-007", "TSH-008"],
+      "specifications": [
+        "docs/tasks/phase-06-typescript-host.md#tsh-009-integrate-the-default-project-compiler"
+      ],
+      "nextAction": "Task complete. Preserve default CLI, package-manifest, lexical-isolation, .stsx, and external watch proofs in the repository gate."
+    },
+    {
+      "id": "TLS-001",
+      "title": "Stabilize origin-query APIs",
+      "phase": "phase-07",
+      "status": "done",
+      "order": 701,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TSH-005"],
+      "specifications": [
+        "docs/tasks/phase-07-tooling-release.md#tls-001-stabilize-origin-query-apis"
+      ],
+      "nextAction": "Task complete. Use this stable query API in expand/explain and language-service mapping."
+    },
+    {
+      "id": "TLS-002",
+      "title": "Implement expand and explain",
+      "phase": "phase-07",
+      "status": "done",
+      "order": 702,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TSH-002", "TLS-001"],
+      "specifications": [
+        "docs/tasks/phase-07-tooling-release.md#tls-002-implement-expand-and-explain"
+      ],
+      "nextAction": "Task complete. Reuse inspection providers and origin queries in the language service."
+    },
+    {
+      "id": "TLS-003",
+      "title": "Build virtual-file language-service host",
+      "phase": "phase-07",
+      "status": "done",
+      "order": 703,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TSH-003", "TLS-001"],
+      "specifications": [
+        "docs/tasks/phase-07-tooling-release.md#tls-003-build-virtual-file-language-service-host"
+      ],
+      "nextAction": "Task complete. Map language-service reads through retained origin indexes."
+    },
+    {
+      "id": "TLS-004",
+      "title": "Map diagnostics, hover, and definitions",
+      "phase": "phase-07",
+      "status": "done",
+      "order": 704,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TLS-003"],
+      "specifications": [
+        "docs/tasks/phase-07-tooling-release.md#tls-004-map-diagnostics-hover-and-definitions"
+      ],
+      "nextAction": "Task complete. Reuse canonical source projections and generated-boundary classification for references and rename."
+    },
+    {
+      "id": "TLS-005",
+      "title": "Implement references and safe rename",
+      "phase": "phase-07",
+      "status": "done",
+      "order": 705,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TLS-004", "HYG-004"],
+      "specifications": [
+        "docs/tasks/phase-07-tooling-release.md#tls-005-implement-references-and-safe-rename"
+      ],
+      "nextAction": "Task complete. Preserve binding-proof requirements in editor integrations."
+    },
+    {
+      "id": "PRF-001",
+      "title": "Add benchmark runner and baselines",
+      "phase": "phase-07",
+      "status": "done",
+      "order": 706,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["RDR-007", "TSH-007"],
+      "specifications": [
+        "docs/tasks/phase-07-tooling-release.md#prf-001-add-benchmark-runner-and-baselines"
+      ],
+      "nextAction": "Task complete. Use the unified report contract for all performance investigations and release evidence."
+    },
+    {
+      "id": "PRF-002",
+      "title": "Profile and optimize hot paths",
+      "phase": "phase-07",
+      "status": "done",
+      "order": 707,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["PRF-001"],
+      "specifications": [
+        "docs/tasks/phase-07-tooling-release.md#prf-002-profile-and-optimize-hot-paths"
+      ],
+      "nextAction": "Task complete. Retain raw profiles and compare future hot-path changes against the refreshed Node 24 baseline."
+    },
+    {
+      "id": "REL-001",
+      "title": "Run compatibility matrix",
+      "phase": "phase-07",
+      "status": "done",
+      "order": 708,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TSH-008"],
+      "specifications": [
+        "docs/tasks/phase-07-tooling-release.md#rel-001-run-compatibility-matrix"
+      ],
+      "nextAction": "Task complete. Keep the Node 24 and TypeScript 6.0 endpoint matrix required in CI."
+    },
+    {
+      "id": "REL-002",
+      "title": "Publish language and package specifications",
+      "phase": "phase-07",
+      "status": "done",
+      "order": 709,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["CMP-006", "REL-001"],
+      "specifications": [
+        "docs/tasks/phase-07-tooling-release.md#rel-002-publish-language-and-package-specifications"
+      ],
+      "nextAction": "Task complete. Treat specification 06 and its completeness gate as the alpha release contract."
+    },
+    {
+      "id": "REL-003",
+      "title": "Validate external sample projects",
+      "phase": "phase-07",
+      "status": "done",
+      "order": 710,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["TLS-005", "PRF-002"],
+      "specifications": [
+        "docs/tasks/phase-07-tooling-release.md#rel-003-validate-external-sample-projects"
+      ],
+      "nextAction": "Task complete. Preserve both external workflows in the ordinary repository gate."
+    },
+    {
+      "id": "REL-004",
+      "title": "Produce alpha release",
+      "phase": "phase-07",
+      "status": "blocked",
+      "order": 711,
+      "owner": "Codex",
+      "branch": null,
+      "prerequisites": ["REL-002", "REL-003"],
+      "specifications": [
+        "docs/tasks/phase-07-tooling-release.md#rel-004-produce-alpha-release"
+      ],
+      "nextAction": "Keep all release artifacts local. npm publication and Git-tag creation require separate, unambiguous maintainer authorization."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "FOUNDATION-DOCS",
+      "title": "Implementation specifications",
+      "status": "done"
+    },
+    {
+      "id": "FOUNDATION-TASKS",
+      "title": "Dependency-ordered task backlog",
+      "status": "done"
+    },
+    {
+      "id": "FOUNDATION-STATUS",
+      "title": "Inspectable project status",
+      "status": "done"
+    },
+    {
+      "id": "FOUNDATION-WORKSPACE",
+      "title": "Buildable package workspace",
+      "status": "done"
+    },
+    {
+      "id": "FOUNDATION-FIXTURES",
+      "title": "Executable fixture harness",
+      "status": "done"
+    },
+    {
+      "id": "SYNTAX-PRIMITIVES",
+      "title": "Immutable syntax representation",
+      "status": "done"
+    },
+    {
+      "id": "SYNTAX-ORIGINS",
+      "title": "Interned origin graph",
+      "status": "done"
+    },
+    {
+      "id": "SYNTAX-CURSORS",
+      "title": "Checkpointed syntax traversal",
+      "status": "done"
+    },
+    {
+      "id": "READER-SCANNER",
+      "title": "Lossless TypeScript scanner adapter",
+      "status": "done"
+    },
+    {
+      "id": "READER-TEMPLATES",
+      "title": "Template lexical modes",
+      "status": "done"
+    },
+    {
+      "id": "READER-JSX",
+      "title": "JSX lexical modes",
+      "status": "done"
+    },
+    {
+      "id": "READER-TREES",
+      "title": "Immutable delimiter trees with recovery",
+      "status": "done"
+    },
+    {
+      "id": "READER-LOSSLESS-PRINT",
+      "title": "Byte-exact syntax printing",
+      "status": "done"
+    },
+    {
+      "id": "READER-INCREMENTAL-BASELINE",
+      "title": "Clean-equivalent update API",
+      "status": "done"
+    },
+    {
+      "id": "READER-BENCHMARK",
+      "title": "Reader corpus and performance baseline",
+      "status": "done"
+    },
+    {
+      "id": "PATTERN-AST",
+      "title": "Declarative pattern and capture IR",
+      "status": "done"
+    },
+    {
+      "id": "MACRO-DEFINITION-PARSER",
+      "title": "Structural declarative definition parser",
+      "status": "done"
+    },
+    {
+      "id": "PATTERN-SHAPE-VALIDATION",
+      "title": "Capture-shape inference and validation",
+      "status": "done"
+    },
+    {
+      "id": "PATTERN-MATCHER-COMPILER",
+      "title": "Deterministic matcher-program compiler",
+      "status": "done"
+    },
+    {
+      "id": "PATTERN-MATCHER-VM",
+      "title": "Checkpointed matcher virtual machine",
+      "status": "done"
+    },
+    {
+      "id": "PATTERN-FAILURES-MEMOIZATION",
+      "title": "Matcher failure ranking and memoization",
+      "status": "done"
+    },
+    {
+      "id": "PATTERN-USER-SYNTAX-CLASSES",
+      "title": "User syntax-class compilation and execution",
+      "status": "done"
+    },
+    {
+      "id": "PATTERN-REFINEMENTS",
+      "title": "Fixed declarative refinement IR and evaluation",
+      "status": "done"
+    },
+    {
+      "id": "PATTERN-STRUCTURAL-PORTS",
+      "title": "Structural playground fixture ports",
+      "status": "done"
+    },
+    {
+      "id": "HYGIENE-SCOPE-STORE",
+      "title": "Interned hygiene scope store",
+      "status": "done"
+    },
+    {
+      "id": "HYGIENE-BINDING-ENVIRONMENTS",
+      "title": "Persistent binding environments",
+      "status": "done"
+    },
+    {
+      "id": "HYGIENE-INVOCATION-SCOPE-MODEL",
+      "title": "Macro introduction and use-site scope model",
+      "status": "done"
+    },
+    {
+      "id": "HYGIENE-BINDING-RESOLUTION",
+      "title": "Binding resolution and ambiguity diagnostics",
+      "status": "done"
+    },
+    {
+      "id": "TEMPLATE-PARSING",
+      "title": "Declarative template parsing and validation",
+      "status": "done"
+    },
+    {
+      "id": "TEMPLATE-REPETITION-CONDITIONALS",
+      "title": "Template repetition and conditionals",
+      "status": "done"
+    },
+    {
+      "id": "TEMPLATE-DECLARATIVE-OPERATIONS",
+      "title": "Finite declarative template hygiene operations",
+      "status": "done"
+    },
+    {
+      "id": "TEMPLATE-INSTANTIATION",
+      "title": "Hygienic template instantiation",
+      "status": "done"
+    },
+    {
+      "id": "HYGIENE-BINDING-CONTRACTS",
+      "title": "Declarative binding contracts",
+      "status": "done"
+    },
+    {
+      "id": "HYGIENE-NAME-ASSIGNMENT",
+      "title": "Deterministic printed name assignment",
+      "status": "done"
+    },
+    {
+      "id": "TEMPLATE-HYGIENE-CONFORMANCE",
+      "title": "End-to-end hygiene conformance fixtures",
+      "status": "done"
+    },
+    {
+      "id": "EXPANSION-ENVIRONMENTS",
+      "title": "Persistent expansion environments",
+      "status": "done"
+    },
+    {
+      "id": "EXPANSION-DEFINITION-CONTEXTS",
+      "title": "Source-ordered definition contexts",
+      "status": "done"
+    },
+    {
+      "id": "ENFORESTATION-CONSUMER-INFRASTRUCTURE",
+      "title": "Checkpointed syntax-consumer infrastructure",
+      "status": "done"
+    },
+    {
+      "id": "ENFORESTATION-PRIMARY-CALLS",
+      "title": "Primary and call expression consumption",
+      "status": "done"
+    },
+    {
+      "id": "ENFORESTATION-PRATT-EXPRESSIONS",
+      "title": "Pratt expression parser with macro operators",
+      "status": "done"
+    },
+    {
+      "id": "EXPANSION-MACRO-INVOCATION",
+      "title": "Transactional macro invocation",
+      "status": "done"
+    },
+    {
+      "id": "EXPANSION-PROGRESS-RESOURCE-CHECKS",
+      "title": "Expansion termination and resource enforcement",
+      "status": "done"
+    },
+    {
+      "id": "ENFORESTATION-STATEMENTS-ITEMS",
+      "title": "Statement and item consumers",
+      "status": "done"
+    },
+    {
+      "id": "ENFORESTATION-BINDINGS-PARAMETERS",
+      "title": "Binding and parameter consumers",
+      "status": "done"
+    },
+    {
+      "id": "ENFORESTATION-TYPES-CLASS-ELEMENTS",
+      "title": "Type and class-element consumers",
+      "status": "done"
+    },
+    {
+      "id": "ENFORESTATION-STATEMENT-PREFIX-FINAL-EXPRESSION",
+      "title": "Statement-prefix and final-expression composition",
+      "status": "done"
+    },
+    {
+      "id": "EXPANSION-CORE-SHADOWING",
+      "title": "Explicit lexical core-form shadowing",
+      "status": "done"
+    },
+    {
+      "id": "EXPANSION-DO-NOTATION",
+      "title": "Declarative do-notation vertical slice",
+      "status": "done"
+    },
+    {
+      "id": "COMPOSITION-LOCAL-RECURSIVE-SYNTAX",
+      "title": "Recursive and local syntax bindings",
+      "status": "done"
+    },
+    {
+      "id": "COMPOSITION-GENERATED-DEFINITIONS",
+      "title": "Checked generated declarative definitions",
+      "status": "done"
+    },
+    {
+      "id": "COMPOSITION-CUSTOM-OPERATORS",
+      "title": "Declarative lexical custom operators",
+      "status": "done"
+    },
+    {
+      "id": "COMPOSITION-MIXFIX",
+      "title": "Declarative mixfix composition",
+      "status": "done"
+    },
+    {
+      "id": "PLAYGROUND-THREADING-EXECUTABLE",
+      "title": "Executable threading acceptance family",
+      "status": "done"
+    },
+    {
+      "id": "PLAYGROUND-IMPLICIT-RETURN-EXECUTABLE",
+      "title": "Executable implicit-return acceptance family",
+      "status": "done"
+    },
+    {
+      "id": "PLAYGROUND-OPERATORS-EXECUTABLE",
+      "title": "Executable custom-operators acceptance family",
+      "status": "done"
+    },
+    {
+      "id": "PLAYGROUND-REWRITTEN-IF-EXECUTABLE",
+      "title": "Executable rewritten-if acceptance family",
+      "status": "done"
+    },
+    {
+      "id": "PLAYGROUND-CURRYING-EXECUTABLE",
+      "title": "Executable currying acceptance family",
+      "status": "done"
+    },
+    {
+      "id": "PLAYGROUND-CORE-REWRITES-EXECUTABLE",
+      "title": "Executable core-rewrites acceptance family",
+      "status": "done"
+    },
+    {
+      "id": "PLAYGROUND-ADT-EXECUTABLE",
+      "title": "Executable ADT and match acceptance family",
+      "status": "done"
+    },
+    {
+      "id": "PLAYGROUND-PROTOCOLS-EXECUTABLE",
+      "title": "Executable protocols acceptance family",
+      "status": "done"
+    },
+    {
+      "id": "PLAYGROUND-CSP-EXECUTABLE",
+      "title": "Executable CSP acceptance family",
+      "status": "done"
+    },
+    {
+      "id": "PLAYGROUND-MULTI-PART-METHODS-EXECUTABLE",
+      "title": "Executable generated multi-part methods family",
+      "status": "done"
+    },
+    {
+      "id": "PLAYGROUND-NEW-LANGUAGE-EXECUTABLE",
+      "title": "Executable combined new-language family",
+      "status": "done"
+    },
+    {
+      "id": "COMPOSITION-DECLARATIVE-BOUNDARY",
+      "title": "CI-enforced declarative acceptance boundary",
+      "status": "done"
+    },
+    {
+      "id": "TYPESCRIPT-HOST-MODULE-RESOLUTION",
+      "title": "Deterministic macro-module manifests and dependency graphs",
+      "status": "done"
+    },
+    {
+      "id": "TYPESCRIPT-HOST-GENERATED-PRINTING",
+      "title": "Deterministic hygienic generated TypeScript and origin maps",
+      "status": "done"
+    },
+    {
+      "id": "TYPESCRIPT-HOST-COMPILER-HOST",
+      "title": "Official TypeScript checking and artifact emission over virtual files",
+      "status": "done"
+    },
+    {
+      "id": "TYPESCRIPT-HOST-DIAGNOSTIC-REMAP",
+      "title": "Origin-aware TypeScript diagnostic remapping",
+      "status": "done"
+    },
+    {
+      "id": "TYPESCRIPT-HOST-SOURCE-MAPS",
+      "title": "Composed JavaScript and declaration source maps",
+      "status": "done"
+    },
+    {
+      "id": "TYPESCRIPT-HOST-CACHES",
+      "title": "Content-addressed caches and dependency invalidation",
+      "status": "done"
+    },
+    {
+      "id": "TYPESCRIPT-HOST-CLI",
+      "title": "Typed check, build, and watch project commands",
+      "status": "done"
+    },
+    {
+      "id": "TYPESCRIPT-HOST-INCREMENTAL-EQUIVALENCE",
+      "title": "Clean and incremental multi-project equivalence",
+      "status": "done"
+    },
+    {
+      "id": "TOOLING-ORIGIN-QUERIES",
+      "title": "Bidirectional origin and invocation queries",
+      "status": "done"
+    },
+    {
+      "id": "TOOLING-EXPAND-EXPLAIN",
+      "title": "Expanded source and structured macro explanations",
+      "status": "done"
+    },
+    {
+      "id": "TOOLING-LANGUAGE-SERVICE-HOST",
+      "title": "Mutable official TypeScript language service over virtual files",
+      "status": "done"
+    },
+    {
+      "id": "TOOLING-MAPPED-READS",
+      "title": "Origin-aware diagnostics, hover, and definitions",
+      "status": "done"
+    },
+    {
+      "id": "TOOLING-SAFE-RENAME",
+      "title": "Binding-aware references and semantics-preserving rename",
+      "status": "done"
+    },
+    {
+      "id": "PERFORMANCE-BENCHMARK-PROTOCOL",
+      "title": "Reproducible benchmark reports and regression baselines",
+      "status": "done"
+    },
+    {
+      "id": "PERFORMANCE-HOT-PATHS",
+      "title": "Profile-backed compiler hot-path optimizations",
+      "status": "done"
+    },
+    {
+      "id": "RELEASE-COMPATIBILITY-MATRIX",
+      "title": "Executable Node and TypeScript compatibility matrix",
+      "status": "done"
+    },
+    {
+      "id": "RELEASE-PUBLIC-SPECIFICATIONS",
+      "title": "Normative language, format, package, security, and migration specifications",
+      "status": "done"
+    },
+    {
+      "id": "RELEASE-EXTERNAL-SAMPLES",
+      "title": "Independent project, declarative macro, runtime, and editor validation",
+      "status": "done"
+    }
+  ],
+  "blockers": [
+    {
+      "id": "RELEASE-AUTHORITY",
+      "title": "Publication and tag authority not granted",
+      "evidence": "REL-004 local staging and packed verification are complete, but npm publication and Git-tag creation are explicitly not authorized.",
+      "requiredAction": "Do not publish packages or create a release tag without separate, unambiguous maintainer authorization."
+    }
+  ],
+  "nextTasks": ["REL-004"]
+}

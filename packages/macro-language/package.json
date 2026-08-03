@@ -1,0 +1,26 @@
+{
+  "name": "@sweet-rewrite/macro-language",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@sweet-rewrite/hygiene": "workspace:*",
+    "@sweet-rewrite/pattern": "workspace:*",
+    "@sweet-rewrite/shared": "workspace:*",
+    "@sweet-rewrite/syntax": "workspace:*",
+    "@sweet-rewrite/template": "workspace:*"
+  },
+  "devDependencies": {
+    "@sweet-rewrite/enforestation": "workspace:*",
+    "@sweet-rewrite/reader": "workspace:*"
+  }
+}

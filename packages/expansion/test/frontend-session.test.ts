@@ -1,0 +1,179 @@
+import {
+  createPhase,
+  EnvironmentStore,
+  ScopeStore,
+} from "@sweet-rewrite/hygiene";
+import { parseMacroDefinitions } from "@sweet-rewrite/macro-language";
+import { printLosslessSequence, readSyntax } from "@sweet-rewrite/reader";
+import {
+  createIdAllocator,
+  createResourceBudget,
+  ResourceTracker,
+  type BindingId,
+  type InvocationId,
+  type SourceId,
+  type SyntaxId,
+} from "@sweet-rewrite/shared";
+import {
+  createSyntaxSequence,
+  OriginStore,
+  type Syntax,
+} from "@sweet-rewrite/syntax";
+import { describe, expect, test } from "vitest";
+import {
+  compileParsedMacros,
+  createExpansionFrontendSession,
+  ExpansionGuard,
+} from "../src/index.js";
+
+const definitionSource = 991 as SourceId;
+const invocationSource = 992 as SourceId;
+
+function withoutEof(syntax: readonly Syntax[]) {
+  return createSyntaxSequence(
+    syntax.filter(
+      (node) => node.tag !== "token" || node.kind !== "end-of-file",
+    ),
+  );
+}
+
+function compact(syntax: readonly Syntax[]) {
+  return printLosslessSequence(syntax).replace(/\s+/gu, "");
+}
+
+function harness() {
+  const origins = new OriginStore();
+  const scopes = new ScopeStore();
+  const definitionScopes = scopes.singleton(
+    scopes.freshScope("module", "frontend-definitions"),
+  );
+  const definitions = readSyntax(
+    `
+      export syntax twice:expr {
+        rule { twice($value:tt) } => { [$value, $value] }
+      }
+      export syntax guard:stmt {
+        rule { guard($condition:expr) $body:stmt }
+        => { return; }
+      }
+      export syntax makeAnswer:item {
+        rule { makeAnswer } => { export const answer = 42; }
+      }
+      export syntax define:item {
+        rule { define $name:ident; } => {
+          #syntax {
+            syntax $name:expr { rule { $name! } => { 42 } }
+          }
+        }
+      }
+      export syntax maybe:type {
+        rule { maybe<$value:type> } => { $value | undefined }
+      }
+      export operator (|>):expr {
+        fixity infix;
+        associativity left;
+        precedence 40;
+        rule { $value:expr |> $callee:ident } => { $callee($value) }
+      }
+    `,
+    {
+      sourceId: definitionSource,
+      scopes: definitionScopes,
+      originStore: origins,
+    },
+  );
+  const parsed = parseMacroDefinitions(definitions.root, {
+    sourceId: definitionSource,
+  });
+  const syntaxIds = createIdAllocator<SyntaxId>(70_000);
+  const bindingIds = createIdAllocator<BindingId>(70_000);
+  const invocationIds = createIdAllocator<InvocationId>(1);
+  const phase = createPhase(1);
+  const module = compileParsedMacros(parsed, {
+    sourceId: definitionSource,
+    phase,
+    definitionScopes,
+    allocateBindingId: bindingIds.allocate,
+    spanForOrigin: (origin) =>
+      origins.selectPrimarySource(origin)?.span ?? { start: 0, end: 0 },
+  });
+  expect(definitions.diagnostics).toEqual([]);
+  expect(parsed.diagnostics).toEqual([]);
+  expect(module.diagnostics).toEqual([]);
+  const tracker = new ResourceTracker(createResourceBudget());
+  const session = createExpansionFrontendSession({
+    module,
+    sourceId: invocationSource,
+    phase,
+    scopeStore: scopes,
+    origins,
+    environments: new EnvironmentStore(),
+    tracker,
+    guard: new ExpansionGuard({ tracker }),
+    allocateSyntaxId: syntaxIds.allocate,
+    allocateBindingId: bindingIds.allocate,
+    allocateInvocationId: invocationIds.allocate,
+  });
+  return (source: string, category: "expr" | "stmt" | "item" | "type") => {
+    const read = readSyntax(source, {
+      sourceId: invocationSource,
+      scopes: scopes.singleton(scopes.freshScope("lexical", "frontend-use")),
+      originStore: origins,
+    });
+    expect(read.diagnostics).toEqual([]);
+    return session.expand(withoutEof(read.root.children), category);
+  };
+}
+
+describe("production expansion frontend session", () => {
+  test("assembles expression, statement, item, and type categories", () => {
+    const expand = harness();
+    const expression = expand("twice(21)", "expr");
+    const statement = expand("guard(ok) { run(); }", "stmt");
+    const item = expand("makeAnswer", "item");
+    const type = expand("maybe<string>", "type");
+    const sourceFile = expand(
+      `export const values: maybe<number[]> = twice(21);
+       export const piped = 21 |> double;
+       export function checked(ok: boolean) { guard(ok) { work(); } }`,
+      "item",
+    );
+
+    expect(expression.diagnostics).toEqual([]);
+    expect(statement.diagnostics).toEqual([]);
+    expect(item.diagnostics).toEqual([]);
+    expect(type.diagnostics).toEqual([]);
+    expect(sourceFile.diagnostics).toEqual([]);
+    expect(compact(expression.syntax)).toBe("[21,21]");
+    expect(compact(statement.syntax)).toBe("return;");
+    expect(compact(item.syntax)).toBe("exportconstanswer=42;");
+    expect(compact(type.syntax)).toBe("string|undefined");
+    expect(compact(sourceFile.syntax)).toBe(
+      "exportconstvalues:number[]|undefined=[21,21];exportconstpiped=double(21);exportfunctionchecked(ok:boolean){return;}",
+    );
+    expect(expression.traces).toHaveLength(1);
+    expect(statement.traces).toHaveLength(1);
+    expect(item.traces).toHaveLength(1);
+    expect(type.traces).toHaveLength(1);
+  });
+
+  test("dispatches lexical custom operators through the production session", () => {
+    const result = harness()("21 |> double", "expr");
+
+    expect(result.diagnostics).toEqual([]);
+    expect(compact(result.syntax)).toBe("double(21)");
+    expect(result.traces).toHaveLength(1);
+  });
+
+  test("registers and invokes a generated expression macro later in the file", () => {
+    const result = harness()(
+      "define answer; export const result = answer!;",
+      "item",
+    );
+
+    expect(result.diagnostics).toEqual([]);
+    expect(compact(result.syntax)).toBe("exportconstresult=42;");
+    expect(result.generatedDefinitionTraces).toHaveLength(1);
+    expect(result.traces).toHaveLength(2);
+  });
+});

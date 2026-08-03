@@ -1,0 +1,27 @@
+export rec syntax thread:expr {
+  rule { thread($value:expr) }
+  expect "expression or call step"
+  => {
+    $value
+  }
+
+  rule { thread($value:expr, $next:ident($($argument:expr),*),) }
+  expect "expression or call step"
+  => {
+    $next($value, $($argument),*)
+  }
+
+  rule {
+    thread($value:expr, $next:ident($($argument:expr),*), $($rest:tt)+)
+  }
+  expect "expression or call step"
+  => {
+    thread($next($value, $($argument),*), $($rest)+)
+  }
+
+  rule { thread($value:expr, $next:ident($($argument:expr),*)) }
+  expect "expression or call step"
+  => {
+    $next($value, $($argument),*)
+  }
+}

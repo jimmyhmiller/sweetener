@@ -1,0 +1,105 @@
+import type {
+  DelimiterKind,
+  Syntax,
+  SyntaxCursor,
+  TokenKind,
+} from "@sweet-rewrite/syntax";
+
+export type StopCondition =
+  | {
+      readonly kind: "token";
+      readonly tokenKind?: TokenKind | undefined;
+      readonly raw?: string | undefined;
+    }
+  | { readonly kind: "group"; readonly delimiter: DelimiterKind }
+  | { readonly kind: "end" };
+
+function conditionKey(condition: StopCondition): string {
+  switch (condition.kind) {
+    case "token":
+      return `token|${condition.tokenKind ?? "*"}|${condition.raw ?? "*"}`;
+    case "group":
+      return `group|${condition.delimiter}`;
+    case "end":
+      return "end";
+  }
+}
+
+function createCondition(condition: StopCondition): StopCondition {
+  if (
+    condition.kind === "token" &&
+    condition.tokenKind === undefined &&
+    condition.raw === undefined
+  ) {
+    throw new TypeError("Token stop condition requires a kind or raw spelling");
+  }
+  if (
+    condition.kind === "token" &&
+    condition.raw !== undefined &&
+    condition.raw.length === 0
+  ) {
+    throw new RangeError("Token stop spelling must not be empty");
+  }
+  return Object.freeze({ ...condition });
+}
+
+function matchesSyntax(
+  condition: StopCondition,
+  syntax: Syntax | undefined,
+): boolean {
+  switch (condition.kind) {
+    case "end":
+      return syntax === undefined;
+    case "group":
+      return (
+        syntax?.tag === "group" && syntax.delimiter === condition.delimiter
+      );
+    case "token":
+      return (
+        syntax?.tag === "token" &&
+        (condition.tokenKind === undefined ||
+          syntax.kind === condition.tokenKind) &&
+        (condition.raw === undefined || syntax.raw === condition.raw)
+      );
+  }
+}
+
+export class StopSet {
+  static readonly empty = new StopSet([]);
+
+  readonly conditions: readonly StopCondition[];
+  readonly #keys: ReadonlySet<string>;
+
+  constructor(conditions: readonly StopCondition[]) {
+    const byKey = new Map<string, StopCondition>();
+    for (const input of conditions) {
+      const condition = createCondition(input);
+      const key = conditionKey(condition);
+      if (byKey.has(key))
+        throw new RangeError(`Duplicate stop condition ${key}`);
+      byKey.set(key, condition);
+    }
+    this.conditions = Object.freeze(
+      [...byKey.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([, condition]) => condition),
+    );
+    this.#keys = new Set(byKey.keys());
+    Object.freeze(this);
+  }
+
+  matches(cursor: SyntaxCursor): boolean {
+    return this.conditions.some((condition) =>
+      matchesSyntax(condition, cursor.peek()),
+    );
+  }
+
+  union(other: StopSet): StopSet {
+    const additions = other.conditions.filter(
+      (condition) => !this.#keys.has(conditionKey(condition)),
+    );
+    return additions.length === 0
+      ? this
+      : new StopSet([...this.conditions, ...additions]);
+  }
+}

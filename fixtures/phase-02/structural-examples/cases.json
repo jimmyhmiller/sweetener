@@ -1,0 +1,45 @@
+{
+  "cases": [
+    {
+      "className": "Bind",
+      "source": "value <- load;",
+      "fields": { "name": ["value"], "source": ["load"] }
+    },
+    {
+      "className": "BindAll",
+      "source": "[left, right] <- [first, second];",
+      "fields": {
+        "names": ["left", "right"],
+        "sources": ["first", "second"]
+      }
+    },
+    {
+      "className": "ProtocolMethod",
+      "source": "equals(left: User, right: User): boolean;",
+      "fields": {
+        "name": ["equals"],
+        "parameters": ["left", "right"],
+        "parameterTypes": ["User", "User"],
+        "result": ["boolean"]
+      }
+    },
+    {
+      "className": "ConstructorDeclaration",
+      "source": "Some(value: T, count: number)",
+      "fields": {
+        "name": ["Some"],
+        "fieldNames": ["value", "count"],
+        "fieldTypes": ["T", "number"]
+      }
+    },
+    {
+      "className": "MethodSegment",
+      "source": "lower(minimum: number)",
+      "fields": {
+        "name": ["lower"],
+        "parameters": ["minimum"],
+        "parameterTypes": ["number"]
+      }
+    }
+  ]
+}

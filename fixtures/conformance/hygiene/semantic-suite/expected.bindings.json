@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    "generated-temporary-collision",
+    "do-three-clause-sequential-scope",
+    "match-branch-scope",
+    "generated-macro-from-captured-name",
+    "definition-helper-shadowing",
+    "explicit-capture",
+    "ambiguous-scope-resolution",
+    "value-type-same-spelling",
+    "constructor-following-bindings",
+    "protocol-parameter-region",
+    "generated-macro-name-collision",
+    "alpha-renaming-invariance"
+  ]
+}

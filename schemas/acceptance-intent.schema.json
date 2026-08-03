@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweet-rewrite.local/schemas/acceptance-intent.schema.json",
+  "title": "Sweet Rewrite acceptance intent",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "fixtureId",
+    "status",
+    "legacySources",
+    "summary",
+    "capabilities",
+    "syntaxNotes",
+    "artifacts",
+    "openDecisions"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "fixtureId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*(/[a-z0-9][a-z0-9-]*)+$"
+    },
+    "status": { "enum": ["proposed", "approved", "deferred"] },
+    "legacySources": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "summary": { "type": "string", "minLength": 1 },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "syntaxNotes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "artifacts": { "$ref": "#/$defs/artifacts" },
+    "openDecisions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/openDecision" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "localFile": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "capability": {
+      "type": "object",
+      "required": ["id", "requirement"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Z][A-Z0-9-]+$" },
+        "requirement": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "variant": {
+      "type": "object",
+      "required": ["input", "expansion"],
+      "properties": {
+        "input": { "$ref": "#/$defs/localFile" },
+        "expansion": { "$ref": "#/$defs/localFile" }
+      },
+      "additionalProperties": false
+    },
+    "malformed": {
+      "type": "object",
+      "required": ["input", "diagnostics"],
+      "properties": {
+        "input": { "$ref": "#/$defs/localFile" },
+        "diagnostics": { "$ref": "#/$defs/localFile" }
+      },
+      "additionalProperties": false
+    },
+    "artifacts": {
+      "type": "object",
+      "required": [
+        "definition",
+        "input",
+        "expansion",
+        "types",
+        "runtime",
+        "hygiene",
+        "malformed"
+      ],
+      "properties": {
+        "definition": { "$ref": "#/$defs/localFile" },
+        "input": { "$ref": "#/$defs/localFile" },
+        "expansion": { "$ref": "#/$defs/localFile" },
+        "types": { "$ref": "#/$defs/localFile" },
+        "runtime": { "$ref": "#/$defs/localFile" },
+        "hygiene": { "$ref": "#/$defs/variant" },
+        "malformed": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/malformed" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "openDecision": {
+      "type": "object",
+      "required": ["id", "question"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^OPEN-[A-Z]+-[0-9]{3}$" },
+        "question": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

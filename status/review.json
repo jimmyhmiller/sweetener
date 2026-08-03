@@ -1,0 +1,6 @@
+{
+  "$schema": "../schemas/review.schema.json",
+  "schemaVersion": 1,
+  "ready": [],
+  "upcoming": []
+}

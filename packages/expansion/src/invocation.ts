@@ -1,0 +1,565 @@
+import {
+  applyBindingContracts,
+  createInvocationScopes,
+  type Binding,
+  type BindingEnvironment,
+  type BindingContract,
+  type ApplyBindingContractsOptions,
+  type EnvironmentStore,
+  type Phase,
+  type ScopeStore,
+} from "@sweet-rewrite/hygiene";
+import {
+  expectationKey,
+  executeMatcher,
+  type BindingLiteralKey,
+  type CaptureRecord,
+  type CaptureValue,
+  type MatchFailure,
+  type MatcherProgram,
+  type SyntaxClassConsumer,
+} from "@sweet-rewrite/pattern";
+import {
+  neverCancelled,
+  type BindingId,
+  type CancellationToken,
+  type Diagnostic,
+  type EnvironmentEpoch,
+  type InvocationId,
+  type OriginId,
+  type ResourceTracker,
+  type RuleId,
+  type ScopeId,
+  type ScopeSetId,
+  type SourceSpan,
+  type SyntaxId,
+} from "@sweet-rewrite/shared";
+import {
+  SyntaxRange,
+  type OriginStore,
+  type ProtectedSyntax,
+  type Syntax,
+  type SyntaxCategory,
+  type SyntaxCursor,
+  type TokenSyntax,
+} from "@sweet-rewrite/syntax";
+import {
+  evaluateTemplate,
+  instantiateTemplate,
+  type FreshBinding,
+  type SequenceTemplate,
+  type TemplateOperationTrace,
+} from "@sweet-rewrite/template";
+import {
+  expansionDiagnosticRegistry,
+  noMatchingMacroRuleCode,
+} from "./diagnostics.js";
+import type { CoreDispatchTrace } from "./core-shadowing.js";
+import { createExpansionFingerprint, type ExpansionGuard } from "./progress.js";
+
+export interface CompiledMacroRule {
+  readonly rule: RuleId;
+  readonly origin: OriginId;
+  readonly fallback: boolean;
+  readonly matcher: MatcherProgram;
+  readonly template: SequenceTemplate;
+  readonly contracts: readonly BindingContract[];
+  readonly requiredContexts: readonly MacroContext[];
+  readonly failureDescription?: string | undefined;
+}
+
+export type MacroContext = "generator";
+
+export interface CompiledMacroBinding {
+  readonly binding: Binding;
+  readonly category: SyntaxCategory;
+  readonly definitionScopes: ScopeSetId;
+  readonly rules: readonly CompiledMacroRule[];
+}
+
+export interface RuleAttemptTrace {
+  readonly rule: RuleId;
+  readonly status: "no-match" | "boundary-rejected" | "selected";
+  readonly matcherSteps: number;
+  readonly failure: MatchFailure | undefined;
+}
+
+export interface CaptureSummary {
+  readonly capture: number;
+  readonly name: string;
+  readonly values: number;
+}
+
+export interface IntroducedBindingSummary {
+  readonly binding: BindingId;
+  readonly spelling: string;
+  readonly space: Binding["space"];
+  readonly declaration: OriginId;
+}
+
+export interface MacroTraceEvent {
+  readonly invocationId: InvocationId;
+  readonly parent: InvocationId | undefined;
+  readonly binding: BindingId;
+  readonly category: SyntaxCategory;
+  readonly phase: Phase;
+  readonly invocationOrigin: OriginId;
+  readonly attemptedRules: readonly RuleAttemptTrace[];
+  readonly selectedRule: RuleId | undefined;
+  readonly captures: readonly CaptureSummary[];
+  readonly scopesIntroduced: readonly ScopeId[];
+  readonly bindingsIntroduced: readonly IntroducedBindingSummary[];
+  readonly operations: readonly TemplateOperationTrace[];
+  readonly outputOrigins: readonly OriginId[];
+  readonly cache: "miss" | "hit";
+  readonly coreInterception: CoreDispatchTrace | undefined;
+}
+
+export interface BoundaryAdmissionRequest {
+  readonly category: SyntaxCategory;
+  readonly consumed: SyntaxRange;
+  readonly cursor: SyntaxCursor;
+  readonly rule: CompiledMacroRule;
+}
+
+export interface ExpandReplacementRequest {
+  readonly syntax: readonly Syntax[];
+  readonly category: SyntaxCategory;
+  readonly phase: Phase;
+  readonly environmentEpoch: EnvironmentEpoch;
+  readonly invocationId: InvocationId;
+  readonly followingScopes: ScopeSetId;
+  readonly environment: BindingEnvironment;
+}
+
+export interface InvokeMacroOptions {
+  readonly macro: CompiledMacroBinding;
+  readonly cursor: SyntaxCursor;
+  readonly category: SyntaxCategory;
+  readonly phase: Phase;
+  readonly environmentEpoch: EnvironmentEpoch;
+  readonly consumeClass: SyntaxClassConsumer;
+  readonly matchesBindingLiteral?:
+    ((token: TokenSyntax, literal: BindingLiteralKey) => boolean) | undefined;
+  readonly scopeStore: ScopeStore;
+  readonly origins: OriginStore;
+  readonly environments: EnvironmentStore;
+  readonly environment: BindingEnvironment;
+  readonly tracker: ResourceTracker;
+  readonly guard: ExpansionGuard;
+  readonly cancellation?: CancellationToken | undefined;
+  readonly allocateSyntaxId: () => SyntaxId;
+  readonly allocateBindingId: () => BindingId;
+  readonly allocateInvocationId: () => InvocationId;
+  readonly parentInvocation?: InvocationId | undefined;
+  readonly contexts?: ReadonlySet<MacroContext> | undefined;
+  readonly coreInterception?: CoreDispatchTrace | undefined;
+  readonly position: number;
+  readonly extractBindings?: ApplyBindingContractsOptions["extractBindings"];
+  readonly admit: (request: BoundaryAdmissionRequest) => boolean;
+  readonly expandReplacement: (
+    request: ExpandReplacementRequest,
+  ) => ProtectedSyntax;
+  readonly diagnosticOrigin: (origin: OriginId) => SourceSpan;
+}
+
+export interface MacroInvocationSuccess {
+  readonly expanded: true;
+  readonly syntax: ProtectedSyntax;
+  readonly cursor: SyntaxCursor;
+  readonly environment: BindingEnvironment;
+  readonly followingScopes: ScopeSetId;
+  readonly freshBindings: readonly FreshBinding[];
+  readonly trace: MacroTraceEvent;
+}
+
+export interface MacroInvocationFailure {
+  readonly expanded: false;
+  readonly cursor: SyntaxCursor;
+  readonly diagnostic: Diagnostic;
+  readonly trace: MacroTraceEvent;
+}
+
+export type MacroInvocationResult =
+  MacroInvocationSuccess | MacroInvocationFailure;
+
+function countValues(value: CaptureValue): number {
+  if (value.kind === "leaf") return 1;
+  return value.elements.reduce(
+    (total, element) => total + countValues(element),
+    0,
+  );
+}
+
+function captureSummaries(
+  program: MatcherProgram,
+  captures: CaptureRecord,
+): readonly CaptureSummary[] {
+  return Object.freeze(
+    program.captureSlots.map((slot) => {
+      const value = captures.get(slot.capture);
+      return Object.freeze({
+        capture: slot.capture,
+        name: slot.name,
+        values: value === undefined ? 0 : countValues(value),
+      });
+    }),
+  );
+}
+
+function mergedFailure(
+  failures: readonly MatchFailure[],
+): MatchFailure | undefined {
+  if (failures.length === 0) return undefined;
+  const farthest = Math.max(...failures.map((failure) => failure.offset));
+  const atOffset = failures.filter((failure) => failure.offset === farthest);
+  const specificity = Math.max(
+    ...atOffset.map((failure) => failure.specificity),
+  );
+  const best = atOffset.filter(
+    (failure) => failure.specificity === specificity,
+  );
+  const expectations = new Map(
+    best.flatMap((failure) =>
+      failure.expectations.map(
+        (expectation) => [expectationKey(expectation), expectation] as const,
+      ),
+    ),
+  );
+  return Object.freeze({
+    offset: farthest,
+    cursor: [...best].sort((left, right) =>
+      left.cursor.localeCompare(right.cursor),
+    )[0]!.cursor,
+    specificity,
+    expectations: Object.freeze(
+      [...expectations]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([, value]) => value),
+    ),
+    origins: Object.freeze(
+      [...new Set(best.flatMap((failure) => failure.origins))].sort(
+        (left, right) => left - right,
+      ),
+    ),
+  });
+}
+
+function orderedRules(rules: readonly CompiledMacroRule[]) {
+  return [
+    ...rules.filter((rule) => !rule.fallback),
+    ...rules.filter((rule) => rule.fallback),
+  ];
+}
+
+function validateMacro(
+  macro: CompiledMacroBinding,
+  category: SyntaxCategory,
+): void {
+  if (macro.binding.kind !== "macro" && macro.binding.kind !== "operator") {
+    throw new TypeError("Invocation requires a macro or operator binding");
+  }
+  if (macro.category !== category) {
+    throw new TypeError(`Cannot invoke ${macro.category} macro as ${category}`);
+  }
+  if (macro.rules.length === 0)
+    throw new RangeError("Macro has no compiled rules");
+  for (const rule of macro.rules) {
+    if (rule.matcher.rule !== rule.rule) {
+      throw new TypeError("Matcher and compiled macro rule identities differ");
+    }
+  }
+}
+
+function validateCoreInterception(
+  trace: CoreDispatchTrace | undefined,
+  macro: CompiledMacroBinding,
+  category: SyntaxCategory,
+  phase: Phase,
+): void {
+  if (trace === undefined) return;
+  if (
+    trace.decision !== "shadow-macro" ||
+    trace.selected !== macro.binding.id ||
+    trace.spelling !== macro.binding.spelling ||
+    trace.category !== category ||
+    trace.phase !== phase
+  ) {
+    throw new TypeError(
+      "Core-interception trace does not select this macro invocation",
+    );
+  }
+}
+
+export function invokeMacro(
+  options: InvokeMacroOptions,
+): MacroInvocationResult {
+  validateMacro(options.macro, options.category);
+  validateCoreInterception(
+    options.coreInterception,
+    options.macro,
+    options.category,
+    options.phase,
+  );
+  if (options.guard.tracker !== options.tracker) {
+    throw new TypeError("Expansion guard and invocation must share a tracker");
+  }
+  if (
+    options.cancellation !== undefined &&
+    options.guard.cancellation !== neverCancelled &&
+    options.guard.cancellation !== options.cancellation
+  ) {
+    throw new TypeError(
+      "Expansion guard and invocation must share a cancellation token",
+    );
+  }
+  const cancellation = options.cancellation ?? options.guard.cancellation;
+  cancellation.throwIfCancellationRequested();
+  const invocationHead = options.cursor.peek();
+  if (invocationHead === undefined) {
+    throw new RangeError("Cannot invoke a macro at end of input");
+  }
+  const invocationId = options.allocateInvocationId();
+  const attempts: RuleAttemptTrace[] = [];
+  const failures: MatchFailure[] = [];
+  const startRange = options.cursor.remainingRange();
+
+  for (const rule of orderedRules(options.macro.rules)) {
+    cancellation.throwIfCancellationRequested();
+    const matched = executeMatcher(rule.matcher, options.cursor, {
+      consumeClass: options.consumeClass,
+      matchesTokenLiteral: (token, literal) =>
+        token === invocationHead &&
+        literal.raw === options.macro.binding.spelling &&
+        token.kind === literal.tokenKind,
+      matchesBindingLiteral: options.matchesBindingLiteral,
+      cancellation,
+      tracker: options.tracker,
+      environmentEpoch: options.environmentEpoch,
+    });
+    if (!matched.matched) {
+      const failure =
+        matched.failure === undefined || rule.failureDescription === undefined
+          ? matched.failure
+          : Object.freeze({
+              ...matched.failure,
+              specificity: Math.max(matched.failure.specificity, 7),
+              expectations: Object.freeze([
+                Object.freeze({
+                  kind: "description" as const,
+                  description: rule.failureDescription,
+                }),
+              ]),
+            });
+      if (failure !== undefined) failures.push(failure);
+      attempts.push(
+        Object.freeze({
+          rule: rule.rule,
+          status: "no-match",
+          matcherSteps: matched.matcherSteps,
+          failure,
+        }),
+      );
+      continue;
+    }
+    const consumed = new SyntaxRange(
+      startRange.sequence,
+      options.cursor.index,
+      matched.cursor.index,
+    );
+    const missingContext = rule.requiredContexts.find(
+      (required) => !options.contexts?.has(required),
+    );
+    if (missingContext !== undefined) {
+      const failure = Object.freeze({
+        offset:
+          matched.cursor.peek()?.span.start ??
+          consumed.at(consumed.length - 1)?.span.end ??
+          0,
+        cursor: matched.cursor.identity,
+        specificity: 8,
+        expectations: Object.freeze([
+          Object.freeze({
+            kind: "description" as const,
+            description: `${missingContext} context`,
+          }),
+        ]),
+        origins: Object.freeze([rule.origin]),
+      });
+      failures.push(failure);
+      attempts.push(
+        Object.freeze({
+          rule: rule.rule,
+          status: "boundary-rejected" as const,
+          matcherSteps: matched.matcherSteps,
+          failure,
+        }),
+      );
+      continue;
+    }
+    if (
+      !options.admit({
+        category: options.category,
+        consumed,
+        cursor: matched.cursor,
+        rule,
+      })
+    ) {
+      attempts.push(
+        Object.freeze({
+          rule: rule.rule,
+          status: "boundary-rejected",
+          matcherSteps: matched.matcherSteps,
+          failure: undefined,
+        }),
+      );
+      continue;
+    }
+
+    const fingerprint = createExpansionFingerprint({
+      binding: options.macro.binding.id,
+      category: options.category,
+      phase: options.phase,
+      input: consumed.toArray(),
+      environmentEpoch: options.environmentEpoch,
+    });
+    return options.guard.run(fingerprint, () => {
+      attempts.push(
+        Object.freeze({
+          rule: rule.rule,
+          status: "selected",
+          matcherSteps: matched.matcherSteps,
+          failure: undefined,
+        }),
+      );
+      const invocationScopes = createInvocationScopes(options.scopeStore);
+      const contracts = applyBindingContracts({
+        contracts: rule.contracts,
+        captures: matched.captures,
+        scopeStore: options.scopeStore,
+        environments: options.environments,
+        environment: options.environment,
+        phase: options.phase,
+        position: options.position,
+        extractBindings: options.extractBindings,
+      });
+      const evaluated = evaluateTemplate(rule.template, {
+        captures: contracts.captures,
+        tracker: options.tracker,
+        cancellation,
+      });
+      const instantiated = instantiateTemplate(evaluated.output, {
+        scopeStore: options.scopeStore,
+        origins: options.origins,
+        invocationScopes,
+        invocationOrigin: invocationHead.origin,
+        definitionScopes: options.macro.definitionScopes,
+        callsiteScopes: invocationHead.scopes,
+        anchor: {
+          start: invocationHead.span.start,
+          end: invocationHead.span.start,
+        },
+        allocateSyntaxId: options.allocateSyntaxId,
+        allocateBindingId: options.allocateBindingId,
+        tracker: options.tracker,
+        cancellation,
+      });
+      const expanded = options.expandReplacement({
+        syntax: instantiated.syntax,
+        category: options.category,
+        phase: options.phase,
+        environmentEpoch: options.environmentEpoch,
+        invocationId,
+        followingScopes: contracts.followingScopes,
+        environment: contracts.environment,
+      });
+      if (expanded.category !== options.category) {
+        throw new TypeError(
+          `Recursive expansion returned ${expanded.category} for ${options.category}`,
+        );
+      }
+      const trace: MacroTraceEvent = Object.freeze({
+        invocationId,
+        parent: options.parentInvocation,
+        binding: options.macro.binding.id,
+        category: options.category,
+        phase: options.phase,
+        invocationOrigin: invocationHead.origin,
+        attemptedRules: Object.freeze(attempts),
+        selectedRule: rule.rule,
+        captures: captureSummaries(rule.matcher, contracts.captures),
+        scopesIntroduced: Object.freeze([
+          invocationScopes.introduction,
+          invocationScopes.useSite,
+          ...contracts.introducedScopes,
+        ]),
+        bindingsIntroduced: Object.freeze(
+          contracts.bindings.map((binding) =>
+            Object.freeze({
+              binding: binding.id,
+              spelling: binding.spelling,
+              space: binding.space,
+              declaration: binding.declaration,
+            }),
+          ),
+        ),
+        operations: evaluated.trace,
+        outputOrigins: instantiated.outputOrigins,
+        cache: "miss",
+        coreInterception: options.coreInterception,
+      });
+      return Object.freeze({
+        expanded: true,
+        syntax: expanded,
+        cursor: matched.cursor,
+        environment: contracts.environment,
+        followingScopes: contracts.followingScopes,
+        freshBindings: instantiated.freshBindings,
+        trace,
+      });
+    });
+  }
+
+  const failure = mergedFailure(failures);
+  const failureDescription = failure?.expectations.find(
+    (expectation) => expectation.kind === "description",
+  );
+  const trace: MacroTraceEvent = Object.freeze({
+    invocationId,
+    parent: options.parentInvocation,
+    binding: options.macro.binding.id,
+    category: options.category,
+    phase: options.phase,
+    invocationOrigin: invocationHead.origin,
+    attemptedRules: Object.freeze(attempts),
+    selectedRule: undefined,
+    captures: Object.freeze([]),
+    scopesIntroduced: Object.freeze([]),
+    bindingsIntroduced: Object.freeze([]),
+    operations: Object.freeze([]),
+    outputOrigins: Object.freeze([]),
+    cache: "miss",
+    coreInterception: options.coreInterception,
+  });
+  return Object.freeze({
+    expanded: false,
+    cursor: options.cursor.fork(),
+    diagnostic: expansionDiagnosticRegistry.create(noMatchingMacroRuleCode, {
+      primaryOrigin: options.diagnosticOrigin(invocationHead.origin),
+      messageArguments: [
+        options.macro.binding.spelling,
+        failureDescription?.kind === "description"
+          ? failureDescription.description
+          : `${String(attempts.length)} rule attempt(s)`,
+      ],
+      relatedOrigins:
+        failure === undefined
+          ? []
+          : failure.origins.map((origin) => ({
+              message: "Expected by a failed rule",
+              origin: options.diagnosticOrigin(origin),
+            })),
+    }),
+    trace,
+  });
+}

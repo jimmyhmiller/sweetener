@@ -1,0 +1,17 @@
+{
+  "name": "sweet-external-macro-editor",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@sweet-rewrite/expansion": "link:../../../packages/expansion",
+    "@sweet-rewrite/hygiene": "link:../../../packages/hygiene",
+    "@sweet-rewrite/macro-language": "link:../../../packages/macro-language",
+    "@sweet-rewrite/pattern": "link:../../../packages/pattern",
+    "@sweet-rewrite/printer": "link:../../../packages/printer",
+    "@sweet-rewrite/reader": "link:../../../packages/reader",
+    "@sweet-rewrite/shared": "link:../../../packages/shared",
+    "@sweet-rewrite/syntax": "link:../../../packages/syntax",
+    "@sweet-rewrite/typescript-host": "link:../../../packages/typescript-host",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
+  }
+}

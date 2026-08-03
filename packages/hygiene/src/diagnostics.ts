@@ -1,0 +1,58 @@
+import { DiagnosticRegistry, diagnosticCode } from "@sweet-rewrite/shared";
+
+export const ambiguousBindingCode = diagnosticCode("SWR3001");
+export const malformedBindingContractCode = diagnosticCode("SWR3002");
+export const invalidBindingPathCode = diagnosticCode("SWR3003");
+export const incompatibleBindingAlignmentCode = diagnosticCode("SWR3004");
+export const incompatibleBindingSpaceCode = diagnosticCode("SWR3005");
+
+export const hygieneDiagnosticRegistry = new DiagnosticRegistry([
+  {
+    code: ambiguousBindingCode,
+    owner: "hygiene-binding",
+    stage: "binding",
+    severity: "error",
+    documentation:
+      "Several visible bindings have incomparable maximal scope sets for one identifier.",
+    format: (arguments_) =>
+      `Identifier ${String(arguments_[0] ?? "unknown")} has ${String(arguments_[1] ?? "multiple")} equally specific bindings.`,
+  },
+  {
+    code: malformedBindingContractCode,
+    owner: "hygiene-binding",
+    stage: "binding",
+    severity: "error",
+    documentation:
+      "Binding contracts use bind <path> in <path|following> as <kind> <space>.",
+    format: () => "Malformed declarative binding contract.",
+  },
+  {
+    code: invalidBindingPathCode,
+    owner: "hygiene-binding",
+    stage: "binding",
+    severity: "error",
+    documentation:
+      "Binder and region paths must resolve through declared capture fields.",
+    format: (arguments_) =>
+      `Invalid binding-contract path ${String(arguments_[0] ?? "unknown")}.`,
+  },
+  {
+    code: incompatibleBindingAlignmentCode,
+    owner: "hygiene-binding",
+    stage: "binding",
+    severity: "error",
+    documentation:
+      "Sequential and element-aligned contracts require compatible repetition dimensions.",
+    format: () => "Binding-contract repetitions are not alignable.",
+  },
+  {
+    code: incompatibleBindingSpaceCode,
+    owner: "hygiene-binding",
+    stage: "binding",
+    severity: "error",
+    documentation:
+      "A binding space must be valid for the macro output category.",
+    format: (arguments_) =>
+      `Binding space ${String(arguments_[0] ?? "unknown")} is invalid for this macro category.`,
+  },
+]);

@@ -1,0 +1,15 @@
+packages:
+  - "packages/*"
+  - "playground"
+
+minimumReleaseAge: 1440
+
+minimumReleaseAgeExclude:
+  - "@eslint/js@10.0.1"
+  - "@types/node@24.13.3"
+  - "@typescript/typescript6@6.0.2"
+  - "eslint@10.8.0"
+  - "pnpm@11.18.0"
+  - "prettier@3.9.6"
+  - "typescript-eslint@8.65.0"
+  - "vitest@4.1.10"

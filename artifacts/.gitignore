@@ -1,0 +1,11 @@
+*
+!.gitignore
+!README.md
+!test-results/
+!test-results/.gitkeep
+!benchmarks/
+!benchmarks/.gitkeep
+!review/
+!review/.gitkeep
+!coverage/
+!coverage/.gitkeep

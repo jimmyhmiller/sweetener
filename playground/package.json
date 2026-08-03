@@ -1,0 +1,30 @@
+{
+  "name": "@sweet-rewrite/playground",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc6 --noEmit && vite build && node scripts/test-built-worker.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@codemirror/commands": "6.10.2",
+    "@codemirror/lang-javascript": "6.2.4",
+    "@codemirror/lint": "6.9.5",
+    "@codemirror/state": "6.5.4",
+    "@codemirror/view": "6.39.16",
+    "@typescript/typescript6": "6.0.2",
+    "codemirror": "6.0.2",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "vite": "8.0.13"
+  }
+}

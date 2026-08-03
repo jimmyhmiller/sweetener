@@ -1,0 +1,14 @@
+const tmp = 1;
+const generated = makeTemporary(tmp);
+
+doSteps(Task) {
+  first <- one();
+  second <- use(first);
+  third <- use(first, second);
+  return use(first, second, third);
+}
+
+const result = match (value) {
+  Some(item) => item;
+  None() => fallback;
+};

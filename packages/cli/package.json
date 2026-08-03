@@ -1,0 +1,29 @@
+{
+  "name": "@sweet-rewrite/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "sweet-rewrite": "./dist/src/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@sweet-rewrite/expansion": "workspace:*",
+    "@sweet-rewrite/hygiene": "workspace:*",
+    "@sweet-rewrite/macro-language": "workspace:*",
+    "@sweet-rewrite/printer": "workspace:*",
+    "@sweet-rewrite/reader": "workspace:*",
+    "@sweet-rewrite/shared": "workspace:*",
+    "@sweet-rewrite/syntax": "workspace:*",
+    "@sweet-rewrite/typescript-host": "workspace:*",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
+  }
+}

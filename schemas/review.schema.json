@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweet-rewrite.local/schemas/review.schema.json",
+  "title": "Sweet Rewrite review queue",
+  "type": "object",
+  "required": ["schemaVersion", "ready", "upcoming"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "ready": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "decision", "blocks", "evidence"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "decision": { "type": "string" },
+          "blocks": { "type": "array", "items": { "type": "string" } },
+          "evidence": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": false
+      }
+    },
+    "upcoming": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "after", "artifacts"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "after": { "type": "array", "items": { "type": "string" } },
+          "artifacts": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweet-rewrite.local/schemas/case.schema.json",
+  "title": "Sweet Rewrite fixture case",
+  "type": "object",
+  "required": [
+    "id",
+    "languageVersion",
+    "typescriptVersion",
+    "compilerOptions",
+    "capabilities",
+    "entry",
+    "expect",
+    "limits"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*(/[a-z0-9][a-z0-9-]*)+$"
+    },
+    "languageVersion": { "type": "string", "minLength": 1 },
+    "typescriptVersion": { "type": "string", "minLength": 1 },
+    "compilerOptions": { "type": "object" },
+    "capabilities": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9-]+$" },
+      "uniqueItems": true
+    },
+    "entry": { "type": "string", "pattern": "^[^/\\]+\\.sts$" },
+    "expect": {
+      "type": "object",
+      "required": ["expansion", "bindings", "trace", "types", "runtime"],
+      "properties": {
+        "expansion": { "type": "boolean" },
+        "bindings": { "type": "boolean" },
+        "trace": { "type": "boolean" },
+        "diagnostics": { "type": "boolean" },
+        "types": { "type": "boolean" },
+        "runtime": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "limits": { "type": "object" }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,228 @@
+import { createPhase } from "@sweet-rewrite/hygiene";
+import { printLosslessSequence, readSyntax } from "@sweet-rewrite/reader";
+import {
+  createIdAllocator,
+  createResourceBudget,
+  ResourceTracker,
+  type EnvironmentEpoch,
+  type ScopeSetId,
+  type SourceId,
+  type SyntaxId,
+} from "@sweet-rewrite/shared";
+import {
+  createProtectedSyntax,
+  createSyntaxCursor,
+  OriginStore,
+  type SyntaxCategory,
+} from "@sweet-rewrite/syntax";
+import ts from "typescript";
+import { describe, expect, test } from "vitest";
+import {
+  ConsumerRegistry,
+  createItemConsumer,
+  createStatementConsumer,
+  type StatementItemMacroResolver,
+} from "../src/index.js";
+
+const sourceId = 103 as SourceId;
+
+function parse(
+  source: string,
+  category: "stmt" | "item",
+  resolveMacro?: StatementItemMacroResolver,
+) {
+  const origins = new OriginStore();
+  const read = readSyntax(source, {
+    sourceId,
+    scopes: 0 as ScopeSetId,
+    originStore: origins,
+  });
+  expect(read.diagnostics).toEqual([]);
+  const syntax = read.root.children.filter(
+    (node) => node.tag !== "token" || node.kind !== "end-of-file",
+  );
+  const ids = createIdAllocator<SyntaxId>(30_000);
+  const options = {
+    origins,
+    allocateSyntaxId: ids.allocate,
+    resolveMacro,
+  };
+  const registry = new ConsumerRegistry([
+    {
+      category,
+      consumer:
+        category === "stmt"
+          ? createStatementConsumer(options)
+          : createItemConsumer(options),
+    },
+  ]);
+  const cursor = createSyntaxCursor(syntax);
+  const tracker = new ResourceTracker(createResourceBudget());
+  const result = registry.consume(category, {
+    cursor,
+    phase: createPhase(0),
+    environmentEpoch: 0 as EnvironmentEpoch,
+    tracker,
+  });
+  return { result, cursor, syntax, origins, ids, tracker };
+}
+
+function output(source: string, category: "stmt" | "item") {
+  const { result } = parse(source, category);
+  if (!result.matched) throw new Error(result.failure.expectations.join(", "));
+  return printLosslessSequence(result.syntax.children);
+}
+
+describe("statement and item consumers", () => {
+  test.each([
+    ";",
+    "{ value(); }",
+    "if (ready) run(); else stop();",
+    "for (const value of values) { use(value); }",
+    "while (ready) tick();",
+    "do tick(); while (ready);",
+    "switch (value) { case 1: break; default: stop(); }",
+    "try { work(); } catch (error) { recover(error); } finally { clean(); }",
+    "return value;",
+    "throw error;",
+    "const value = source + 1;",
+    "function run(value) { return value; }",
+    "class Box { value = 1; }",
+    "target.call(value);",
+  ])("consumes the complete statement extent: %s", (source) => {
+    const { result } = parse(`${source} after();`, "stmt");
+    expect(result.matched).toBe(true);
+    if (!result.matched) throw new Error("expected statement");
+    expect(printLosslessSequence(result.syntax.children)).toBe(source);
+    expect(result.cursor.atEnd).toBe(false);
+    expect(result.syntax.category).toBe("stmt");
+  });
+
+  test("implements restricted-production and automatic-semicolon rules", () => {
+    const returned = parse("return\nnext();", "stmt").result;
+    expect(returned.matched).toBe(true);
+    if (!returned.matched) throw new Error("expected return");
+    expect(printLosslessSequence(returned.syntax.children)).toBe("return");
+
+    const declaration = parse(
+      "const first = 1\nconst second = 2",
+      "stmt",
+    ).result;
+    expect(declaration.matched).toBe(true);
+    if (!declaration.matched) throw new Error("expected declaration");
+    expect(printLosslessSequence(declaration.syntax.children)).toBe(
+      "const first = 1",
+    );
+
+    const thrown = parse("throw\nerror", "stmt").result;
+    expect(thrown.matched).toBe(false);
+    if (thrown.matched) throw new Error("expected throw failure");
+    expect(thrown.failure.expectations).toContain(
+      "expression on the same line as 'throw'",
+    );
+
+    expect(parse("value next", "stmt").result.matched).toBe(false);
+  });
+
+  test.each([
+    "import { value } from 'module';",
+    "export const value = 1;",
+    "export function run() { return 1; }",
+    "interface Box { value: number; }",
+    "type Value = string | number;",
+    "enum Mode { One, Two }",
+    "namespace Local { export const value = 1; }",
+  ])("consumes the complete module-item extent: %s", (source) => {
+    const { result } = parse(`${source}\nconst after = 1;`, "item");
+    expect(result.matched).toBe(true);
+    if (!result.matched) throw new Error("expected item");
+    expect(printLosslessSequence(result.syntax.children)).toBe(source);
+    expect(result.cursor.atEnd).toBe(false);
+    expect(result.syntax.category).toBe("item");
+  });
+
+  test("dispatches category-specific macro heads before built-in syntax", () => {
+    const resolver: StatementItemMacroResolver = (category, cursor) => {
+      const head = cursor.peek();
+      if (head?.tag !== "token" || head.raw !== "unless") return undefined;
+      cursor.advance();
+      const group = cursor.consume();
+      if (group === undefined) return undefined;
+      return Object.freeze({
+        matched: true,
+        syntax: createProtectedSyntax({
+          id: 90_000 as SyntaxId,
+          span: { start: head.span.start, end: group.span.end },
+          origin: head.origin,
+          scopes: head.scopes,
+          category,
+          children: [head, group],
+        }),
+        cursor,
+      });
+    };
+    const { result } = parse("unless (ready) after", "stmt", resolver);
+    expect(result.matched).toBe(true);
+    if (!result.matched) throw new Error("expected macro statement");
+    expect(printLosslessSequence(result.syntax.children)).toBe(
+      "unless (ready)",
+    );
+    expect(result.cursor.atEnd).toBe(false);
+  });
+
+  test("returns ranked failures without mutating caller cursors", () => {
+    const malformed = [
+      "if value;",
+      "do work();",
+      "function missing()",
+      "try {}",
+      "switch value {}",
+    ];
+    for (const source of malformed) {
+      const { result, cursor } = parse(source, "stmt");
+      expect(result.matched).toBe(false);
+      expect(cursor.index).toBe(0);
+      if (result.matched) throw new Error("expected malformed statement");
+      expect(result.failure.progress).toBeGreaterThan(0);
+    }
+  });
+
+  test("reconstructed representative extents parse with pinned TypeScript", () => {
+    const statements = [
+      "if (ready) run(); else stop();",
+      "for (const value of values) use(value);",
+      "try { work(); } catch { recover(); }",
+      "const value = source + 1;",
+      "target.call(value);",
+    ];
+    const items = [
+      "import { value } from 'module';",
+      "export function run() { return value; }",
+      "interface Box { value: number; }",
+    ];
+    for (const [category, sources] of [
+      ["stmt", statements],
+      ["item", items],
+    ] as const satisfies readonly (readonly [
+      SyntaxCategory,
+      readonly string[],
+    ])[]) {
+      for (const source of sources) {
+        const reconstructed = output(source, category as "stmt" | "item");
+        const parsed = ts.createSourceFile(
+          "fixture.ts",
+          reconstructed,
+          ts.ScriptTarget.Latest,
+          true,
+          ts.ScriptKind.TS,
+        );
+        const diagnostics = (
+          parsed as ts.SourceFile & {
+            readonly parseDiagnostics: readonly ts.Diagnostic[];
+          }
+        ).parseDiagnostics;
+        expect(diagnostics, reconstructed).toEqual([]);
+      }
+    }
+  });
+});

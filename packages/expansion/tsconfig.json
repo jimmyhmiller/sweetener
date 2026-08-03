@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "references": [
+    { "path": "../shared" },
+    { "path": "../syntax" },
+    { "path": "../hygiene" },
+    { "path": "../macro-language" },
+    { "path": "../reader" },
+    { "path": "../printer" },
+    { "path": "../pattern" },
+    { "path": "../template" },
+    { "path": "../enforestation" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "placeholders": [
+    {
+      "className": "binding",
+      "behavior": "Consume one identifier token.",
+      "replacementTask": "ENF-005",
+      "replacement": "TypeScript identifier and destructuring binding consumer"
+    },
+    {
+      "className": "type",
+      "behavior": "Consume one balanced token tree.",
+      "replacementTask": "ENF-006",
+      "replacement": "TypeScript type consumer"
+    }
+  ]
+}

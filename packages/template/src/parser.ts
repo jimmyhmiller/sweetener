@@ -1,0 +1,853 @@
+import {
+  captureShapeDepth,
+  createCapturePath,
+  createSequenceShape,
+  type CaptureShape,
+  type CaptureShapeBinding,
+  type LeafShape,
+} from "@sweet-rewrite/pattern";
+import type {
+  CaptureId,
+  CardinalityGroupId,
+  Diagnostic,
+  OriginId,
+  SourceId,
+  SyntaxClassId,
+} from "@sweet-rewrite/shared";
+import type {
+  GroupSyntax,
+  Span,
+  Syntax,
+  TokenSyntax,
+} from "@sweet-rewrite/syntax";
+import {
+  createCaptureTemplate,
+  createConditionalTemplate,
+  createFoldTemplate,
+  createGroupTemplate,
+  createHygieneOperationTemplate,
+  createLiteralTemplate,
+  createLocalTemplate,
+  createRepeatTemplate,
+  createSequenceTemplate,
+  type CaptureTemplate,
+  type SequenceTemplate,
+  type TemplateNode,
+} from "./ast.js";
+import {
+  incompatibleTemplateDriversCode,
+  invalidTemplateOperationCode,
+  malformedTemplateCode,
+  missingTemplateDriverCode,
+  templateCaptureDepthCode,
+  templateDiagnosticRegistry,
+  unknownTemplateCaptureCode,
+  unknownTemplateFieldCode,
+} from "./diagnostics.js";
+
+export interface TemplateField {
+  readonly name: string;
+  readonly capture: CaptureId;
+}
+
+export interface ParseTemplateOptions {
+  readonly sourceId: SourceId;
+  readonly captures: readonly CaptureShapeBinding[];
+  readonly spanForOrigin: (origin: OriginId) => Span;
+  readonly fieldsForClass?:
+    | ((classId: SyntaxClassId) => readonly TemplateField[] | undefined)
+    | undefined;
+  readonly identifierClassIds?: readonly SyntaxClassId[] | undefined;
+}
+
+export interface ParseTemplateResult {
+  readonly template: SequenceTemplate;
+  readonly diagnostics: readonly Diagnostic[];
+}
+
+function token(node: Syntax | undefined, raw?: string): node is TokenSyntax {
+  return node?.tag === "token" && (raw === undefined || node.raw === raw);
+}
+
+function group(
+  node: Syntax | undefined,
+  delimiter?: GroupSyntax["delimiter"],
+): node is GroupSyntax {
+  return (
+    node?.tag === "group" &&
+    (delimiter === undefined || node.delimiter === delimiter)
+  );
+}
+
+function baseLeaf(shape: CaptureShape): LeafShape {
+  let current = shape;
+  while (current.kind === "sequence") current = current.element;
+  return current;
+}
+
+function projectFieldShape(
+  container: CaptureShape,
+  field: CaptureShape,
+): CaptureShape {
+  if (container.kind === "leaf") return field;
+  return createSequenceShape({
+    element: projectFieldShape(container.element, field),
+    cardinalityGroup: container.cardinalityGroup,
+    minimum: container.minimum,
+    maximum: container.maximum,
+  });
+}
+
+function cardinalityAtDepth(
+  shape: CaptureShape,
+  depth: number,
+): CardinalityGroupId | undefined {
+  let current = shape;
+  let currentDepth = 1;
+  while (current.kind === "sequence" && currentDepth < depth) {
+    current = current.element;
+    currentDepth += 1;
+  }
+  return current.kind === "sequence" ? current.cardinalityGroup : undefined;
+}
+
+function elementShapeAtDepth(
+  shape: CaptureShape,
+  dimensions: number,
+): CaptureShape | undefined {
+  let current = shape;
+  for (let index = 0; index < dimensions; index += 1) {
+    if (current.kind !== "sequence") return undefined;
+    current = current.element;
+  }
+  return current;
+}
+
+interface FoldParserContext {
+  readonly elementShape: CaptureShape;
+}
+
+class TemplateParser {
+  readonly #options: ParseTemplateOptions;
+  readonly #captures: ReadonlyMap<string, CaptureShapeBinding>;
+  readonly #diagnostics: Diagnostic[] = [];
+
+  constructor(options: ParseTemplateOptions) {
+    this.#options = options;
+    const captures = new Map<string, CaptureShapeBinding>();
+    for (const capture of options.captures) {
+      const previous = captures.get(capture.name);
+      if (previous !== undefined && previous.capture !== capture.capture) {
+        throw new RangeError(`Conflicting capture name ${capture.name}`);
+      }
+      captures.set(capture.name, capture);
+    }
+    this.#captures = captures;
+  }
+
+  parse(groupSyntax: GroupSyntax): ParseTemplateResult {
+    const template = this.#sequence(
+      groupSyntax.children,
+      0,
+      groupSyntax.origin,
+      undefined,
+    );
+    return Object.freeze({
+      template,
+      diagnostics: Object.freeze([...this.#diagnostics]),
+    });
+  }
+
+  #sequence(
+    nodes: readonly Syntax[],
+    depth: number,
+    origin: OriginId,
+    fold: FoldParserContext | undefined,
+    quoted = false,
+  ): SequenceTemplate {
+    const elements: TemplateNode[] = [];
+    let index = 0;
+    while (index < nodes.length) {
+      const current = nodes[index]!;
+      const operationName =
+        token(current) && current.raw.startsWith("#")
+          ? current.raw.slice(1)
+          : undefined;
+      const compactSyntaxQuote =
+        operationName === "syntax" && group(nodes[index + 1], "brace");
+      const splitSyntaxQuote =
+        token(current, "#") &&
+        token(nodes[index + 1], "syntax") &&
+        group(nodes[index + 2], "brace");
+      if (compactSyntaxQuote || splitSyntaxQuote) {
+        const body = nodes[index + (compactSyntaxQuote ? 1 : 2)] as GroupSyntax;
+        elements.push(createLiteralTemplate(current));
+        if (splitSyntaxQuote)
+          elements.push(createLiteralTemplate(nodes[index + 1]!));
+        elements.push(
+          createGroupTemplate(
+            body.origin,
+            body.delimiter,
+            this.#sequence(body.children, depth, body.origin, fold, true),
+            body.open,
+            body.close,
+            body.scopes,
+          ),
+        );
+        index += compactSyntaxQuote ? 2 : 3;
+        continue;
+      }
+      if (
+        operationName === "fold" &&
+        group(nodes[index + 1], "parenthesis") &&
+        group(nodes[index + 2], "brace")
+      ) {
+        const argumentsGroup = nodes[index + 1] as GroupSyntax;
+        const foldGroup = nodes[index + 2] as GroupSyntax;
+        const resolved = this.#resolveConditionalPath(
+          argumentsGroup.children,
+          0,
+        );
+        const tail =
+          resolved === undefined
+            ? []
+            : argumentsGroup.children.slice(resolved.next);
+        const initialGroup = tail[3];
+        const parameters = foldGroup.children[0];
+        const arrow = foldGroup.children[1];
+        const bodyGroup = foldGroup.children[2];
+        const parameterRaws = group(parameters, "parenthesis")
+          ? parameters.children
+              .filter((child): child is TokenSyntax => token(child))
+              .map((child) => child.raw)
+          : [];
+        const elementShape =
+          resolved === undefined
+            ? undefined
+            : elementShapeAtDepth(resolved.shape, depth + 1);
+        const valid =
+          resolved !== undefined &&
+          elementShape !== undefined &&
+          token(tail[0], ",") &&
+          token(tail[1], "init") &&
+          token(tail[2], ":") &&
+          group(initialGroup, "brace") &&
+          parameterRaws.join("") === "$acc,$item,$index" &&
+          token(arrow, "=>") &&
+          group(bodyGroup, "brace");
+        if (!valid) {
+          this.#diagnostic(
+            invalidTemplateOperationCode,
+            current.origin,
+            operationName,
+          );
+        } else {
+          elements.push(
+            createFoldTemplate({
+              origin: current.origin,
+              driver: resolved.path,
+              initial: this.#sequence(
+                (initialGroup as GroupSyntax).children,
+                depth,
+                (initialGroup as GroupSyntax).origin,
+                fold,
+              ),
+              body: this.#sequence(
+                (bodyGroup as GroupSyntax).children,
+                depth,
+                (bodyGroup as GroupSyntax).origin,
+                { elementShape },
+              ),
+            }),
+          );
+        }
+        index += 3;
+        continue;
+      }
+      if (
+        operationName !== undefined &&
+        [
+          "fresh",
+          "metavar",
+          "callsite",
+          "definition",
+          "capture",
+          "text",
+          "trim",
+          "count",
+          "index",
+        ].includes(operationName) &&
+        group(nodes[index + 1], "parenthesis")
+      ) {
+        const argumentsGroup = nodes[index + 1] as GroupSyntax;
+        if (operationName === "metavar") {
+          const hint = argumentsGroup.children[0];
+          const resolved = this.#resolveConditionalPath(
+            argumentsGroup.children,
+            2,
+          );
+          const valid =
+            token(hint) &&
+            hint.kind === "string-literal" &&
+            typeof hint.value === "string" &&
+            hint.value.length > 0 &&
+            token(argumentsGroup.children[1], ",") &&
+            resolved !== undefined &&
+            resolved.next === argumentsGroup.children.length &&
+            depth > 0;
+          if (!valid) {
+            this.#diagnostic(
+              invalidTemplateOperationCode,
+              current.origin,
+              operationName,
+            );
+          } else {
+            elements.push(
+              createHygieneOperationTemplate(
+                current.origin,
+                {
+                  kind: "metavar",
+                  hint: hint.value as string,
+                  path: resolved.path,
+                },
+                resolved.shape,
+              ),
+            );
+          }
+        } else if (operationName === "fresh") {
+          const hint = argumentsGroup.children[0];
+          if (
+            !token(hint) ||
+            hint.kind !== "string-literal" ||
+            typeof hint.value !== "string" ||
+            hint.value.length === 0 ||
+            argumentsGroup.children.length !== 1
+          ) {
+            this.#diagnostic(
+              invalidTemplateOperationCode,
+              current.origin,
+              operationName,
+            );
+          } else {
+            elements.push(
+              createHygieneOperationTemplate(current.origin, {
+                kind: "fresh",
+                hint: hint.value,
+              }),
+            );
+          }
+        } else if (operationName === "index") {
+          if (argumentsGroup.children.length !== 0 || depth === 0) {
+            this.#diagnostic(
+              invalidTemplateOperationCode,
+              current.origin,
+              operationName,
+            );
+          } else {
+            elements.push(
+              createHygieneOperationTemplate(current.origin, {
+                kind: "index",
+              }),
+            );
+          }
+        } else {
+          const resolved = this.#resolveConditionalPath(
+            argumentsGroup.children,
+            0,
+          );
+          const identifierOnly = !["text", "trim", "count"].includes(
+            operationName,
+          );
+          const allowedClasses = this.#options.identifierClassIds;
+          const valid =
+            resolved !== undefined &&
+            resolved.next === argumentsGroup.children.length &&
+            (operationName === "count" ||
+              captureShapeDepth(resolved.shape) <= depth) &&
+            (!identifierOnly ||
+              allowedClasses === undefined ||
+              allowedClasses.includes(baseLeaf(resolved.shape).classId));
+          if (!valid) {
+            this.#diagnostic(
+              invalidTemplateOperationCode,
+              current.origin,
+              operationName,
+            );
+          } else {
+            elements.push(
+              createHygieneOperationTemplate(current.origin, {
+                kind: operationName as
+                  | "callsite"
+                  | "definition"
+                  | "capture"
+                  | "text"
+                  | "trim"
+                  | "count",
+                path: resolved.path,
+              }),
+            );
+          }
+        }
+        index += 2;
+        continue;
+      }
+      const compactIf = token(current, "#if");
+      const splitIf = token(current, "#") && token(nodes[index + 1], "if");
+      const predicateIndex = index + (compactIf ? 1 : 2);
+      if (
+        (compactIf || splitIf) &&
+        group(nodes[predicateIndex], "parenthesis") &&
+        group(nodes[predicateIndex + 1], "brace")
+      ) {
+        const predicateGroup = nodes[predicateIndex] as GroupSyntax;
+        const consequentGroup = nodes[predicateIndex + 1] as GroupSyntax;
+        const predicateKind = predicateGroup.children[0];
+        const predicateCapture = predicateGroup.children[1];
+        const resolved = this.#resolveConditionalPath(
+          predicateGroup.children,
+          1,
+        );
+        if (
+          resolved === undefined ||
+          !token(predicateKind) ||
+          !["present", "alternative"].includes(predicateKind.raw)
+        ) {
+          this.#diagnostic(
+            malformedTemplateCode,
+            predicateCapture?.origin ?? predicateGroup.origin,
+            "conditional requires present $capture or alternative $capture tag",
+          );
+          elements.push(createLiteralTemplate(current));
+          index = predicateIndex + 2;
+          continue;
+        }
+        let predicate:
+          | {
+              readonly kind: "present";
+              readonly path: ReturnType<typeof createCapturePath>;
+            }
+          | {
+              readonly kind: "selected-alternative";
+              readonly path: ReturnType<typeof createCapturePath>;
+              readonly alternative: string;
+            };
+        if (predicateKind.raw === "present") {
+          predicate = Object.freeze({ kind: "present", path: resolved.path });
+        } else {
+          const tag = predicateGroup.children[resolved.next];
+          if (!token(tag) || tag.raw.length === 0) {
+            this.#diagnostic(
+              malformedTemplateCode,
+              predicateGroup.origin,
+              "alternative conditional requires a tag",
+            );
+            elements.push(createLiteralTemplate(current));
+            index = predicateIndex + 2;
+            continue;
+          }
+          predicate = Object.freeze({
+            kind: "selected-alternative",
+            path: resolved.path,
+            alternative: typeof tag.value === "string" ? tag.value : tag.raw,
+          });
+        }
+        let next = predicateIndex + 2;
+        let alternate: SequenceTemplate | undefined;
+        const compactElse = token(nodes[next], "#else");
+        const splitElse =
+          token(nodes[next], "#") && token(nodes[next + 1], "else");
+        const alternateIndex = next + (compactElse ? 1 : 2);
+        if (
+          (compactElse || splitElse) &&
+          group(nodes[alternateIndex], "brace")
+        ) {
+          const alternateGroup = nodes[alternateIndex] as GroupSyntax;
+          alternate = this.#sequence(
+            alternateGroup.children,
+            depth,
+            alternateGroup.origin,
+            fold,
+          );
+          next = alternateIndex + 1;
+        }
+        elements.push(
+          createConditionalTemplate({
+            origin: current.origin,
+            predicate,
+            consequent: this.#sequence(
+              consequentGroup.children,
+              depth,
+              consequentGroup.origin,
+              fold,
+            ),
+            alternate,
+          }),
+        );
+        index = next;
+        continue;
+      }
+      if (token(current, "$") && group(nodes[index + 1], "parenthesis")) {
+        const repeatedGroup = nodes[index + 1] as GroupSyntax;
+        let quantifierIndex = index + 2;
+        let separator: TemplateNode | undefined;
+        if (
+          !token(nodes[quantifierIndex], "*") &&
+          !token(nodes[quantifierIndex], "+")
+        ) {
+          const separatorSyntax = nodes[quantifierIndex];
+          if (separatorSyntax !== undefined) {
+            separator = this.#atom(separatorSyntax, depth, fold, quoted);
+            quantifierIndex += 1;
+          }
+        }
+        if (
+          !token(nodes[quantifierIndex], "*") &&
+          !token(nodes[quantifierIndex], "+")
+        ) {
+          this.#diagnostic(
+            malformedTemplateCode,
+            current.origin,
+            "repetition requires * or +",
+          );
+          elements.push(createLiteralTemplate(current));
+          index += 1;
+          continue;
+        }
+        const repetitionDepth = depth + 1;
+        const body = this.#sequence(
+          repeatedGroup.children,
+          repetitionDepth,
+          repeatedGroup.origin,
+          fold,
+          quoted,
+        );
+        const drivers = this.#drivers(body, repetitionDepth);
+        const groups = new Set(
+          drivers.flatMap((capture) => {
+            const cardinality = cardinalityAtDepth(
+              capture.shape,
+              repetitionDepth,
+            );
+            return cardinality === undefined ? [] : [cardinality];
+          }),
+        );
+        if (quoted && (drivers.length === 0 || groups.size === 0)) {
+          elements.push(createLiteralTemplate(current));
+          elements.push(
+            createGroupTemplate(
+              repeatedGroup.origin,
+              repeatedGroup.delimiter,
+              body,
+              repeatedGroup.open,
+              repeatedGroup.close,
+              repeatedGroup.scopes,
+            ),
+          );
+          if (separator !== undefined) elements.push(separator);
+          elements.push(createLiteralTemplate(nodes[quantifierIndex]!));
+          index = quantifierIndex + 1;
+          continue;
+        }
+        if (drivers.length === 0 || groups.size === 0) {
+          this.#diagnostic(
+            missingTemplateDriverCode,
+            current.origin,
+            repetitionDepth,
+          );
+        } else if (groups.size > 1) {
+          this.#diagnostic(
+            incompatibleTemplateDriversCode,
+            current.origin,
+            repetitionDepth,
+          );
+        }
+        elements.push(
+          createRepeatTemplate({
+            origin: current.origin,
+            body,
+            separator,
+            depth: repetitionDepth,
+            cardinalityGroup:
+              groups.size === 1 ? groups.values().next().value : undefined,
+            drivers: drivers.map((capture) => capture.path),
+          }),
+        );
+        index = quantifierIndex + 1;
+        continue;
+      }
+      if (
+        fold !== undefined &&
+        token(current) &&
+        ["$acc", "$item", "$index"].includes(current.raw)
+      ) {
+        if (current.raw === "$item") {
+          let shape = fold.elementShape;
+          const fields: {
+            readonly name: string;
+            readonly capture: CaptureId;
+          }[] = [];
+          let next = index + 1;
+          while (token(nodes[next], ".") && token(nodes[next + 1])) {
+            const fieldToken = nodes[next + 1] as TokenSyntax;
+            const leaf = baseLeaf(shape);
+            const field = this.#options
+              .fieldsForClass?.(leaf.classId)
+              ?.find((candidate) => candidate.name === fieldToken.raw);
+            const fieldShape =
+              field === undefined ? undefined : leaf.fields.get(field.capture);
+            if (field === undefined || fieldShape === undefined) {
+              this.#diagnostic(
+                unknownTemplateFieldCode,
+                fieldToken.origin,
+                fieldToken.raw,
+              );
+              break;
+            }
+            fields.push(
+              Object.freeze({ name: field.name, capture: field.capture }),
+            );
+            shape = projectFieldShape(shape, fieldShape);
+            next += 2;
+          }
+          if (captureShapeDepth(shape) > 0) {
+            this.#diagnostic(
+              invalidTemplateOperationCode,
+              current.origin,
+              "fold",
+            );
+          }
+          elements.push(
+            createLocalTemplate({
+              origin: current.origin,
+              local: "element",
+              fields,
+            }),
+          );
+          index = next;
+        } else {
+          elements.push(
+            createLocalTemplate({
+              origin: current.origin,
+              local: current.raw === "$acc" ? "accumulator" : "index",
+            }),
+          );
+          index += 1;
+        }
+        continue;
+      }
+      if (
+        token(current) &&
+        current.kind === "identifier" &&
+        current.raw.startsWith("$") &&
+        current.raw.length > 1
+      ) {
+        const captureName = current.raw.slice(1);
+        const binding = this.#captures.get(captureName);
+        if (binding === undefined) {
+          if (!quoted)
+            this.#diagnostic(
+              unknownTemplateCaptureCode,
+              current.origin,
+              captureName,
+            );
+          elements.push(createLiteralTemplate(current));
+          index += 1;
+          continue;
+        }
+        let shape = binding.shape;
+        const fields: { readonly name: string; readonly capture: CaptureId }[] =
+          [];
+        let next = index + 1;
+        while (token(nodes[next], ".") && token(nodes[next + 1])) {
+          const fieldToken = nodes[next + 1] as TokenSyntax;
+          const leaf = baseLeaf(shape);
+          const declaredFields = this.#options.fieldsForClass?.(leaf.classId);
+          // External and built-in syntax classes have no declarative fields.
+          // In an ordinary template `$value.property` must therefore splice the
+          // capture and preserve `.property` as TypeScript syntax. A known user
+          // syntax class, by contrast, makes the dotted form a field path.
+          if (declaredFields === undefined) break;
+          const field = declaredFields.find(
+            (candidate) => candidate.name === fieldToken.raw,
+          );
+          const fieldShape =
+            field === undefined ? undefined : leaf.fields.get(field.capture);
+          if (field === undefined || fieldShape === undefined) {
+            this.#diagnostic(
+              unknownTemplateFieldCode,
+              fieldToken.origin,
+              fieldToken.raw,
+            );
+            break;
+          }
+          fields.push(
+            Object.freeze({ name: field.name, capture: field.capture }),
+          );
+          shape = projectFieldShape(shape, fieldShape);
+          next += 2;
+        }
+        if (captureShapeDepth(shape) > depth) {
+          this.#diagnostic(
+            templateCaptureDepthCode,
+            current.origin,
+            captureName,
+            captureShapeDepth(shape),
+          );
+        }
+        elements.push(
+          createCaptureTemplate(
+            current.origin,
+            createCapturePath(captureName, binding.capture, fields),
+            shape,
+          ),
+        );
+        index = next;
+        continue;
+      }
+      elements.push(this.#atom(current, depth, fold, quoted));
+      index += 1;
+    }
+    return createSequenceTemplate(origin, elements);
+  }
+
+  #atom(
+    node: Syntax,
+    depth: number,
+    fold: FoldParserContext | undefined,
+    quoted = false,
+  ): TemplateNode {
+    if (group(node)) {
+      return createGroupTemplate(
+        node.origin,
+        node.delimiter,
+        this.#sequence(node.children, depth, node.origin, fold, quoted),
+        node.open,
+        node.close,
+        node.scopes,
+      );
+    }
+    return createLiteralTemplate(node);
+  }
+
+  #resolveConditionalPath(
+    nodes: readonly Syntax[],
+    index: number,
+  ):
+    | {
+        readonly path: ReturnType<typeof createCapturePath>;
+        readonly shape: CaptureShape;
+        readonly next: number;
+      }
+    | undefined {
+    const current = nodes[index];
+    if (
+      !token(current) ||
+      current.kind !== "identifier" ||
+      !current.raw.startsWith("$") ||
+      current.raw.length < 2
+    ) {
+      return undefined;
+    }
+    const captureName = current.raw.slice(1);
+    const binding = this.#captures.get(captureName);
+    if (binding === undefined) {
+      this.#diagnostic(unknownTemplateCaptureCode, current.origin, captureName);
+      return undefined;
+    }
+    let shape = binding.shape;
+    const fields: { readonly name: string; readonly capture: CaptureId }[] = [];
+    let next = index + 1;
+    while (token(nodes[next], ".") && token(nodes[next + 1])) {
+      const fieldToken = nodes[next + 1] as TokenSyntax;
+      const leaf = baseLeaf(shape);
+      const field = this.#options
+        .fieldsForClass?.(leaf.classId)
+        ?.find((candidate) => candidate.name === fieldToken.raw);
+      const fieldShape =
+        field === undefined ? undefined : leaf.fields.get(field.capture);
+      if (field === undefined || fieldShape === undefined) {
+        this.#diagnostic(
+          unknownTemplateFieldCode,
+          fieldToken.origin,
+          fieldToken.raw,
+        );
+        return undefined;
+      }
+      fields.push(Object.freeze({ name: field.name, capture: field.capture }));
+      shape = projectFieldShape(shape, fieldShape);
+      next += 2;
+    }
+    return Object.freeze({
+      path: createCapturePath(captureName, binding.capture, fields),
+      shape,
+      next,
+    });
+  }
+
+  #drivers(
+    template: TemplateNode,
+    depth: number,
+  ): readonly Pick<CaptureTemplate, "path" | "shape">[] {
+    const captures: Pick<CaptureTemplate, "path" | "shape">[] = [];
+    const stack: TemplateNode[] = [template];
+    while (stack.length > 0) {
+      const current = stack.pop()!;
+      if (current.kind === "capture") {
+        if (captureShapeDepth(current.shape) >= depth) captures.push(current);
+      } else if (
+        current.kind === "operation" &&
+        current.operation.kind === "metavar" &&
+        current.driverShape !== undefined &&
+        captureShapeDepth(current.driverShape) >= depth
+      ) {
+        captures.push({
+          path: current.operation.path,
+          shape: current.driverShape,
+        });
+      } else if (current.kind === "sequence") {
+        stack.push(...[...current.elements].reverse());
+      } else if (current.kind === "group") {
+        stack.push(current.body);
+      } else if (current.kind === "repeat") {
+        stack.push(current.body);
+      } else if (current.kind === "conditional") {
+        if (current.alternate !== undefined) stack.push(current.alternate);
+        stack.push(current.consequent);
+      }
+    }
+    return captures;
+  }
+
+  #diagnostic(
+    code:
+      | typeof unknownTemplateCaptureCode
+      | typeof unknownTemplateFieldCode
+      | typeof templateCaptureDepthCode
+      | typeof missingTemplateDriverCode
+      | typeof incompatibleTemplateDriversCode
+      | typeof malformedTemplateCode
+      | typeof invalidTemplateOperationCode,
+    origin: OriginId,
+    ...messageArguments: readonly (string | number)[]
+  ): void {
+    const span = this.#options.spanForOrigin(origin);
+    this.#diagnostics.push(
+      templateDiagnosticRegistry.create(code, {
+        primaryOrigin: {
+          sourceId: this.#options.sourceId,
+          start: span.start,
+          end: span.end,
+          originId: origin,
+        },
+        messageArguments,
+      }),
+    );
+  }
+}
+
+export function parseTemplate(
+  groupSyntax: GroupSyntax,
+  options: ParseTemplateOptions,
+): ParseTemplateResult {
+  return new TemplateParser(options).parse(groupSyntax);
+}

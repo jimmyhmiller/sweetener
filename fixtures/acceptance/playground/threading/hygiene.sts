@@ -1,0 +1,10 @@
+import { thread } from "./declarative.sts" for syntax;
+
+const value = "call-site value";
+const argument = 40;
+const add = (left: number, right: number): number => left + right;
+
+export const hygieneResult = {
+  outer: value,
+  threaded: thread(2, add(argument)),
+};

@@ -1,0 +1,6 @@
+artifacts/
+docs/acceptance-capability-ledger.md
+fixtures/legacy/
+STATUS.md
+pnpm-lock.yaml
+samples/external/*/dist/

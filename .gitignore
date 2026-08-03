@@ -1,2 +1,11 @@
+node_modules/
+.pnpm-store/
+packages/*/dist/
+samples/external/*/dist/
+playground/dist/
+playground/.vite/
+playground/.vinext/
+playground/.wrangler/
+coverage/
+*.tsbuildinfo
 .DS_Store
-.claude/settings.local.json

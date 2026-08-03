@@ -1,0 +1,18 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/shared" },
+    { "path": "packages/syntax" },
+    { "path": "packages/reader" },
+    { "path": "packages/hygiene" },
+    { "path": "packages/pattern" },
+    { "path": "packages/template" },
+    { "path": "packages/macro-language" },
+    { "path": "packages/enforestation" },
+    { "path": "packages/expansion" },
+    { "path": "packages/printer" },
+    { "path": "packages/typescript-host" },
+    { "path": "packages/test-support" },
+    { "path": "packages/cli" }
+  ]
+}

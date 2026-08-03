@@ -1,0 +1,15 @@
+export const packageName = "@sweet-rewrite/expansion" as const;
+export * from "./environment.js";
+export * from "./definition-context.js";
+export * from "./diagnostics.js";
+export * from "./invocation.js";
+export * from "./progress.js";
+export * from "./item-context.js";
+export * from "./macro-extent.js";
+export * from "./core-shadowing.js";
+export * from "./compile-macros.js";
+export * from "./recursive-expander.js";
+export * from "./local-definition-context.js";
+export * from "./generated-definitions.js";
+export * from "./operator-dispatch.js";
+export * from "./frontend-session.js";

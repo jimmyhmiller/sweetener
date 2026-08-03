@@ -1,0 +1,23 @@
+export syntax duplicate:expr {
+  rule { duplicate($value:tt) } => { [$value, $value] }
+}
+
+export syntax guard:stmt {
+  rule { guard($condition:expr) $body:stmt }
+  => { return; }
+}
+
+export syntax makeConstant:item {
+  rule { makeConstant } => { export const generated = 7; }
+}
+
+export syntax maybe:type {
+  rule { maybe<$value:type> } => { $value | undefined }
+}
+
+export operator (|>):expr {
+  fixity infix;
+  associativity left;
+  precedence 40;
+  rule { $value:expr |> $callee:ident } => { $callee($value) }
+}

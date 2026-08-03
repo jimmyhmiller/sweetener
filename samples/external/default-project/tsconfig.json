@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "target": "ES2022",
+    "module": "ESNext"
+  },
+  "sweet": {
+    "languageVersion": "1",
+    "macroExtensions": [".sts"]
+  },
+  "files": ["src/macros.sts", "src/main.sts"]
+}

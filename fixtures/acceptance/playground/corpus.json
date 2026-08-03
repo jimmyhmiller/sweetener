@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "importedAt": "2026-08-02",
+  "sourceRootAtImport": "/Users/jimmyhmiller/Documents/Code/PlayGround/sweetjs",
+  "normalization": "LF content with one final newline",
+  "entries": [
+    {
+      "fixtureId": "playground/adt",
+      "source": "adt.sweet.js",
+      "imported": "fixtures/acceptance/playground/adt/input.sts",
+      "sourceSha256": "b5e80bdb25a7a68e26e713641718eee01fd9bc7a693d013a2894a5ce3dfb3b6f",
+      "importedSha256": "15fa857904c4da267567fa22e3bd177ecfd85e015d43ce9844539dddb3b77f99"
+    },
+    {
+      "fixtureId": "playground/core-rewrites",
+      "source": "allen-robert-new-lang.sjs",
+      "imported": "fixtures/acceptance/playground/core-rewrites/input.sts",
+      "sourceSha256": "50b51be872de9a73aeb373dfef577295dbbffd9998f808a44e2bbfac5e326830",
+      "importedSha256": "50b51be872de9a73aeb373dfef577295dbbffd9998f808a44e2bbfac5e326830"
+    },
+    {
+      "fixtureId": "playground/csp",
+      "source": "csp.sweet.js",
+      "imported": "fixtures/acceptance/playground/csp/input.sts",
+      "sourceSha256": "8e641f2479804b8dad653f3fe95104476bf819e5cecdd5f70749b3237c23e752",
+      "importedSha256": "8e641f2479804b8dad653f3fe95104476bf819e5cecdd5f70749b3237c23e752"
+    },
+    {
+      "fixtureId": "playground/currying",
+      "source": "curry.sweet.js",
+      "imported": "fixtures/acceptance/playground/currying/input.sts",
+      "sourceSha256": "5368857fb828da372c45bbc1fad4ba291e4492a19694eaf2e6b7c8407461bd30",
+      "importedSha256": "5368857fb828da372c45bbc1fad4ba291e4492a19694eaf2e6b7c8407461bd30"
+    },
+    {
+      "fixtureId": "playground/do-notation",
+      "source": "do-notation.sweet.js",
+      "imported": "fixtures/acceptance/playground/do-notation/input.sts",
+      "sourceSha256": "0cb46fe990c4e87ba7f4b06e9cbbee56c46ea632c7433ce055528ee47c54db0c",
+      "importedSha256": "0cb46fe990c4e87ba7f4b06e9cbbee56c46ea632c7433ce055528ee47c54db0c"
+    },
+    {
+      "fixtureId": "playground/implicit-return",
+      "source": "implicit.sweet.js",
+      "imported": "fixtures/acceptance/playground/implicit-return/input.sts",
+      "sourceSha256": "3cb1b9e84a9401644a4f8d23a81145113536b22bae804f3313d45464c5209699",
+      "importedSha256": "40e67fb2600d939430823590f94800801b6ddcb062c3ef1448578f75f860519e"
+    },
+    {
+      "fixtureId": "playground/multi-part-methods",
+      "source": "methods.sweet.js",
+      "imported": "fixtures/acceptance/playground/multi-part-methods/input.sts",
+      "sourceSha256": "f7ac5efab4eb26edfcd49004e497fbad6588c24df9ca4f9eb7f33d0333f808e5",
+      "importedSha256": "f7ac5efab4eb26edfcd49004e497fbad6588c24df9ca4f9eb7f33d0333f808e5"
+    },
+    {
+      "fixtureId": "playground/new-language",
+      "source": "newlang.sweet.js",
+      "imported": "fixtures/acceptance/playground/new-language/input.sts",
+      "sourceSha256": "14c58efe0e7cb655bf7bb1943d93b4ffd33cc3883aa12d6428e0f77585291dbd",
+      "importedSha256": "14c58efe0e7cb655bf7bb1943d93b4ffd33cc3883aa12d6428e0f77585291dbd"
+    },
+    {
+      "fixtureId": "playground/operators",
+      "source": "ideas.sjs",
+      "imported": "fixtures/acceptance/playground/operators/input.sts",
+      "sourceSha256": "cd16d9fa389a70e5dac3d920f698edf5b4420ff89436d827abccebae38026b25",
+      "importedSha256": "cd16d9fa389a70e5dac3d920f698edf5b4420ff89436d827abccebae38026b25"
+    },
+    {
+      "fixtureId": "playground/protocols",
+      "source": "protocol.sweet.js",
+      "imported": "fixtures/acceptance/playground/protocols/input.sts",
+      "sourceSha256": "3dc6a4ce0f191c641ba0ea5afd9823ac1fa28b1edb3353f05cf56d9732ece037",
+      "importedSha256": "3dc6a4ce0f191c641ba0ea5afd9823ac1fa28b1edb3353f05cf56d9732ece037"
+    },
+    {
+      "fixtureId": "playground/rewritten-if",
+      "source": "new/if.sjs",
+      "imported": "fixtures/acceptance/playground/rewritten-if/input.sts",
+      "sourceSha256": "57bd712ea57003b39fecb6d29be32145bf76a44f1c3a5939e4faab20a065fcac",
+      "importedSha256": "57bd712ea57003b39fecb6d29be32145bf76a44f1c3a5939e4faab20a065fcac"
+    },
+    {
+      "fixtureId": "playground/rewritten-if",
+      "source": "new/helpers.sjs",
+      "imported": "fixtures/acceptance/playground/rewritten-if/macros.sts",
+      "sourceSha256": "020e737142855c96eb0c52f3b9e19ca22939e27742598d54d00d492497a779c5",
+      "importedSha256": "020e737142855c96eb0c52f3b9e19ca22939e27742598d54d00d492497a779c5"
+    },
+    {
+      "fixtureId": "playground/threading",
+      "source": "threading.sweet.js",
+      "imported": "fixtures/acceptance/playground/threading/input.sts",
+      "sourceSha256": "4e946066551b6139fdc80f3dbe2aa0df808f3d022c8a89112ea1e5210835460e",
+      "importedSha256": "3ddfc88afaae2c27c8deb725cb3219a8873c1290878b8c1d86c7f62b4a4f04a6"
+    }
+  ]
+}

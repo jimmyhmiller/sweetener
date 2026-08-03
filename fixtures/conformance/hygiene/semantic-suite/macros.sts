@@ -1,0 +1,14 @@
+syntax makeTemporary:expr {
+  rule { makeTemporary($value:expr) }
+  => { (($tmp) => $value)(#fresh("tmp")) }
+}
+
+syntax expose:expr {
+  rule { expose($name:ident) }
+  => { #capture($name) }
+}
+
+syntax helperCall:expr {
+  rule { helperCall($value:expr) }
+  => { helper($value) }
+}

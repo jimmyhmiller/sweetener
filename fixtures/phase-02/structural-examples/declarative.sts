@@ -1,0 +1,56 @@
+export syntax class Bind {
+  fields {
+    name: binding;
+    source: expr;
+  }
+
+  rule { $name:binding <- $source:expr; }
+}
+
+export syntax class BindAll {
+  fields {
+    names: binding*;
+    sources: expr*;
+  }
+
+  rule {
+    [$($names:binding),*] <- [$($sources:expr),*];
+  }
+}
+
+export syntax class ProtocolMethod {
+  fields {
+    name: ident;
+    parameters: binding*;
+    parameterTypes: type*;
+    result: type;
+  }
+
+  rule {
+    $name:ident($($parameters:binding: $parameterTypes:type),*): $result:type;
+  }
+}
+
+export syntax class ConstructorDeclaration {
+  fields {
+    name: ident;
+    fieldNames: binding*;
+    fieldTypes: type*;
+  }
+
+  rule {
+    $name:ident($($fieldNames:binding: $fieldTypes:type),*)
+  }
+}
+
+export syntax class MethodSegment {
+  fields {
+    name: ident;
+    parameters: binding*;
+    parameterTypes: type*;
+  }
+
+  rule {
+    $name:ident($($parameters:binding: $parameterTypes:type),*)
+  }
+}

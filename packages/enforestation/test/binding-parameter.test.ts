@@ -1,0 +1,295 @@
+import { createPhase, EnvironmentStore } from "@sweet-rewrite/hygiene";
+import { printLosslessSequence, readSyntax } from "@sweet-rewrite/reader";
+import {
+  createIdAllocator,
+  createResourceBudget,
+  ResourceTracker,
+  type EnvironmentEpoch,
+  type ScopeSetId,
+  type SourceId,
+  type SyntaxId,
+} from "@sweet-rewrite/shared";
+import { createSyntaxCursor, OriginStore } from "@sweet-rewrite/syntax";
+import ts from "typescript";
+import { describe, expect, test } from "vitest";
+import {
+  ConsumerRegistry,
+  consumeParameterList,
+  createBindingConsumer,
+  registerBindingSkeleton,
+  StopSet,
+} from "../src/index.js";
+
+const sourceId = 109 as SourceId;
+
+function setup(source: string) {
+  const origins = new OriginStore();
+  const read = readSyntax(source, {
+    sourceId,
+    scopes: 0 as ScopeSetId,
+    originStore: origins,
+  });
+  expect(read.diagnostics).toEqual([]);
+  const syntax = read.root.children.filter(
+    (node) => node.tag !== "token" || node.kind !== "end-of-file",
+  );
+  const ids = createIdAllocator<SyntaxId>(50_000);
+  const tracker = new ResourceTracker(createResourceBudget());
+  const context = Object.freeze({
+    category: "binding" as const,
+    phase: createPhase(0),
+    environmentEpoch: 0 as EnvironmentEpoch,
+    stopSet: StopSet.empty,
+    tracker,
+    cancellation: Object.freeze({
+      isCancellationRequested: false,
+      throwIfCancellationRequested() {},
+    }),
+  });
+  const options = { origins, allocateSyntaxId: ids.allocate };
+  return { syntax, origins, ids, tracker, context, options };
+}
+
+function binding(source: string) {
+  const prepared = setup(source);
+  const consumer = createBindingConsumer(prepared.options);
+  const registry = new ConsumerRegistry([{ category: "binding", consumer }]);
+  const cursor = createSyntaxCursor(prepared.syntax);
+  const result = registry.consume("binding", {
+    cursor,
+    phase: prepared.context.phase,
+    environmentEpoch: prepared.context.environmentEpoch,
+    tracker: prepared.tracker,
+  });
+  if (!result.matched) throw new Error(result.failure.expectations.join(", "));
+  const detailed = consumer.consumeBinding(
+    createSyntaxCursor(prepared.syntax),
+    prepared.context,
+  );
+  if (!detailed.matched) throw new Error("missing binding skeleton");
+  return { ...prepared, result, skeleton: detailed.skeleton, cursor };
+}
+
+describe("binding and parameter consumers", () => {
+  test("returns an immutable identifier skeleton", () => {
+    const { skeleton, result } = binding("name: Type");
+    expect(skeleton.shape).toBe("identifier");
+    expect(skeleton.names.map(({ spelling }) => spelling)).toEqual(["name"]);
+    expect(skeleton.syntax.category).toBe("binding");
+    expect(result.cursor.index).toBe(1);
+    expect(Object.isFrozen(skeleton)).toBe(true);
+    expect(Object.isFrozen(skeleton.names[0]?.path)).toBe(true);
+  });
+
+  test("enumerates nested object names without treating property keys as bindings", () => {
+    const { skeleton } = binding(
+      "{ short, source: target, [computed]: computedValue, nested: { deep }, defaulted = fallback, ...rest }",
+    );
+    expect(skeleton.shape).toBe("object");
+    expect(skeleton.names.map(({ spelling }) => spelling)).toEqual([
+      "short",
+      "target",
+      "computedValue",
+      "deep",
+      "defaulted",
+      "rest",
+    ]);
+    expect(skeleton.names.map(({ path }) => path)).toMatchObject([
+      [{ kind: "object-property", property: "short" }],
+      [{ kind: "object-property", property: "source" }],
+      [{ kind: "object-property", property: "[computed]" }],
+      [
+        { kind: "object-property", property: "nested" },
+        { kind: "object-property", property: "deep" },
+      ],
+      [{ kind: "object-property", property: "defaulted" }],
+      [{ kind: "object-property", property: "rest" }, { kind: "rest" }],
+    ]);
+  });
+
+  test("enumerates holes, nested patterns, defaults, and array rest", () => {
+    const { skeleton } = binding(
+      "[first, , { nested: renamed = fallback }, ...rest]",
+    );
+    expect(skeleton.shape).toBe("array");
+    expect(skeleton.names.map(({ spelling }) => spelling)).toEqual([
+      "first",
+      "renamed",
+      "rest",
+    ]);
+    expect(skeleton.names.map(({ path }) => path)).toMatchObject([
+      [{ kind: "array-element", index: 0 }],
+      [
+        { kind: "array-element", index: 2 },
+        { kind: "object-property", property: "nested" },
+      ],
+      [{ kind: "array-element", index: 3 }, { kind: "rest" }],
+    ]);
+  });
+
+  test("parses parameter modifiers, types, defaults, optionality, and rest", () => {
+    const prepared = setup(
+      "(public readonly value?: number, { source: renamed, fallback = 1 }: Options = defaults, ...rest: string[]) after",
+    );
+    const cursor = createSyntaxCursor(prepared.syntax);
+    const result = consumeParameterList(
+      cursor,
+      prepared.context,
+      prepared.options,
+    );
+    expect(result).toBeDefined();
+    expect(result?.cursor.index).toBe(1);
+    expect(result?.skeleton.parameters).toHaveLength(3);
+    expect(result?.skeleton.names.map(({ spelling }) => spelling)).toEqual([
+      "value",
+      "renamed",
+      "fallback",
+      "rest",
+    ]);
+    expect(result?.skeleton.parameters[0]).toMatchObject({
+      optional: true,
+      rest: false,
+      modifiers: [{ raw: "public" }, { raw: "readonly" }],
+      typeSyntax: [{ raw: "number" }],
+    });
+    expect(
+      printLosslessSequence(
+        result?.skeleton.parameters[1]?.initializerSyntax ?? [],
+      ).trim(),
+    ).toBe("defaults");
+    expect(result?.skeleton.parameters[2]).toMatchObject({ rest: true });
+  });
+
+  test("rejects malformed patterns and parameter combinations transactionally", () => {
+    for (const source of [
+      "{ key: }",
+      "{ ...{ nested } }",
+      "[...rest = value]",
+    ]) {
+      const prepared = setup(source);
+      const cursor = createSyntaxCursor(prepared.syntax);
+      const registry = new ConsumerRegistry([
+        {
+          category: "binding",
+          consumer: createBindingConsumer(prepared.options),
+        },
+      ]);
+      const result = registry.consume("binding", {
+        cursor,
+        phase: prepared.context.phase,
+        environmentEpoch: prepared.context.environmentEpoch,
+        tracker: prepared.tracker,
+      });
+      expect(result.matched).toBe(false);
+      expect(cursor.index).toBe(0);
+    }
+    const invalidParameters = setup("(optional?: Type = value, ...rest = [])");
+    expect(
+      consumeParameterList(
+        createSyntaxCursor(invalidParameters.syntax),
+        invalidParameters.context,
+        invalidParameters.options,
+      ),
+    ).toBeUndefined();
+  });
+
+  test("registers every destructured name in hygiene without reparsing text", () => {
+    const { skeleton } = binding("{ left, source: right }");
+    const store = new EnvironmentStore();
+    const phase = createPhase(0);
+    const result = registerBindingSkeleton({
+      store,
+      environment: store.createRoot(),
+      skeleton,
+      phase,
+      space: "value",
+      kind: "parameter",
+    });
+    expect(result.bindings.map(({ spelling }) => spelling)).toEqual([
+      "left",
+      "right",
+    ]);
+    expect(result.bindings[0]?.declarationGroup).toBe(
+      result.bindings[1]?.declarationGroup,
+    );
+    expect(
+      store.candidates(result.environment, {
+        spelling: "right",
+        phase,
+        space: "value",
+        position: 0,
+      }),
+    ).toEqual([result.bindings[1]]);
+  });
+
+  test("accepts trailing commas, computed keys, and typed this parameters", () => {
+    const computed = binding("{ [key]: value, }").skeleton;
+    expect(computed.names).toMatchObject([
+      {
+        spelling: "value",
+        path: [{ kind: "object-property", property: "[computed]" }],
+      },
+    ]);
+    const prepared = setup("(this: Context, value: number,)");
+    const result = consumeParameterList(
+      createSyntaxCursor(prepared.syntax),
+      prepared.context,
+      prepared.options,
+    );
+    expect(result?.skeleton.parameters).toMatchObject([
+      { thisParameter: true, binding: undefined },
+      { thisParameter: false, binding: { shape: "identifier" } },
+    ]);
+    expect(result?.skeleton.names.map(({ spelling }) => spelling)).toEqual([
+      "value",
+    ]);
+  });
+
+  test.each([
+    "[...rest, after]",
+    "[value =]",
+    "{ first,, second }",
+    "{ ...rest: renamed }",
+  ])("rejects invalid binding edge %s", (source) => {
+    const prepared = setup(source);
+    const result = createBindingConsumer(prepared.options).consumeBinding(
+      createSyntaxCursor(prepared.syntax),
+      prepared.context,
+    );
+    expect(result.matched).toBe(false);
+  });
+
+  test.each(["(...rest: string[], after: string)", "(value?: T = fallback)"])(
+    "rejects invalid parameter edge %s",
+    (source) => {
+      const prepared = setup(source);
+      expect(
+        consumeParameterList(
+          createSyntaxCursor(prepared.syntax),
+          prepared.context,
+          prepared.options,
+        ),
+      ).toBeUndefined();
+    },
+  );
+
+  test("representative bindings and parameters parse under pinned TypeScript", () => {
+    const sources = [
+      "const { short, source: target, nested: { deep }, ...rest } = value;",
+      "const [first, , nested = fallback, ...rest] = values;",
+      "function run(value?: number, { source: renamed }: Options = defaults, ...rest: string[]) {}",
+    ];
+    for (const source of sources) {
+      const parsed = ts.createSourceFile(
+        "binding.ts",
+        source,
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TS,
+      ) as ts.SourceFile & {
+        readonly parseDiagnostics: readonly ts.Diagnostic[];
+      };
+      expect(parsed.parseDiagnostics, source).toEqual([]);
+    }
+  });
+});
