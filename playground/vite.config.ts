@@ -8,6 +8,7 @@ const require = createRequire(import.meta.url);
 const packageSource = (name: string) => `${root}packages/${name}/src/index.ts`;
 
 export default defineConfig({
+  base: process.env["PLAYGROUND_BASE_PATH"] ?? "/",
   plugins: [react()],
   resolve: {
     alias: [
