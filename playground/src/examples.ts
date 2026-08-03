@@ -54,11 +54,11 @@ const example = (
 
 export const examples: PlaygroundExample[] = [
   example(
-    "threading",
-    "Everyday syntax",
-    "Thread first / last",
-    threadMacros,
-    threadMain,
+    "adt",
+    "Language building",
+    "Algebraic data types",
+    adtMacros,
+    adtMain,
   ),
   example(
     "implicit-return",
@@ -98,13 +98,6 @@ export const examples: PlaygroundExample[] = [
     methodsMain,
   ),
   example(
-    "adt",
-    "Language building",
-    "Algebraic data types",
-    adtMacros,
-    adtMain,
-  ),
-  example(
     "protocols",
     "Language building",
     "Protocols",
@@ -118,5 +111,12 @@ export const examples: PlaygroundExample[] = [
     "Combined new language",
     languageMacros,
     languageMain,
+  ),
+  example(
+    "threading",
+    "Everyday syntax",
+    "Thread first / last",
+    threadMacros,
+    threadMain,
   ),
 ];
