@@ -25,4 +25,6 @@ jobs:
           node-version: 24.18.1
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Refresh generated status dashboard
+        run: pnpm status > /dev/null
       - run: pnpm check
