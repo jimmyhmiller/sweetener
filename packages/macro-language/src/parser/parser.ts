@@ -8,7 +8,7 @@ import {
   createSequencePattern,
   createTokenLiteralKey,
   type PatternNode,
-} from "@sweet-rewrite/pattern";
+} from "@sweetener/pattern";
 import {
   createIdAllocator,
   type CaptureId,
@@ -20,14 +20,14 @@ import {
   type RuleId,
   type SourceId,
   type SyntaxClassId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import type {
   GroupSyntax,
   RootSyntax,
   Syntax,
   SyntaxCategory,
   TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import type {
   DefinitionClause,
   DefinitionField,

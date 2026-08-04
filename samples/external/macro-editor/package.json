@@ -3,15 +3,15 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@sweet-rewrite/expansion": "link:../../../packages/expansion",
-    "@sweet-rewrite/hygiene": "link:../../../packages/hygiene",
-    "@sweet-rewrite/macro-language": "link:../../../packages/macro-language",
-    "@sweet-rewrite/pattern": "link:../../../packages/pattern",
-    "@sweet-rewrite/printer": "link:../../../packages/printer",
-    "@sweet-rewrite/reader": "link:../../../packages/reader",
-    "@sweet-rewrite/shared": "link:../../../packages/shared",
-    "@sweet-rewrite/syntax": "link:../../../packages/syntax",
-    "@sweet-rewrite/typescript-host": "link:../../../packages/typescript-host",
+    "@sweetener/expansion": "link:../../../packages/expansion",
+    "@sweetener/hygiene": "link:../../../packages/hygiene",
+    "@sweetener/macro-language": "link:../../../packages/macro-language",
+    "@sweetener/pattern": "link:../../../packages/pattern",
+    "@sweetener/printer": "link:../../../packages/printer",
+    "@sweetener/reader": "link:../../../packages/reader",
+    "@sweetener/shared": "link:../../../packages/shared",
+    "@sweetener/syntax": "link:../../../packages/syntax",
+    "@sweetener/typescript-host": "link:../../../packages/typescript-host",
     "typescript": "npm:@typescript/typescript6@6.0.2"
   }
 }

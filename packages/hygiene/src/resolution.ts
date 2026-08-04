@@ -1,4 +1,4 @@
-import type { Diagnostic, SourceSpan, ScopeSetId } from "@sweet-rewrite/shared";
+import type { Diagnostic, SourceSpan, ScopeSetId } from "@sweetener/shared";
 import type { Binding, Phase, SyntaxSpace } from "./binding.js";
 import type { BindingEnvironment, EnvironmentStore } from "./environment.js";
 import {

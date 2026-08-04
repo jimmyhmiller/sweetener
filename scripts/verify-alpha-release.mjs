@@ -75,7 +75,7 @@ try {
     {
       cwd: temporary,
       encoding: "utf8",
-      env: { ...process.env, SWEET_REWRITE_CONSUMER_ROOT: temporary },
+      env: { ...process.env, SWEETENER_CONSUMER_ROOT: temporary },
     },
   );
   if (

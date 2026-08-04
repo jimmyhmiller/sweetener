@@ -1,6 +1,7 @@
 import { dirname, resolve } from "node:path";
-import type { PrintedExpandedFile } from "@sweet-rewrite/printer";
+import type { PrintedExpandedFile } from "@sweetener/printer";
 import ts from "typescript";
+import { scriptKindForFileName } from "./script-kind.js";
 
 export interface VirtualTypeScriptFile {
   readonly fileName: string;
@@ -75,7 +76,7 @@ export function createVirtualCompilerHost(options: {
         virtual.text,
         languageVersion,
         true,
-        fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+        scriptKindForFileName(fileName),
       );
       sourceFiles.set(path, source);
       return source;

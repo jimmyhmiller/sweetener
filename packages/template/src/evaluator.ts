@@ -3,7 +3,7 @@ import type {
   CapturePath,
   CaptureRecord,
   CaptureValue,
-} from "@sweet-rewrite/pattern";
+} from "@sweetener/pattern";
 import {
   createResourceBudget,
   neverCancelled,
@@ -13,13 +13,13 @@ import {
   type OriginId,
   type ResourceBudget,
   type ScopeSetId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import type {
   DelimiterKind,
   MissingToken,
   SyntaxSequence,
   TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import type {
   ConditionalPredicate,
   HygieneOperation,

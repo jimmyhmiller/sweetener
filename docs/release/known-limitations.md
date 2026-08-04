@@ -2,7 +2,7 @@
 
 These are explicit gaps in `0.1.0-alpha.0`, not unspecified behavior.
 
-- The CLI installs a `sweet-rewrite` binary and a default project expansion
+- The CLI installs a `sweetener` binary and a default project expansion
   provider. The current frontend resolves project-local relative and tsconfig
   path imports, including transitive modules, plus installed packages using the
   versioned `sweetMacros` manifest pointer.

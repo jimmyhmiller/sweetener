@@ -3,7 +3,7 @@ import {
   type CaptureId,
   type OriginId,
   type SourceId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import type { Span } from "./span.js";
 import { createSpan } from "./span.js";
 

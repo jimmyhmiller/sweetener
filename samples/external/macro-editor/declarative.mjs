@@ -1,28 +1,24 @@
-import {
-  EnvironmentStore,
-  createPhase,
-  ScopeStore,
-} from "@sweet-rewrite/hygiene";
-import { parseMacroDefinitions } from "@sweet-rewrite/macro-language";
-import { createSyntaxClassConsumer } from "@sweet-rewrite/pattern";
-import { printLosslessSequence, readSyntax } from "@sweet-rewrite/reader";
+import { EnvironmentStore, createPhase, ScopeStore } from "@sweetener/hygiene";
+import { parseMacroDefinitions } from "@sweetener/macro-language";
+import { createSyntaxClassConsumer } from "@sweetener/pattern";
+import { printLosslessSequence, readSyntax } from "@sweetener/reader";
 import {
   createIdAllocator,
   createResourceBudget,
   ResourceTracker,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createProtectedSyntax,
   createSyntaxSequence,
   OriginStore,
   spanEnvelope,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   compileParsedMacros,
   expandMacroSyntax,
   ExpansionGuard,
-} from "@sweet-rewrite/expansion";
-import { printExpandedFile } from "@sweet-rewrite/printer";
+} from "@sweetener/expansion";
+import { printExpandedFile } from "@sweetener/printer";
 
 const definition = `export syntax duplicate:expr {
   rule { duplicate($value:tt) } => { [$value, $value] }

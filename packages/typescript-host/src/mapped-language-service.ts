@@ -1,10 +1,7 @@
-import type {
-  OriginQueryIndex,
-  PrintedExpandedFile,
-} from "@sweet-rewrite/printer";
+import type { OriginQueryIndex, PrintedExpandedFile } from "@sweetener/printer";
 import { resolve } from "node:path";
-import type { BindingId, SourceId, SourceSpan } from "@sweet-rewrite/shared";
-import type { OriginStore } from "@sweet-rewrite/syntax";
+import type { BindingId, SourceId, SourceSpan } from "@sweetener/shared";
+import type { OriginStore } from "@sweetener/syntax";
 import type * as ts from "typescript";
 import { remapTypeScriptDiagnostic } from "./diagnostic-remap.js";
 import type { RemappedTypeScriptDiagnostic } from "./diagnostic-remap.js";

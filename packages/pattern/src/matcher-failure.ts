@@ -1,5 +1,5 @@
-import type { OriginId, SyntaxClassId } from "@sweet-rewrite/shared";
-import type { CursorIdentity, DelimiterKind } from "@sweet-rewrite/syntax";
+import type { OriginId, SyntaxClassId } from "@sweetener/shared";
+import type { CursorIdentity, DelimiterKind } from "@sweetener/syntax";
 import type { LiteralKey, LookaheadPredicate } from "./ast.js";
 
 export type MatcherExpectation =

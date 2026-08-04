@@ -1,11 +1,11 @@
-import type { OriginId } from "@sweet-rewrite/shared";
+import type { OriginId } from "@sweetener/shared";
 import type {
   MissingToken,
   Origin,
   OriginStore,
   Syntax,
   TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import type { NameAssignmentPlan } from "./name-assignment.js";
 
 export type GeneratedRegionKind = Origin["kind"] | "grouping";

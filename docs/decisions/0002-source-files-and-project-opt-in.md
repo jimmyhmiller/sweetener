@@ -2,6 +2,7 @@
 
 Status: accepted  
 Date: 2026-08-02  
+Amended: 2026-08-03 (see ADR-0009)  
 Owners: Jimmy Miller
 
 ## Decision
@@ -13,6 +14,11 @@ through `sweet.macroExtensions`. The first release accepts `.sts` and `.stsx`.
 Keep ordinary `.ts` and `.tsx` under the TypeScript parser unless a later ADR
 defines a file-level pragma. The compiler rejects macro syntax in unlisted file
 extensions.
+
+> **Amended by [ADR-0009](0009-directive-opt-in-and-javascript-targets.md).**
+> The file-level pragma this ADR deferred now exists as the `"use sweetener"`
+> directive, and JavaScript is a supported target. Extensions remain supported
+> and unchanged.
 
 ## Context
 

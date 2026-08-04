@@ -3,20 +3,20 @@ import {
   createPhase,
   runtimePhase,
   type SyntaxSpace,
-} from "@sweet-rewrite/hygiene";
+} from "@sweetener/hygiene";
 import {
   parseMacroDefinitions,
   type MacroDefinition,
-} from "@sweet-rewrite/macro-language";
-import { readSyntax } from "@sweet-rewrite/reader";
+} from "@sweetener/macro-language";
+import { readSyntax } from "@sweetener/reader";
 import type {
   BindingId,
   OriginId,
   ScopeSetId,
   SourceId,
   SyntaxId,
-} from "@sweet-rewrite/shared";
-import { createSyntaxSequence, createToken } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import { createSyntaxSequence, createToken } from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import {
   ExpansionEnvironmentStore,

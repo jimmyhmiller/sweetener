@@ -1,6 +1,6 @@
-# Sweet Rewrite Playground
+# Sweetener Playground
 
-The browser playground runs the production Sweet Rewrite expansion provider in
+The browser playground runs the production Sweetener expansion provider in
 a Web Worker over an in-memory project filesystem. It does not use a server,
 saved output, or a fallback transformer.
 

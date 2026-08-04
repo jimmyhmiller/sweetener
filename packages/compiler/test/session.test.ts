@@ -1,0 +1,113 @@
+import {
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, test } from "vitest";
+import { createSweetenerSession } from "../src/index.js";
+
+function project(): {
+  directory: string;
+  config: string;
+  main: string;
+  macros: string;
+} {
+  const directory = mkdtempSync(join(tmpdir(), "sweet-compiler-"));
+  const macros = join(directory, "macros.sts");
+  const main = join(directory, "main.sts");
+  const config = join(directory, "tsconfig.json");
+  writeFileSync(
+    macros,
+    `export syntax duplicate:expr { rule { duplicate($value:tt) } => { [$value, $value] } }\n`,
+  );
+  writeFileSync(
+    main,
+    `import { duplicate } from "./macros.sts" for syntax;\nexport const answer = duplicate(21);\n`,
+  );
+  writeFileSync(
+    config,
+    JSON.stringify({
+      compilerOptions: { module: "ESNext", target: "ES2022" },
+      files: ["macros.sts", "main.sts"],
+    }),
+  );
+  return { directory, config, main, macros };
+}
+
+describe("public compiler session", () => {
+  test("expands a project file and reports its complete watch set", async () => {
+    const fixture = project();
+    const source = await import("node:fs/promises").then(({ readFile }) =>
+      readFile(fixture.main, "utf8"),
+    );
+    const session = createSweetenerSession();
+    const result = await session.transform({
+      code: source,
+      filename: fixture.main,
+      configFile: fixture.config,
+      mode: "test",
+    });
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.code).toContain("[21,21]");
+    expect(result.virtualFilename).toMatch(/main\.ts$/u);
+    expect(result.dependencies).toEqual(
+      [fixture.config, fixture.macros, fixture.main]
+        .map((fileName) => realpathSync(fileName))
+        .sort(),
+    );
+    expect(result.originMap.entries.length).toBeGreaterThan(0);
+    expect(result.map.version).toBe(3);
+    expect(result.map.mappings.length).toBeGreaterThan(0);
+    expect(result.map.sources).toContain(realpathSync(fixture.main));
+    expect(result.map.sourcesContent).toContain(source);
+    expect(Array.isArray(result.trace)).toBe(true);
+    await session.close();
+  });
+
+  test("caches stable transforms and invalidates macro dependents", async () => {
+    const fixture = project();
+    const source = readFile(fixture.main);
+    const session = createSweetenerSession();
+    const first = await session.transform({
+      code: source,
+      filename: fixture.main,
+    });
+    const cached = await session.transform({
+      code: source,
+      filename: fixture.main,
+    });
+    expect(cached).toBe(first);
+
+    session.invalidate([fixture.macros]);
+    const rebuilt = await session.transform({
+      code: source,
+      filename: fixture.main,
+    });
+    expect(rebuilt).not.toBe(first);
+    expect(rebuilt.code).toBe(first.code);
+    await session.close();
+  });
+
+  test("rejects stale build-tool input and use after close", async () => {
+    const fixture = project();
+    const session = createSweetenerSession();
+    await expect(
+      session.transform({ code: "stale", filename: fixture.main }),
+    ).rejects.toThrow(/changed before expansion/u);
+    await session.close();
+    await expect(
+      session.transform({
+        code: readFile(fixture.main),
+        filename: fixture.main,
+      }),
+    ).rejects.toThrow(/closed/u);
+  });
+});
+
+function readFile(fileName: string): string {
+  return readFileSync(fileName, "utf8");
+}

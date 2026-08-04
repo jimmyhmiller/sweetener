@@ -1,4 +1,4 @@
-import { DiagnosticRegistry, diagnosticCode } from "@sweet-rewrite/shared";
+import { DiagnosticRegistry, diagnosticCode } from "@sweetener/shared";
 
 export const invalidMacroManifestCode = diagnosticCode("SWR5001");
 export const unresolvedMacroModuleCode = diagnosticCode("SWR5002");

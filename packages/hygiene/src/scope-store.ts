@@ -2,7 +2,7 @@ import {
   createIdAllocator,
   type ScopeId,
   type ScopeSetId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import { createScope, type Scope, type ScopeKind } from "./scope.js";
 import {
   scopeSetKey,

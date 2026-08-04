@@ -1,4 +1,4 @@
-import type { BindingId } from "@sweet-rewrite/shared";
+import type { BindingId } from "@sweetener/shared";
 import {
   createPrecedence,
   createProtectedSyntax,
@@ -7,7 +7,7 @@ import {
   type ProtectedSyntax,
   type Syntax,
   type SyntaxCursor,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   createConsumerFailure,
   type ConsumerAttempt,

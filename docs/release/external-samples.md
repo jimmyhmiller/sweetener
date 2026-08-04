@@ -4,7 +4,7 @@ Date: 2026-08-03
 
 All three samples live below `samples/external` but are excluded from
 `pnpm-workspace.yaml`. Setup uses `pnpm --ignore-workspace` and public
-`@sweet-rewrite/*` export roots. No sample imports a package-internal source or
+`@sweetener/*` export roots. No sample imports a package-internal source or
 `dist` path.
 
 ## Project graph
@@ -34,7 +34,7 @@ plus expansion at 14.45 ms and all editor reads at 186.86 ms.
 
 ## Default installed CLI project
 
-The third sample invokes the `sweet-rewrite` executable with no injected
+The third sample invokes the `sweetener` executable with no injected
 provider. A normal `.sts` application imports aliased expression, statement,
 item, type, and symbolic operator macros from a declarative module. The workflow
 checks generated source,

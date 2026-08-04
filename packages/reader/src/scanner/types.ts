@@ -3,13 +3,8 @@ import type {
   Diagnostic,
   ResourceBudget,
   SourceId,
-} from "@sweet-rewrite/shared";
-import type {
-  LexicalMode,
-  Span,
-  TokenKind,
-  Trivia,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import type { LexicalMode, Span, TokenKind, Trivia } from "@sweetener/syntax";
 import type { ScannerLanguageVariant } from "../typescript-version/adapter.js";
 
 export interface ScannerToken {

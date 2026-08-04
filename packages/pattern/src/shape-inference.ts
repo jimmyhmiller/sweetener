@@ -4,8 +4,8 @@ import type {
   OriginId,
   SourceId,
   SyntaxClassId,
-} from "@sweet-rewrite/shared";
-import type { Span } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import type { Span } from "@sweetener/syntax";
 import type { PatternNode } from "./ast.js";
 import {
   CaptureShapeRecord,

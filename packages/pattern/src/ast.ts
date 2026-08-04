@@ -5,8 +5,8 @@ import type {
   OriginId,
   RepetitionId,
   SyntaxClassId,
-} from "@sweet-rewrite/shared";
-import type { DelimiterKind, TokenKind } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import type { DelimiterKind, TokenKind } from "@sweetener/syntax";
 
 export interface PatternBase {
   readonly origin: OriginId;

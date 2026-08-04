@@ -1,9 +1,9 @@
-import { createSpan, createTrivia, type Trivia } from "@sweet-rewrite/syntax";
+import { createSpan, createTrivia, type Trivia } from "@sweetener/syntax";
 import {
   defaultResourceBudget,
   neverCancelled,
   ResourceTracker,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   scanWithSupportedTypeScript,
   type TypeScriptScannedToken,

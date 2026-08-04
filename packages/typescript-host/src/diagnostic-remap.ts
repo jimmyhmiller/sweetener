@@ -2,9 +2,9 @@ import type {
   ExpansionFrame,
   RelatedDiagnosticOrigin,
   SourceSpan,
-} from "@sweet-rewrite/shared";
-import type { PrintedExpandedFile } from "@sweet-rewrite/printer";
-import type { Origin, OriginStore } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import type { PrintedExpandedFile } from "@sweetener/printer";
+import type { Origin, OriginStore } from "@sweetener/syntax";
 import type ts from "typescript";
 
 export interface RemappedTypeScriptDiagnostic {

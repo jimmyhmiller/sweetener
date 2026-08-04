@@ -1,4 +1,4 @@
-import { DiagnosticRegistry, diagnosticCode } from "@sweet-rewrite/shared";
+import { DiagnosticRegistry, diagnosticCode } from "@sweetener/shared";
 
 export const expectedDefinitionPartCode = diagnosticCode("SWR2001");
 export const malformedPatternCode = diagnosticCode("SWR2002");

@@ -7,8 +7,8 @@ import type {
   RepetitionId,
   RuleId,
   SyntaxClassId,
-} from "@sweet-rewrite/shared";
-import type { DelimiterKind } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import type { DelimiterKind } from "@sweetener/syntax";
 import type { LiteralKey, LookaheadPredicate } from "./ast.js";
 
 interface InstructionBase {

@@ -4,8 +4,8 @@ import {
   type Binding,
   type Phase,
   type SyntaxSpace,
-} from "@sweet-rewrite/hygiene";
-import type { BindingId, OriginId, ScopeSetId } from "@sweet-rewrite/shared";
+} from "@sweetener/hygiene";
+import type { BindingId, OriginId, ScopeSetId } from "@sweetener/shared";
 import { describe, expect, test } from "vitest";
 import {
   ExpansionEnvironmentStore,

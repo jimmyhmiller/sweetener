@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import type { PrintedExpandedFile } from "@sweet-rewrite/printer";
+import type { PrintedExpandedFile } from "@sweetener/printer";
 import { describe, expect, test } from "vitest";
 import ts from "typescript";
 import { VirtualLanguageServiceProject } from "../src/index.js";

@@ -5,8 +5,8 @@ import type {
   ScopeSetId,
   SyntaxClassId,
   SyntaxId,
-} from "@sweet-rewrite/shared";
-import { createGroup, createSpan, createToken } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import { createGroup, createSpan, createToken } from "@sweetener/syntax";
 import { describe, expect, it } from "vitest";
 import {
   CaptureRecord,

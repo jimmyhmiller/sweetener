@@ -30,7 +30,7 @@ describe("package boundary checker", () => {
     const result = check(fixture);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain(
-      "packages/one/src/index.ts imports internal package path @sweet-rewrite/two/internal",
+      "packages/one/src/index.ts imports internal package path @sweetener/two/internal",
     );
   });
 
@@ -42,7 +42,7 @@ describe("package boundary checker", () => {
     const result = check(fixture);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain(
-      "workspace package cycle: @sweet-rewrite/one -> @sweet-rewrite/two -> @sweet-rewrite/one",
+      "workspace package cycle: @sweetener/one -> @sweetener/two -> @sweetener/one",
     );
   });
 });

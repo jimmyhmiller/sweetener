@@ -1,16 +1,12 @@
-import type { Phase } from "@sweet-rewrite/hygiene";
+import type { Phase } from "@sweetener/hygiene";
 import {
   neverCancelled,
   type BindingId,
   type CancellationToken,
   type EnvironmentEpoch,
   type ResourceTracker,
-} from "@sweet-rewrite/shared";
-import type {
-  Syntax,
-  SyntaxCategory,
-  TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import type { Syntax, SyntaxCategory, TokenSyntax } from "@sweetener/syntax";
 
 declare const expansionInputHashBrand: unique symbol;
 

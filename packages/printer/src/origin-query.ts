@@ -1,5 +1,5 @@
-import type { ExpansionFrame, OriginId, SourceId } from "@sweet-rewrite/shared";
-import type { OriginStore, SourceOrigin } from "@sweet-rewrite/syntax";
+import type { ExpansionFrame, OriginId, SourceId } from "@sweetener/shared";
+import type { OriginStore, SourceOrigin } from "@sweetener/syntax";
 import type {
   GeneratedRegionKind,
   OriginMapEntry,

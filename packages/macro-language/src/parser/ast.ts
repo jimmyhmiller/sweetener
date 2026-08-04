@@ -4,14 +4,14 @@ import type {
   OriginId,
   RuleId,
   SyntaxClassId,
-} from "@sweet-rewrite/shared";
-import type { PatternNode } from "@sweet-rewrite/pattern";
+} from "@sweetener/shared";
+import type { PatternNode } from "@sweetener/pattern";
 import type {
   GroupSyntax,
   Syntax,
   SyntaxCategory,
   SyntaxSequence,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 
 export interface MacroLanguageNode {
   readonly origin: OriginId;

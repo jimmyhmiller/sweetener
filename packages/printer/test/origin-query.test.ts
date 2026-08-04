@@ -1,5 +1,5 @@
-import type { CaptureId, InvocationId, SourceId } from "@sweet-rewrite/shared";
-import { OriginStore } from "@sweet-rewrite/syntax";
+import type { CaptureId, InvocationId, SourceId } from "@sweetener/shared";
+import { OriginStore } from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import {
   createOriginQueryIndex,

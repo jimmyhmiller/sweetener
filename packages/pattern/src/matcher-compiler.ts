@@ -3,7 +3,7 @@ import type {
   CaptureSlotId,
   ProgramCounter,
   RuleId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import type { PatternNode } from "./ast.js";
 import { captureShapeDepth } from "./capture-shape.js";
 import type { CaptureShapeInferenceResult } from "./shape-inference.js";

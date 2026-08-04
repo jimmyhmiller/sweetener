@@ -11,7 +11,7 @@ import {
   type RepetitionId,
   type ResourceBudget,
   type SyntaxClassId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createSyntaxCursor,
   type CursorIdentity,
@@ -19,7 +19,7 @@ import {
   type SyntaxCursor,
   type SyntaxSequence,
   type TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   CaptureRecord,
   createCaptureLeaf,

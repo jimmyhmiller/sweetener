@@ -1,4 +1,4 @@
-import { DiagnosticRegistry, diagnosticCode } from "@sweet-rewrite/shared";
+import { DiagnosticRegistry, diagnosticCode } from "@sweetener/shared";
 
 export const noMatchingMacroRuleCode = diagnosticCode("SWR4001");
 export const invalidCoreShadowCode = diagnosticCode("SWR4002");

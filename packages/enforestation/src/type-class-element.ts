@@ -1,13 +1,14 @@
-import type { SyntaxId } from "@sweet-rewrite/shared";
+import type { SyntaxId } from "@sweetener/shared";
 import {
   createProtectedSyntax,
   spanEnvelope,
+  type GroupSyntax,
   type OriginStore,
   type ProtectedSyntax,
   type Syntax,
   type SyntaxCursor,
   type TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   createConsumerFailure,
   type ConsumerAttempt,
@@ -27,6 +28,17 @@ export interface TypeClassConsumerOptions {
   readonly allocateSyntaxId: () => SyntaxId;
   readonly origins: OriginStore;
   readonly resolveMacro?: TypeClassMacroResolver | undefined;
+  /**
+   * Enforests a class element's brace body as a statement list. Without it the
+   * body stays an opaque token tree and macros inside a method never expand.
+   */
+  readonly enforestStatementBlock?:
+    | ((
+        block: GroupSyntax,
+        context: ConsumerContext,
+        allowYield: boolean,
+      ) => Syntax)
+    | undefined;
 }
 
 const prefixTypeWords = new Set([
@@ -421,7 +433,20 @@ class ClassElementConsumer implements SyntaxConsumer {
         break;
       children.push(cursor.consume()!);
       if (token(next, ";")) break;
-      if (classElementCanEndAtBrace(children)) break;
+      if (classElementCanEndAtBrace(children)) {
+        // The element ended at its body; enforest that body so macros inside a
+        // method are reached.
+        const enforest = this.options.enforestStatementBlock;
+        if (enforest !== undefined && next.tag === "group")
+          children[children.length - 1] = enforest(
+            next,
+            context,
+            // A generator method is written `*name() {}`, so the star appears
+            // among the tokens scanned before the parameter list.
+            children.some((node) => token(node, "*")),
+          );
+        break;
+      }
     }
     if (children.length === 0) {
       return failure("classElement", cursor, start, ["class element"], 1);

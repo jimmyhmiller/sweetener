@@ -1,4 +1,4 @@
-import type { SourceId } from "@sweet-rewrite/shared";
+import type { SourceId } from "@sweetener/shared";
 import { describe, expect, it } from "vitest";
 import {
   assertSupportedTypeScriptVersion,

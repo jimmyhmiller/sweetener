@@ -2,7 +2,7 @@ import type {
   CaptureId,
   CardinalityGroupId,
   SyntaxClassId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 
 export interface CapturePathSegment {
   readonly name: string;

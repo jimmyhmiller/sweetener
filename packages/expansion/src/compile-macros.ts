@@ -1,4 +1,4 @@
-import { createBinding, type Phase } from "@sweet-rewrite/hygiene";
+import { createBinding, type Phase } from "@sweetener/hygiene";
 import {
   compileParsedBindingContracts,
   compileParsedSyntaxClasses,
@@ -6,7 +6,7 @@ import {
   type ParseMacroDefinitionsResult,
   type MacroDefinition,
   type DefinitionClause,
-} from "@sweet-rewrite/macro-language";
+} from "@sweetener/macro-language";
 import {
   compileMatcherProgram,
   createBindingLiteralKey,
@@ -19,16 +19,16 @@ import {
   inferCaptureShapes,
   type PatternNode,
   type SyntaxClassRegistry,
-} from "@sweet-rewrite/pattern";
+} from "@sweetener/pattern";
 import type {
   BindingId,
   Diagnostic,
   OriginId,
   ScopeSetId,
   SourceId,
-} from "@sweet-rewrite/shared";
-import type { Span } from "@sweet-rewrite/syntax";
-import type { TokenSyntax } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import type { Span } from "@sweetener/syntax";
+import type { TokenSyntax } from "@sweetener/syntax";
 import {
   expansionDiagnosticRegistry,
   invalidMacroContextCode,

@@ -4,13 +4,13 @@ import type {
   ResourceBudget,
   ScopeSetId,
   SourceId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createSpan,
   type OriginStore,
   type RootSyntax,
   type Span,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import { readSyntax } from "./reader.js";
 import type { ScannerLanguageVariant } from "./typescript-version/adapter.js";
 

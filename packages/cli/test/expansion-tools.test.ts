@@ -1,9 +1,9 @@
-import type { InvocationId, SourceId } from "@sweet-rewrite/shared";
+import type { InvocationId, SourceId } from "@sweetener/shared";
 import type {
   OriginQueryIndex,
   OriginQueryResult,
   PrintedExpandedFile,
-} from "@sweet-rewrite/printer";
+} from "@sweetener/printer";
 import { describe, expect, test } from "vitest";
 import {
   explainOriginalPosition,

@@ -4,12 +4,12 @@ import {
   type ScopeSetId,
   type SourceId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createProtectedSyntax,
   createToken,
   OriginStore,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import {
   createExpansionTraceEnvelope,

@@ -1,12 +1,12 @@
-import { createPhase, ScopeStore } from "@sweet-rewrite/hygiene";
-import { parseMacroDefinitions } from "@sweet-rewrite/macro-language";
-import { readSyntax } from "@sweet-rewrite/reader";
+import { createPhase, ScopeStore } from "@sweetener/hygiene";
+import { parseMacroDefinitions } from "@sweetener/macro-language";
+import { readSyntax } from "@sweetener/reader";
 import {
   createIdAllocator,
   type BindingId,
   type SourceId,
-} from "@sweet-rewrite/shared";
-import { OriginStore } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import { OriginStore } from "@sweetener/syntax";
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { compileParsedMacros } from "../src/index.js";

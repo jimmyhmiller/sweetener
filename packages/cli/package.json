@@ -1,10 +1,10 @@
 {
-  "name": "@sweet-rewrite/cli",
+  "name": "@sweetener/cli",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "bin": {
-    "sweet-rewrite": "./dist/src/bin.js"
+    "sweetener": "./dist/src/bin.js"
   },
   "exports": {
     ".": {
@@ -16,14 +16,15 @@
     "dist"
   ],
   "dependencies": {
-    "@sweet-rewrite/expansion": "workspace:*",
-    "@sweet-rewrite/hygiene": "workspace:*",
-    "@sweet-rewrite/macro-language": "workspace:*",
-    "@sweet-rewrite/printer": "workspace:*",
-    "@sweet-rewrite/reader": "workspace:*",
-    "@sweet-rewrite/shared": "workspace:*",
-    "@sweet-rewrite/syntax": "workspace:*",
-    "@sweet-rewrite/typescript-host": "workspace:*",
+    "@sweetener/compiler": "workspace:*",
+    "@sweetener/expansion": "workspace:*",
+    "@sweetener/hygiene": "workspace:*",
+    "@sweetener/macro-language": "workspace:*",
+    "@sweetener/printer": "workspace:*",
+    "@sweetener/reader": "workspace:*",
+    "@sweetener/shared": "workspace:*",
+    "@sweetener/syntax": "workspace:*",
+    "@sweetener/typescript-host": "workspace:*",
     "typescript": "npm:@typescript/typescript6@6.0.2"
   }
 }

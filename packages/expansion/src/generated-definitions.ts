@@ -1,5 +1,5 @@
-import type { Phase } from "@sweet-rewrite/hygiene";
-import { parseMacroDefinitions } from "@sweet-rewrite/macro-language";
+import type { Phase } from "@sweetener/hygiene";
+import { parseMacroDefinitions } from "@sweetener/macro-language";
 import type {
   BindingId,
   Diagnostic,
@@ -9,14 +9,14 @@ import type {
   SyntaxId,
   EnvironmentEpoch,
   OriginId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createRootSyntax,
   type GroupSyntax,
   type OriginStore,
   type SyntaxSequence,
   type TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   compileParsedMacros,
   type CompileParsedMacrosResult,

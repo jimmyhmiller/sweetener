@@ -1,7 +1,8 @@
 export * from "./module-diagnostics.js";
+export * from "./script-kind.js";
 export * from "./module-manifest.js";
 
-export const packageName = "@sweet-rewrite/typescript-host" as const;
+export const packageName = "@sweetener/typescript-host" as const;
 export * from "./module-resolver.js";
 export * from "./compiler-host.js";
 export * from "./language-service-host.js";

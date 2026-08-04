@@ -1,4 +1,4 @@
-import type { OriginId, ScopeSetId, SyntaxId } from "@sweet-rewrite/shared";
+import type { OriginId, ScopeSetId, SyntaxId } from "@sweetener/shared";
 import type {
   DelimiterKind,
   LexicalMode,

@@ -10,4 +10,4 @@ export * from "./refinement.js";
 export * from "./shape-inference.js";
 export * from "./syntax-class.js";
 
-export const packageName = "@sweet-rewrite/pattern" as const;
+export const packageName = "@sweetener/pattern" as const;

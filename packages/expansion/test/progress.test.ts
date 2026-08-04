@@ -1,4 +1,4 @@
-import { createPhase } from "@sweet-rewrite/hygiene";
+import { createPhase } from "@sweetener/hygiene";
 import {
   CancellationError,
   CancellationSource,
@@ -10,8 +10,8 @@ import {
   type OriginId,
   type ScopeSetId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
-import { createToken } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import { createToken } from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import {
   CompleteExpansionCache,

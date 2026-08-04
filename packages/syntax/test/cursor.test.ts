@@ -3,7 +3,7 @@ import {
   type OriginId,
   type ScopeSetId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import { describe, expect, it } from "vitest";
 import {
   createGroup,

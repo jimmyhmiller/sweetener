@@ -9,7 +9,7 @@ import {
   type BindingContractKind,
   type BindingContractRegion,
   type SyntaxSpace,
-} from "@sweet-rewrite/hygiene";
+} from "@sweetener/hygiene";
 import {
   createCapturePath,
   createSequenceShape,
@@ -18,7 +18,7 @@ import {
   type CaptureShape,
   type LeafShape,
   type SyntaxClassRegistry,
-} from "@sweet-rewrite/pattern";
+} from "@sweetener/pattern";
 import type {
   CardinalityGroupId,
   CaptureId,
@@ -26,13 +26,13 @@ import type {
   OriginId,
   RuleId,
   SourceId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import type {
   Span,
   Syntax,
   SyntaxCategory,
   TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import type {
   MacroDefinition,
   ParseMacroDefinitionsResult,

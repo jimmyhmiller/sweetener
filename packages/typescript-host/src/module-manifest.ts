@@ -1,5 +1,5 @@
-import type { Diagnostic, SourceId } from "@sweet-rewrite/shared";
-import type { SyntaxCategory } from "@sweet-rewrite/syntax";
+import type { Diagnostic, SourceId } from "@sweetener/shared";
+import type { SyntaxCategory } from "@sweetener/syntax";
 import {
   invalidMacroManifestCode,
   moduleDiagnosticRegistry,

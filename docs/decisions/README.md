@@ -19,6 +19,7 @@ docs/decisions/0002-source-opt-in.md
 | [ADR-0006](0006-invocation-scope-transform.md)                | accepted | introduction flip and invocation use-site scopes     |
 | [ADR-0007](0007-scope-set-intern-key-cache.md)                | accepted | measured scope-set interning optimization            |
 | [ADR-0008](0008-fragment-validation.md)                       | accepted | complete-file TypeScript validation                  |
+| [ADR-0009](0009-directive-opt-in-and-javascript-targets.md)   | accepted | `"use sweetener"` opt-in and JavaScript targets      |
 
 Use this template:
 

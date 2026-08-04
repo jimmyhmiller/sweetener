@@ -11,5 +11,5 @@
     "languageVersion": "1",
     "macroExtensions": [".sts"]
   },
-  "files": ["src/macros.sts", "src/main.sts"]
+  "files": ["src/macros.sts", "src/main.sts", "src/workflow.sts"]
 }

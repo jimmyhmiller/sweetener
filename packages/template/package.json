@@ -1,5 +1,5 @@
 {
-  "name": "@sweet-rewrite/template",
+  "name": "@sweetener/template",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,12 +13,12 @@
     "dist"
   ],
   "dependencies": {
-    "@sweet-rewrite/hygiene": "workspace:*",
-    "@sweet-rewrite/pattern": "workspace:*",
-    "@sweet-rewrite/shared": "workspace:*",
-    "@sweet-rewrite/syntax": "workspace:*"
+    "@sweetener/hygiene": "workspace:*",
+    "@sweetener/pattern": "workspace:*",
+    "@sweetener/shared": "workspace:*",
+    "@sweetener/syntax": "workspace:*"
   },
   "devDependencies": {
-    "@sweet-rewrite/reader": "workspace:*"
+    "@sweetener/reader": "workspace:*"
   }
 }

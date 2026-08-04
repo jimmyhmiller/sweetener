@@ -1,4 +1,4 @@
-import type { ScopeId } from "@sweet-rewrite/shared";
+import type { ScopeId } from "@sweetener/shared";
 
 export type ScopeKind =
   "lexical" | "introduction" | "use-site" | "module" | "generated";

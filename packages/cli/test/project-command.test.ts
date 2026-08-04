@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { runInNewContext } from "node:vm";
-import type { PrintedExpandedFile } from "@sweet-rewrite/printer";
+import type { PrintedExpandedFile } from "@sweetener/printer";
 import { describe, expect, test } from "vitest";
 import * as ts from "typescript";
 import {
@@ -50,6 +50,27 @@ function provider(input: string, text: string): ProjectExpansionProvider {
 }
 
 describe("project commands", () => {
+  test("fails before expansion when the config file cannot be read", () => {
+    const directory = mkdtempSync(join(tmpdir(), "sweet-missing-config-"));
+    let expanded = false;
+    const result = runConfiguredProjectCommand({
+      command: "check",
+      configPath: join(directory, "missing.json"),
+      expansionProvider: {
+        expandProject: () => {
+          expanded = true;
+          return [];
+        },
+      },
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 5083 })]),
+    );
+    expect(expanded).toBe(false);
+  });
+
   test("loads every declarative playground family through the production frontend", () => {
     const fixtureRoot = resolve(
       import.meta.dirname,
@@ -192,6 +213,33 @@ describe("project commands", () => {
     expect(generated).toContain("beforeOperator = 1 %% 2");
     expect(generated).toMatch(/afterOperator\s*=\s*\(?\s*1\)?\s*\+\s*2/u);
     expect(result.diagnostics.map(({ code }) => code)).toContain(2552);
+  });
+
+  test("recursively expands every template substitution without rewriting literal segments", () => {
+    const project = fixture(`
+      syntax twice:expr {
+        rule { twice($value:expr) } => { $value + $value }
+      }
+      export const text = String.raw\`before \${twice(1)} middle \${
+        \`nested \${twice(2)}\`
+      } after\`;
+    `);
+
+    const result = runConfiguredProjectCommand({
+      command: "check",
+      configPath: project.config,
+      writeThrough: false,
+    });
+
+    expect(result.diagnostics).toEqual([]);
+    const generated = result.virtualFiles[0]?.generated.text ?? "";
+    expect(generated).toContain("String.raw`before ${");
+    expect(generated).toMatch(/middle\s+\$\{\s*`nested\s+\$\{/u);
+    expect(generated).toContain("} after`");
+    expect(generated).not.toContain("twice(");
+    const compact = generated.replace(/[\s()]/gu, "");
+    expect(compact.match(/1\+1/gu)).toHaveLength(1);
+    expect(compact.match(/2\+2/gu)).toHaveLength(1);
   });
 
   test("synthesizes and hygienically aliases definition-site runtime imports", () => {

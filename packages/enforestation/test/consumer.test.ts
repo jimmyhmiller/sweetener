@@ -1,4 +1,4 @@
-import { createPhase } from "@sweet-rewrite/hygiene";
+import { createPhase } from "@sweetener/hygiene";
 import {
   CancellationSource,
   createResourceBudget,
@@ -8,14 +8,14 @@ import {
   type OriginId,
   type ScopeSetId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createProtectedSyntax,
   createSyntaxCursor,
   createToken,
   type SyntaxCategory,
   type SyntaxCursor,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import {
   ConsumerProgressError,

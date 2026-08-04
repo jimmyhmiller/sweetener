@@ -1,22 +1,26 @@
-import type { BindingEnvironment } from "@sweet-rewrite/hygiene";
-import type { SyntaxClassConsumer } from "@sweet-rewrite/pattern";
+import type { BindingEnvironment } from "@sweetener/hygiene";
+import type { SyntaxClassConsumer } from "@sweetener/pattern";
 import type {
   BindingId,
   Diagnostic,
   InvocationId,
   SourceId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createGroup,
+  createMissingToken,
   createProtectedSyntax,
+  createRootSyntax,
   createSyntaxCursor,
   createSyntaxSequence,
+  createToken,
   spanEnvelope,
   type ProtectedSyntax,
   type Syntax,
   type SyntaxCategory,
   type SyntaxSequence,
-} from "@sweet-rewrite/syntax";
+  type TokenSyntax,
+} from "@sweetener/syntax";
 import {
   resolveCompiledMacro,
   type CompileParsedMacrosResult,
@@ -62,6 +66,13 @@ export interface ExpandMacroSyntaxOptions extends Omit<
         readonly modules: readonly CompileParsedMacrosResult[];
         readonly lexicalModule: CompileParsedMacrosResult;
         readonly position: number;
+        /**
+         * Source the position belongs to. Definition-order visibility is only
+         * meaningful within one file, and a macro's replacement mixes template
+         * syntax from the defining file with captured syntax from the call
+         * site, so the two must be told apart.
+         */
+        readonly positionSourceId?: SourceId | undefined;
       }) => CompiledMacroBinding | undefined)
     | undefined;
   readonly environment: BindingEnvironment;
@@ -83,6 +94,21 @@ export interface ExpandMacroSyntaxOptions extends Omit<
     readonly lexicalModule: CompileParsedMacrosResult;
     readonly contexts: ReadonlySet<MacroContext>;
   }) => ProtectedSyntax;
+  /**
+   * Enforest a brace body as a statement list, or return undefined when it
+   * does not parse as one.
+   *
+   * A replacement is expanded while it is still raw, so a block spliced into
+   * it — a captured statement, for instance — is walked under the enclosing
+   * category and its interior expressions are never categorized. Enforesting
+   * the block on the way in gives those positions their real categories.
+   */
+  readonly enforestStatements?:
+    | ((request: {
+        readonly syntax: SyntaxSequence;
+        readonly contexts: ReadonlySet<MacroContext>;
+      }) => SyntaxSequence | undefined)
+    | undefined;
 }
 
 export interface ExpandMacroSyntaxResult {
@@ -102,6 +128,11 @@ const itemDispatchPrefixes = new Set([
   "async",
   "abstract",
 ]);
+
+/** Whether a spelling is punctuation rather than an identifier. */
+function punctuationSpelled(spelling: string): boolean {
+  return !/^[\p{ID_Start}_$]/u.test(spelling);
+}
 
 function operatorWidthAt(
   syntax: SyntaxSequence,
@@ -131,6 +162,37 @@ export function expandMacroSyntax(
   if (activeModules.length === 0)
     throw new RangeError("Expansion requires at least one macro module");
   let activeExpansionEnvironment = options.expansionEnvironment;
+
+  const addScopes = (syntax: Syntax, added: Syntax["scopes"]): Syntax => {
+    const scopes = options.scopeStore.union(syntax.scopes, added);
+    switch (syntax.tag) {
+      case "token":
+        return createToken({ ...syntax, scopes });
+      case "group":
+        return createGroup({
+          ...syntax,
+          scopes,
+          open: addScopes(syntax.open, added) as TokenSyntax,
+          children: syntax.children.map((child) => addScopes(child, added)),
+          close:
+            syntax.close.tag === "token"
+              ? (addScopes(syntax.close, added) as TokenSyntax)
+              : createMissingToken({ ...syntax.close, scopes }),
+        });
+      case "protected":
+        return createProtectedSyntax({
+          ...syntax,
+          scopes,
+          children: syntax.children.map((child) => addScopes(child, added)),
+        });
+      case "root":
+        return createRootSyntax({
+          ...syntax,
+          scopes,
+          children: syntax.children.map((child) => addScopes(child, added)),
+        });
+    }
+  };
 
   const enforestSequence = (
     syntax: SyntaxSequence,
@@ -185,7 +247,7 @@ export function expandMacroSyntax(
   };
 
   const visit = (
-    input: SyntaxSequence,
+    initialInput: SyntaxSequence,
     environment: BindingEnvironment,
     category: SyntaxCategory,
     parentInvocation: InvocationId | undefined,
@@ -197,6 +259,7 @@ export function expandMacroSyntax(
     readonly syntax: SyntaxSequence;
     readonly environment: BindingEnvironment;
   } => {
+    let input = initialInput;
     const output: Syntax[] = [];
     let currentEnvironment = environment;
     let index = 0;
@@ -256,7 +319,13 @@ export function expandMacroSyntax(
         index += coreBody === compactCoreBody ? 2 : 3;
         continue;
       }
-      const resolveSpelling = (spelling: string, position: number) => {
+      const sourceOf = (syntax: Syntax): SourceId | undefined =>
+        options.origins.selectPrimarySource(syntax.origin)?.sourceId;
+      const resolveSpelling = (
+        spelling: string,
+        position: number,
+        positionSourceId?: SourceId | undefined,
+      ) => {
         const recursiveMacro = lexicalModule.get(spelling, category);
         if (
           recursiveBinding !== undefined &&
@@ -276,6 +345,7 @@ export function expandMacroSyntax(
             modules: activeModules,
             lexicalModule,
             position,
+            positionSourceId,
           });
         }
         return options.expansionStore !== undefined &&
@@ -301,7 +371,7 @@ export function expandMacroSyntax(
       let resolvedSpelling = node.tag === "token" ? node.raw : "";
       let resolvedMacro =
         node.tag === "token"
-          ? resolveSpelling(node.raw, node.span.start)
+          ? resolveSpelling(node.raw, node.span.start, sourceOf(node))
           : undefined;
       if (
         resolvedMacro === undefined &&
@@ -314,6 +384,12 @@ export function expandMacroSyntax(
             (candidate) =>
               candidate.category === category &&
               candidate.binding.kind === "macro" &&
+              // Only a punctuation-spelled macro turns its enclosing
+              // parentheses into the invocation. An identifier-spelled macro
+              // in this position is just the head of a parenthesized
+              // expression, and treating the group as its invocation consumes
+              // the parentheses and stops the expander from descending.
+              punctuationSpelled(candidate.binding.spelling) &&
               operatorWidthAt(node.children, 0, candidate.binding.spelling) !==
                 undefined,
           )
@@ -325,6 +401,7 @@ export function expandMacroSyntax(
           const visible = resolveSpelling(
             candidate.binding.spelling,
             node.span.start,
+            sourceOf(node),
           );
           if (visible?.binding.id !== candidate.binding.id) continue;
           resolvedMacro = visible;
@@ -350,6 +427,7 @@ export function expandMacroSyntax(
           const visible = resolveSpelling(
             candidate.binding.spelling,
             node.span.start,
+            sourceOf(node),
           );
           if (visible?.binding.id !== candidate.binding.id) continue;
           resolvedMacro = visible;
@@ -372,7 +450,11 @@ export function expandMacroSyntax(
         }
         const candidate = input[candidateIndex];
         if (candidate?.tag === "token") {
-          resolvedMacro = resolveSpelling(candidate.raw, candidate.span.start);
+          resolvedMacro = resolveSpelling(
+            candidate.raw,
+            candidate.span.start,
+            sourceOf(candidate),
+          );
           resolvedHeadIndex = candidateIndex;
           resolvedSpelling = candidate.raw;
         }
@@ -410,7 +492,11 @@ export function expandMacroSyntax(
               const candidateMacro =
                 width === undefined
                   ? undefined
-                  : resolveSpelling(operator.spelling, candidate.span.start);
+                  : resolveSpelling(
+                      operator.spelling,
+                      candidate.span.start,
+                      sourceOf(candidate),
+                    );
               return candidateMacro === undefined ||
                 candidateMacro.binding.id !== operator.binding
                 ? []
@@ -512,8 +598,21 @@ export function expandMacroSyntax(
                 children: createSyntaxSequence(request.syntax),
               });
             }
+            // Give a statement replacement its interior categories before it
+            // is walked, so that a macro spliced into an expression position
+            // inside it is recognized as an expression. A replacement that
+            // does not yet parse as a statement list — because it still holds
+            // an unexpanded invocation the parser cannot place — is walked raw
+            // exactly as before.
+            const preEnforested =
+              request.category === "stmt"
+                ? options.enforestStatements?.({
+                    syntax: request.syntax,
+                    contexts,
+                  })
+                : undefined;
             const nested = visit(
-              createSyntaxSequence(request.syntax),
+              createSyntaxSequence(preEnforested ?? request.syntax),
               request.environment,
               request.category,
               request.invocationId,
@@ -551,6 +650,14 @@ export function expandMacroSyntax(
         }
         if (!eraseReplacement) output.push(...result.syntax.children);
         currentEnvironment = replacementEnvironment ?? result.environment;
+        if (options.scopeStore.size(result.followingScopes) > 0) {
+          input = createSyntaxSequence([
+            ...input.slice(0, result.cursor.index),
+            ...input
+              .slice(result.cursor.index)
+              .map((syntax) => addScopes(syntax, result.followingScopes)),
+          ]);
+        }
         index = result.cursor.index;
         continue;
       }
@@ -587,6 +694,53 @@ export function expandMacroSyntax(
               ...node,
               id: options.allocateSyntaxId(),
               children: createSyntaxSequence(jsxChildren),
+            }),
+          );
+          index += 1;
+          continue;
+        }
+        if (node.tag === "group" && node.delimiter === "template") {
+          const children: Syntax[] = [];
+          let substitution: Syntax[] = [];
+          const expandSubstitution = () => {
+            if (substitution.length === 0) return;
+            const enforested = enforestSequence(
+              createSyntaxSequence(substitution),
+              "expr",
+              lexicalModule,
+              contexts,
+            );
+            const nested = visit(
+              createSyntaxSequence([enforested]),
+              currentEnvironment,
+              "expr",
+              parentInvocation,
+              lexicalModule,
+              contexts,
+              false,
+              recursiveBinding,
+            );
+            currentEnvironment = nested.environment;
+            children.push(...nested.syntax);
+            substitution = [];
+          };
+          for (const child of node.children) {
+            if (
+              child.tag === "token" &&
+              (child.kind === "template-head" ||
+                child.kind === "template-middle" ||
+                child.kind === "template-tail")
+            ) {
+              expandSubstitution();
+              children.push(child);
+            } else substitution.push(child);
+          }
+          expandSubstitution();
+          output.push(
+            createGroup({
+              ...node,
+              id: options.allocateSyntaxId(),
+              children: createSyntaxSequence(children),
             }),
           );
           index += 1;
@@ -652,8 +806,24 @@ export function expandMacroSyntax(
           index += 1;
           continue;
         }
+        // A raw brace body reached under a statement or item category is a
+        // statement list. Enforesting it here assigns interior categories, so
+        // an expression macro inside it is seen as an expression rather than
+        // walked as part of the enclosing statement. A body that is already
+        // enforested, or that does not parse as a statement list, is left for
+        // the ordinary descent below.
+        const statementBody =
+          node.tag === "group" &&
+          node.delimiter === "brace" &&
+          (category === "stmt" || category === "item") &&
+          node.children.some((child) => child.tag === "token")
+            ? options.enforestStatements?.({
+                syntax: node.children,
+                contexts,
+              })
+            : undefined;
         const nested = visit(
-          createSyntaxSequence(node.children),
+          createSyntaxSequence(statementBody ?? node.children),
           currentEnvironment,
           node.tag === "protected" ? node.category : category,
           parentInvocation,

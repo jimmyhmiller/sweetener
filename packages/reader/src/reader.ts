@@ -9,7 +9,7 @@ import {
   type ScopeSetId,
   type SourceId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createGroup,
   createMissingToken,
@@ -22,7 +22,7 @@ import {
   type RootSyntax,
   type Syntax,
   type TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   missingCloserCode,
   readerDiagnosticRegistry,

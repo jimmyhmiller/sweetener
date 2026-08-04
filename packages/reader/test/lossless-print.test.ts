@@ -5,13 +5,13 @@ import {
   createResourceBudget,
   type ScopeSetId,
   type SourceId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createSyntaxCursor,
   syntaxStructuralEquals,
   type RootSyntax,
   type Syntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import { describe, expect, it } from "vitest";
 import { printLossless, readSyntax } from "../src/index.js";
 

@@ -1,4 +1,4 @@
-import { DiagnosticRegistry, diagnosticCode } from "@sweet-rewrite/shared";
+import { DiagnosticRegistry, diagnosticCode } from "@sweetener/shared";
 
 export const scannerErrorCode = diagnosticCode("SWR1001");
 export const unexpectedCloserCode = diagnosticCode("SWR1002");

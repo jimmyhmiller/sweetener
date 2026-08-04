@@ -5,7 +5,7 @@ import {
   type CaptureShape,
   type CaptureShapeBinding,
   type LeafShape,
-} from "@sweet-rewrite/pattern";
+} from "@sweetener/pattern";
 import type {
   CaptureId,
   CardinalityGroupId,
@@ -13,13 +13,8 @@ import type {
   OriginId,
   SourceId,
   SyntaxClassId,
-} from "@sweet-rewrite/shared";
-import type {
-  GroupSyntax,
-  Span,
-  Syntax,
-  TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import type { GroupSyntax, Span, Syntax, TokenSyntax } from "@sweetener/syntax";
 import {
   createCaptureTemplate,
   createConditionalTemplate,

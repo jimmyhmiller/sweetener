@@ -11,7 +11,7 @@ import {
   type SourceId,
   type SyntaxClassId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createGroup,
   createSpan,
@@ -19,7 +19,7 @@ import {
   type Syntax,
   type SyntaxCursor,
   type TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import { describe, expect, it } from "vitest";
 import {
   compileMatcherProgram,

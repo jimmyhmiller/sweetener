@@ -1,9 +1,5 @@
-import type { CaptureId } from "@sweet-rewrite/shared";
-import type {
-  DelimiterKind,
-  TokenKind,
-  TokenSyntax,
-} from "@sweet-rewrite/syntax";
+import type { CaptureId } from "@sweetener/shared";
+import type { DelimiterKind, TokenKind, TokenSyntax } from "@sweetener/syntax";
 import type { LiteralKey } from "./ast.js";
 import type { CaptureRecord, CaptureValue } from "./capture-record.js";
 

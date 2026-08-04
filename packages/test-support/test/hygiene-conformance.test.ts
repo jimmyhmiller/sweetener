@@ -11,7 +11,7 @@ import {
   runtimePhase,
   ScopeStore,
   syntaxPhase,
-} from "@sweet-rewrite/hygiene";
+} from "@sweetener/hygiene";
 import {
   CaptureRecord,
   createCaptureLeaf,
@@ -19,8 +19,8 @@ import {
   createCaptureSequence,
   type CaptureLeaf,
   type CaptureValue,
-} from "@sweet-rewrite/pattern";
-import { assignPrintedNames } from "@sweet-rewrite/printer";
+} from "@sweetener/pattern";
+import { assignPrintedNames } from "@sweetener/printer";
 import {
   createIdAllocator,
   type BindingId,
@@ -31,19 +31,15 @@ import {
   type SourceId,
   type SyntaxClassId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
-import {
-  createToken,
-  OriginStore,
-  type TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import { createToken, OriginStore, type TokenSyntax } from "@sweetener/syntax";
 import {
   createHygieneOperationTemplate,
   createSequenceTemplate,
   evaluateTemplate,
   instantiateTemplate,
   type EvaluatedTemplate,
-} from "@sweet-rewrite/template";
+} from "@sweetener/template";
 import { describe, expect, test } from "vitest";
 import { loadFixture } from "../src/index.js";
 

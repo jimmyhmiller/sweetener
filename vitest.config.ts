@@ -4,5 +4,11 @@ export default defineConfig({
   test: {
     include: ["packages/*/test/**/*.test.ts"],
     reporters: ["default"],
+    // Acceptance tests construct, check, and execute whole TypeScript programs.
+    // Vitest's five-second default is close enough to their real cost that
+    // parallel workers push some of them over it, which reads as an unrelated
+    // failure rather than as contention.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });

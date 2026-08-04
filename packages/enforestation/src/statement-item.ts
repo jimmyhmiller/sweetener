@@ -1,12 +1,16 @@
 import {
+  createGroup,
   createProtectedSyntax,
+  createSyntaxCursor,
+  createSyntaxSequence,
+  type GroupSyntax,
   type OriginStore,
   type ProtectedSyntax,
   type Syntax,
   type SyntaxCategory,
   type SyntaxCursor,
   type TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   createConsumerFailure,
   type ConsumerAttempt,
@@ -19,7 +23,10 @@ import {
 } from "./pratt-expression.js";
 import { StopSet } from "./stop-set.js";
 import { createBindingConsumer } from "./binding-parameter.js";
-import { createTypeConsumer } from "./type-class-element.js";
+import {
+  createClassElementConsumer,
+  createTypeConsumer,
+} from "./type-class-element.js";
 
 export type StatementItemMacroResolver = (
   category: "stmt" | "item",
@@ -108,6 +115,19 @@ function token(
 
 function braceGroup(syntax: Syntax | undefined): boolean {
   return syntax?.tag === "group" && syntax.delimiter === "brace";
+}
+
+/**
+ * Whether a declaration's scanned head marks a generator, so that its body
+ * admits `yield`. The star follows `function` for a declaration and precedes
+ * the name for a class method.
+ */
+function declaresGenerator(children: readonly Syntax[]): boolean {
+  return children.some(
+    (node, index) =>
+      token(node, "*") &&
+      children.slice(0, index).every((prior) => prior.tag === "token"),
+  );
 }
 
 function leadingLineBreak(syntax: Syntax | undefined): boolean {
@@ -235,6 +255,13 @@ class StatementConsumer implements SyntaxConsumer {
   consume(cursor: SyntaxCursor, context: ConsumerContext): ConsumerAttempt {
     const start = cursor.index;
     checkWork(context);
+    // Input that is already a statement, such as a replacement enforested on
+    // its way into expansion, is taken as-is instead of re-parsed.
+    const enforested = cursor.peek();
+    if (enforested?.tag === "protected" && enforested.category === "stmt") {
+      cursor.advance();
+      return Object.freeze({ matched: true, syntax: enforested, cursor });
+    }
     const macro = this.options.resolveMacro?.("stmt", cursor, context);
     if (macro !== undefined) return validateMacroAttempt(macro, "stmt", start);
     const first = cursor.peek();
@@ -245,7 +272,9 @@ class StatementConsumer implements SyntaxConsumer {
       cursor.advance();
       return Object.freeze({
         matched: true,
-        syntax: protect("stmt", this.options, [first]),
+        syntax: protect("stmt", this.options, [
+          this.enforestBlock(first, context),
+        ]),
         cursor,
       });
     }
@@ -273,7 +302,7 @@ class StatementConsumer implements SyntaxConsumer {
       return this.#consumeRestricted(cursor, context, start, keyword!);
     }
     if (["const", "let", "var"].includes(keyword ?? "")) {
-      return this.#consumeScanned(cursor, context, start, false);
+      return this.#consumeVariable(cursor, context, start);
     }
     if (
       [
@@ -288,7 +317,13 @@ class StatementConsumer implements SyntaxConsumer {
         "syntax",
       ].includes(keyword ?? "")
     ) {
-      return this.#consumeScanned(cursor, context, start, true);
+      // Only a function or namespace body is a statement list. A class, enum,
+      // or interface body is a member list and needs its own consumer, so it
+      // stays opaque here.
+      const statementBody = ["function", "namespace", "module"].includes(
+        keyword ?? "",
+      );
+      return this.#consumeScanned(cursor, context, start, true, statementBody);
     }
     return this.#consumeExpression(cursor, context, start);
   }
@@ -298,6 +333,53 @@ class StatementConsumer implements SyntaxConsumer {
     context: ConsumerContext,
   ): ConsumerAttempt {
     return this.consume(cursor, context);
+  }
+
+  /**
+   * Enforest a brace-delimited block as a statement list.
+   *
+   * Without this the block is carried through as an opaque token tree, and the
+   * expander only ever walks its raw children under the enclosing category.
+   * That let a statement macro at the head of a block expand while every macro
+   * in an expression position inside the block was silently left alone.
+   *
+   * A block whose contents do not enforest is returned unchanged rather than
+   * failing the enclosing statement: the block may hold syntax this consumer
+   * does not model, and TypeScript reports anything genuinely malformed.
+   */
+  enforestBlock(
+    block: GroupSyntax,
+    context: ConsumerContext,
+    allowYield?: boolean,
+  ): Syntax {
+    if (block.children.length === 0) return block;
+    let inner = createSyntaxCursor(block.children);
+    const statements: Syntax[] = [];
+    const blockContext = Object.freeze({
+      ...context,
+      category: "stmt" as const,
+      // Stop tokens belong to the enclosing construct; inside the braces the
+      // statement list runs to the closing delimiter.
+      stopSet: StopSet.empty,
+      // `yield` is only a statement inside a generator. Inheriting the
+      // enclosing permission would fail to enforest a generator body reached
+      // from a non-generator context, which silently skips expansion there.
+      ...(allowYield === undefined ? {} : { allowYield }),
+    });
+    while (!inner.atEnd) {
+      const before = inner.index;
+      const attempt = this.consume(inner, blockContext);
+      if (!attempt.matched || attempt.cursor.index <= before) return block;
+      statements.push(attempt.syntax);
+      // The macro-resolver path returns a fresh cursor rather than advancing
+      // the one it was given, so the result must be threaded through.
+      inner = attempt.cursor;
+    }
+    return createGroup({
+      ...block,
+      id: this.options.allocateSyntaxId(),
+      children: createSyntaxSequence(statements),
+    });
   }
 
   #consumeIf(
@@ -407,7 +489,7 @@ class StatementConsumer implements SyntaxConsumer {
 
   #consumeTry(
     cursor: SyntaxCursor,
-    _context: ConsumerContext,
+    context: ConsumerContext,
     start: number,
   ): ConsumerAttempt {
     const children: Syntax[] = [cursor.consume()!];
@@ -415,7 +497,8 @@ class StatementConsumer implements SyntaxConsumer {
     if (body?.tag !== "group" || body.delimiter !== "brace") {
       return failure("stmt", cursor, start, ["try block"], 40);
     }
-    children.push(cursor.consume()!);
+    cursor.advance();
+    children.push(this.enforestBlock(body, context));
     let handler = false;
     if (token(cursor.peek(), "catch")) {
       handler = true;
@@ -428,7 +511,8 @@ class StatementConsumer implements SyntaxConsumer {
       if (catchBody?.tag !== "group" || catchBody.delimiter !== "brace") {
         return failure("stmt", cursor, start, ["catch block"], 40);
       }
-      children.push(cursor.consume()!);
+      cursor.advance();
+      children.push(this.enforestBlock(catchBody, context));
     }
     if (token(cursor.peek(), "finally")) {
       handler = true;
@@ -437,7 +521,8 @@ class StatementConsumer implements SyntaxConsumer {
       if (finallyBody?.tag !== "group" || finallyBody.delimiter !== "brace") {
         return failure("stmt", cursor, start, ["finally block"], 40);
       }
-      children.push(cursor.consume()!);
+      cursor.advance();
+      children.push(this.enforestBlock(finallyBody, context));
     }
     if (!handler)
       return failure("stmt", cursor, start, ["catch or finally clause"], 40);
@@ -500,11 +585,67 @@ class StatementConsumer implements SyntaxConsumer {
     });
   }
 
+  /**
+   * `const`/`let`/`var` in statement position.
+   *
+   * The declarator head is scanned rather than parsed, but the initializer is
+   * enforested as an expression so that macros can be invoked there. Scanning
+   * the whole declaration, as this previously did, meant `const a = m(x);`
+   * inside any block never saw its expression macros expanded, while the same
+   * declaration at module level did.
+   */
+  #consumeVariable(
+    cursor: SyntaxCursor,
+    context: ConsumerContext,
+    start: number,
+  ): ConsumerAttempt {
+    const children: Syntax[] = [cursor.consume()!];
+    while (!cursor.atEnd && !context.stopSet.matches(cursor)) {
+      checkWork(context);
+      const next = cursor.peek()!;
+      if (token(next, ";")) break;
+      if (token(next, "=")) {
+        children.push(cursor.consume()!);
+        const expression = this.#expression.consume(cursor, {
+          ...context,
+          category: "expr",
+          stopSet: context.stopSet.union(
+            new StopSet(
+              [",", ";"].map((value) => ({
+                kind: "token" as const,
+                raw: value,
+              })),
+            ),
+          ),
+        });
+        if (!expression.matched)
+          return failure("stmt", cursor, start, ["variable initializer"], 40);
+        children.push(expression.syntax);
+        continue;
+      }
+      if (
+        children.length > 1 &&
+        leadingLineBreak(next) &&
+        statementStarts.has(raw(next) ?? "")
+      )
+        break;
+      children.push(cursor.consume()!);
+    }
+    const terminator = requireTerminator("stmt", cursor, start, children);
+    if (terminator !== undefined) return terminator;
+    return Object.freeze({
+      matched: true,
+      syntax: protect("stmt", this.options, children),
+      cursor,
+    });
+  }
+
   #consumeScanned(
     cursor: SyntaxCursor,
     context: ConsumerContext,
     start: number,
     endsAtBlock: boolean,
+    statementBody = false,
   ): ConsumerAttempt {
     const children: Syntax[] = [];
     while (!cursor.atEnd && !context.stopSet.matches(cursor)) {
@@ -516,10 +657,17 @@ class StatementConsumer implements SyntaxConsumer {
         statementStarts.has(raw(next) ?? "")
       )
         break;
-      children.push(cursor.consume()!);
-      if (token(next, ";")) break;
-      if (endsAtBlock && next.tag === "group" && next.delimiter === "brace")
+      cursor.advance();
+      if (endsAtBlock && next.tag === "group" && next.delimiter === "brace") {
+        children.push(
+          statementBody
+            ? this.enforestBlock(next, context, declaresGenerator(children))
+            : next,
+        );
         break;
+      }
+      children.push(next);
+      if (token(next, ";")) break;
     }
     if (
       endsAtBlock &&
@@ -571,7 +719,8 @@ class StatementConsumer implements SyntaxConsumer {
 }
 
 class ItemConsumer implements SyntaxConsumer {
-  readonly #statement: SyntaxConsumer;
+  readonly #classElement: SyntaxConsumer;
+  readonly #statement: StatementConsumer;
   readonly #expression: SyntaxConsumer;
   readonly #binding: SyntaxConsumer;
   readonly #type: SyntaxConsumer;
@@ -588,7 +737,45 @@ class ItemConsumer implements SyntaxConsumer {
     };
     this.#binding = createBindingConsumer(shared);
     this.#type = createTypeConsumer(shared);
+    this.#classElement = createClassElementConsumer({
+      ...shared,
+      enforestStatementBlock: (block, blockContext) =>
+        this.#statement.enforestBlock(block, blockContext),
+    });
     Object.freeze(this);
+  }
+
+  /**
+   * Enforest a class body as a list of class elements.
+   *
+   * Protecting the raw body as `classElement`, as this previously did, never
+   * ran the element consumer over it, so a method body was never reached and
+   * macros inside methods were left unexpanded.
+   *
+   * A body that does not enforest is returned unchanged; TypeScript reports
+   * anything genuinely malformed.
+   */
+  #enforestClassBody(body: GroupSyntax, context: ConsumerContext): Syntax {
+    if (body.children.length === 0) return body;
+    let inner = createSyntaxCursor(body.children);
+    const elements: Syntax[] = [];
+    const elementContext = Object.freeze({
+      ...context,
+      category: "classElement" as const,
+      stopSet: StopSet.empty,
+    });
+    while (!inner.atEnd) {
+      const before = inner.index;
+      const attempt = this.#classElement.consume(inner, elementContext);
+      if (!attempt.matched || attempt.cursor.index <= before) return body;
+      elements.push(attempt.syntax);
+      inner = attempt.cursor;
+    }
+    return createGroup({
+      ...body,
+      id: this.options.allocateSyntaxId(),
+      children: createSyntaxSequence(elements),
+    });
   }
 
   #consumeVariable(
@@ -738,7 +925,20 @@ class ItemConsumer implements SyntaxConsumer {
               : undefined;
         if (bodyCategory !== undefined)
           children[children.length - 1] = protect(bodyCategory, this.options, [
-            body,
+            // A function body is a statement list and a class body is an
+            // element list; both are enforested as such. Protecting the raw
+            // group instead only let the expander walk its tokens under the
+            // body's category, which reached a macro at the head of the body
+            // and nothing else.
+            bodyCategory === "stmt"
+              ? this.#statement.enforestBlock(
+                  body,
+                  context,
+                  declaresGenerator(children),
+                )
+              : bodyCategory === "classElement"
+                ? this.#enforestClassBody(body, context)
+                : body,
           ]);
       }
       return Object.freeze({
@@ -765,9 +965,18 @@ class ItemConsumer implements SyntaxConsumer {
   }
 }
 
+/**
+ * A statement consumer that can also enforest a brace-delimited statement
+ * list. Consumers for other categories that contain statement bodies — class
+ * methods, for instance — delegate their bodies here.
+ */
+export interface StatementBlockConsumer extends SyntaxConsumer {
+  enforestBlock(block: GroupSyntax, context: ConsumerContext): Syntax;
+}
+
 export function createStatementConsumer(
   options: StatementItemConsumerOptions,
-): SyntaxConsumer {
+): StatementBlockConsumer {
   return Object.freeze(new StatementConsumer(options));
 }
 

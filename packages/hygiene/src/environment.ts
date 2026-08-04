@@ -6,7 +6,7 @@ import {
   type EnvironmentId,
   type OriginId,
   type ScopeSetId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   bindingVisibleAt,
   createBinding,

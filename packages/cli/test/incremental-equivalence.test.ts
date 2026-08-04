@@ -1,4 +1,4 @@
-import type { PrintedExpandedFile } from "@sweet-rewrite/printer";
+import type { PrintedExpandedFile } from "@sweetener/printer";
 import { runInNewContext } from "node:vm";
 import { describe, expect, test } from "vitest";
 import * as ts from "typescript";

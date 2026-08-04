@@ -5,7 +5,7 @@ import type {
   OriginId,
   RepetitionId,
   SyntaxClassId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import { describe, expect, it } from "vitest";
 import {
   createBindingLiteralKey,

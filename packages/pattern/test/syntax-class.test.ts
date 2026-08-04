@@ -6,13 +6,13 @@ import type {
   SourceId,
   SyntaxClassId,
   SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createSyntaxCursor,
   createSpan,
   createToken,
   type Syntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import { describe, expect, it } from "vitest";
 import {
   compileSyntaxClasses,

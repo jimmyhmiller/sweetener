@@ -5,9 +5,9 @@ import {
   type CompileSyntaxClassesResult,
   type RefinementPredicate,
   type SyntaxClassRefinementInput,
-} from "@sweet-rewrite/pattern";
-import type { Diagnostic, OriginId, SourceId } from "@sweet-rewrite/shared";
-import type { Span, TokenSyntax } from "@sweet-rewrite/syntax";
+} from "@sweetener/pattern";
+import type { Diagnostic, OriginId, SourceId } from "@sweetener/shared";
+import type { Span, TokenSyntax } from "@sweetener/syntax";
 import type { ParseMacroDefinitionsResult } from "./parser/index.js";
 
 export interface CompileParsedSyntaxClassesOptions {

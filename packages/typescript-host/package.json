@@ -1,5 +1,5 @@
 {
-  "name": "@sweet-rewrite/typescript-host",
+  "name": "@sweetener/typescript-host",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,11 +13,11 @@
     "dist"
   ],
   "dependencies": {
-    "@sweet-rewrite/shared": "workspace:*",
-    "@sweet-rewrite/syntax": "workspace:*",
-    "@sweet-rewrite/printer": "workspace:*",
-    "@sweet-rewrite/reader": "workspace:*",
-    "@sweet-rewrite/hygiene": "workspace:*",
+    "@sweetener/shared": "workspace:*",
+    "@sweetener/syntax": "workspace:*",
+    "@sweetener/printer": "workspace:*",
+    "@sweetener/reader": "workspace:*",
+    "@sweetener/hygiene": "workspace:*",
     "typescript": "npm:@typescript/typescript6@6.0.2"
   }
 }

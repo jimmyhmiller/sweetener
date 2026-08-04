@@ -1,5 +1,5 @@
 {
-  "name": "@sweet-rewrite/macro-language",
+  "name": "@sweetener/macro-language",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,14 +13,14 @@
     "dist"
   ],
   "dependencies": {
-    "@sweet-rewrite/hygiene": "workspace:*",
-    "@sweet-rewrite/pattern": "workspace:*",
-    "@sweet-rewrite/shared": "workspace:*",
-    "@sweet-rewrite/syntax": "workspace:*",
-    "@sweet-rewrite/template": "workspace:*"
+    "@sweetener/hygiene": "workspace:*",
+    "@sweetener/pattern": "workspace:*",
+    "@sweetener/shared": "workspace:*",
+    "@sweetener/syntax": "workspace:*",
+    "@sweetener/template": "workspace:*"
   },
   "devDependencies": {
-    "@sweet-rewrite/enforestation": "workspace:*",
-    "@sweet-rewrite/reader": "workspace:*"
+    "@sweetener/enforestation": "workspace:*",
+    "@sweetener/reader": "workspace:*"
   }
 }

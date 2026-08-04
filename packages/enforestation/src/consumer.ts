@@ -1,17 +1,17 @@
-import type { Phase } from "@sweet-rewrite/hygiene";
+import type { Phase } from "@sweetener/hygiene";
 import {
   neverCancelled,
   type CancellationToken,
   type EnvironmentEpoch,
   type ResourceTracker,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   SyntaxRange,
   type CursorIdentity,
   type ProtectedSyntax,
   type SyntaxCategory,
   type SyntaxCursor,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import { StopSet } from "./stop-set.js";
 
 export interface ConsumerFailure {

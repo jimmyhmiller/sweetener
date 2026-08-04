@@ -2,16 +2,16 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { watchConfiguredProject } from "@sweet-rewrite/cli";
+import { watchConfiguredProject } from "@sweetener/cli";
 import ts from "typescript";
 
 const directory = import.meta.dirname;
-const consumerRoot = process.env["SWEET_REWRITE_CONSUMER_ROOT"]
-  ? resolve(process.env["SWEET_REWRITE_CONSUMER_ROOT"])
+const consumerRoot = process.env["SWEETENER_CONSUMER_ROOT"]
+  ? resolve(process.env["SWEETENER_CONSUMER_ROOT"])
   : directory;
 const executable = resolve(
   consumerRoot,
-  "node_modules/@sweet-rewrite/cli/dist/src/bin.js",
+  "node_modules/@sweetener/cli/dist/src/bin.js",
 );
 const started = performance.now();
 const output = execFileSync(
@@ -34,8 +34,15 @@ const explanation = JSON.parse(
 );
 const generated = readFileSync(resolve(directory, "dist/main.js"), "utf8");
 const declaration = readFileSync(resolve(directory, "dist/main.d.ts"), "utf8");
+const workflowDeclaration = readFileSync(
+  resolve(directory, "dist/workflow.d.ts"),
+  "utf8",
+);
 const runtime = await import(
   `${pathToFileURL(resolve(directory, "dist/main.js")).href}?${String(Date.now())}`
+);
+const workflow = await import(
+  `${pathToFileURL(resolve(directory, "dist/workflow.js")).href}?${String(Date.now())}`
 );
 const callbacks = new Map();
 const results = [];
@@ -106,7 +113,16 @@ if (JSON.stringify(runtime.answer) !== "[21,21]")
 if (runtime.generated !== 7) throw new Error("item runtime value is incorrect");
 if (runtime.piped !== 42)
   throw new Error("operator runtime value is incorrect");
+if (!workflowDeclaration.includes("class OrderPlaced"))
+  throw new Error("generated event declaration is missing");
+if (
+  JSON.stringify(workflow.audit) !== '["A-17",42.5]' ||
+  workflow.transformed !== 4250 ||
+  JSON.stringify(workflow.copies) !== '["A-17","A-17"]' ||
+  workflow.readyToShip(workflow.order) !== "A-17:4250"
+)
+  throw new Error("composed workflow runtime behavior is incorrect");
 
 process.stdout.write(
-  `${JSON.stringify({ cli: "pass", expand: "pass", explain: "pass", watchCallSite: "pass", watchMacro: "pass", expression: "pass", statement: "pass", item: "pass", type: "pass", operator: "pass", declaration: "pass", runtime: "pass", buildMs })}\n`,
+  `${JSON.stringify({ cli: "pass", expand: "pass", explain: "pass", watchCallSite: "pass", watchMacro: "pass", expression: "pass", statement: "pass", item: "pass", type: "pass", operator: "pass", declaration: "pass", runtime: "pass", composedWorkflow: "pass", buildMs })}\n`,
 );

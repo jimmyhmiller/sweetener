@@ -10,7 +10,7 @@ const rules = Object.freeze([
   {
     id: "compiler-import",
     pattern:
-      /\b(?:import|export)\s+[\s\S]*?\bfrom\s*["'](?:node:|typescript(?:["'/])|@sweet-rewrite\/|[^"']*packages\/)[^"']*["']/gu,
+      /\b(?:import|export)\s+[\s\S]*?\bfrom\s*["'](?:node:|typescript(?:["'/])|@sweetener\/|[^"']*packages\/)[^"']*["']/gu,
     message:
       "acceptance macros cannot import compiler internals or host modules",
   },

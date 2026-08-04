@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type { OriginId, SourceId } from "@sweet-rewrite/shared";
+import type { OriginId, SourceId } from "@sweetener/shared";
 import { parseCliInvocation, runCli } from "../src/index.js";
 
 describe("sweet-ts command line", () => {
@@ -39,7 +39,7 @@ describe("sweet-ts command line", () => {
     expect(result.exitCode).toBe(1);
     expect(stdout).toEqual([]);
     expect(stderr.join("")).toContain(
-      "Expected check, build, watch, expand, or explain",
+      "Expected check, build, watch, expand, explain, or emit",
     );
   });
 

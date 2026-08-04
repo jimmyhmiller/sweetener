@@ -1,4 +1,4 @@
-export const packageName = "@sweet-rewrite/printer" as const;
+export const packageName = "@sweetener/printer" as const;
 export * from "./name-assignment.js";
 export * from "./print-assigned.js";
 export * from "./hygienic-plan.js";

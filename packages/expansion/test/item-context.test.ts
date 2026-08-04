@@ -1,7 +1,7 @@
-import { createBinding, createPhase } from "@sweet-rewrite/hygiene";
-import { createItemConsumer } from "@sweet-rewrite/enforestation";
-import { parseMacroDefinitions } from "@sweet-rewrite/macro-language";
-import { printLosslessSequence, readSyntax } from "@sweet-rewrite/reader";
+import { createBinding, createPhase } from "@sweetener/hygiene";
+import { createItemConsumer } from "@sweetener/enforestation";
+import { parseMacroDefinitions } from "@sweetener/macro-language";
+import { printLosslessSequence, readSyntax } from "@sweetener/reader";
 import {
   createIdAllocator,
   createResourceBudget,
@@ -10,12 +10,12 @@ import {
   type ScopeSetId,
   type SourceId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createSyntaxCursor,
   createSyntaxSequence,
   OriginStore,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import { ExpansionEnvironmentStore, processItemContext } from "../src/index.js";
 

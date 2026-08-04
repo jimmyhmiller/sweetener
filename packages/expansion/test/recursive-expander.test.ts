@@ -1,14 +1,10 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  createPhase,
-  EnvironmentStore,
-  ScopeStore,
-} from "@sweet-rewrite/hygiene";
-import { parseMacroDefinitions } from "@sweet-rewrite/macro-language";
-import { createSyntaxClassConsumer } from "@sweet-rewrite/pattern";
-import { readSyntax, printLosslessSequence } from "@sweet-rewrite/reader";
+import { createPhase, EnvironmentStore, ScopeStore } from "@sweetener/hygiene";
+import { parseMacroDefinitions } from "@sweetener/macro-language";
+import { createSyntaxClassConsumer } from "@sweetener/pattern";
+import { readSyntax, printLosslessSequence } from "@sweetener/reader";
 import {
   createIdAllocator,
   createResourceBudget,
@@ -17,17 +13,17 @@ import {
   type InvocationId,
   type SourceId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createSyntaxCursor,
   createSyntaxSequence,
   OriginStore,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   createBindingConsumer,
   createPrattExpressionConsumer,
   type ConsumerContext,
-} from "@sweet-rewrite/enforestation";
+} from "@sweetener/enforestation";
 import { describe, expect, test } from "vitest";
 import {
   compileParsedMacros,
@@ -199,5 +195,5 @@ describe("recursive declarative expansion", () => {
 });
 
 // Kept outside the test body so the consumer context shares one immutable stop set.
-import { StopSet } from "@sweet-rewrite/enforestation";
+import { StopSet } from "@sweetener/enforestation";
 const awaitStopSet = StopSet.empty;

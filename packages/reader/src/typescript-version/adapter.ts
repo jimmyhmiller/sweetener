@@ -1,4 +1,4 @@
-import type { LexicalMode, TokenKind, TriviaKind } from "@sweet-rewrite/syntax";
+import type { LexicalMode, TokenKind, TriviaKind } from "@sweetener/syntax";
 import * as ts from "typescript";
 
 export const supportedTypeScriptMajorMinor = "6.0" as const;

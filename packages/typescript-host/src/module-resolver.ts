@@ -1,5 +1,5 @@
 import { posix } from "node:path";
-import type { Diagnostic, SourceId, SourceSpan } from "@sweet-rewrite/shared";
+import type { Diagnostic, SourceId, SourceSpan } from "@sweetener/shared";
 import {
   ambiguousMacroAliasCode,
   duplicateMacroImportCode,

@@ -1,4 +1,4 @@
-import type { MissingToken, Syntax, TokenSyntax } from "@sweet-rewrite/syntax";
+import type { MissingToken, Syntax, TokenSyntax } from "@sweetener/syntax";
 
 type PrintItem = Syntax | MissingToken | string;
 

@@ -17,10 +17,7 @@ describe("declarative acceptance boundary", () => {
   });
 
   test.each([
-    [
-      "compiler-import",
-      'import { invokeMacro } from "@sweet-rewrite/expansion";',
-    ],
+    ["compiler-import", 'import { invokeMacro } from "@sweetener/expansion";'],
     ["compiler-import", 'import fs from "node:fs";'],
     ["compiler-helper", "createSyntax(value)"],
     ["compiler-helper", "executeMatcher(program, input)"],

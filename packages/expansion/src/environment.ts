@@ -1,4 +1,4 @@
-import type { Binding, Phase, SyntaxSpace } from "@sweet-rewrite/hygiene";
+import type { Binding, Phase, SyntaxSpace } from "@sweetener/hygiene";
 import {
   createIdAllocator,
   type BindingId,
@@ -6,8 +6,8 @@ import {
   type EnvironmentEpoch,
   type EnvironmentId,
   type OriginId,
-} from "@sweet-rewrite/shared";
-import type { SyntaxCategory } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import type { SyntaxCategory } from "@sweetener/syntax";
 
 export type OperatorFixity = "prefix" | "infix" | "postfix";
 export type OperatorAssociativity = "left" | "right" | "none";

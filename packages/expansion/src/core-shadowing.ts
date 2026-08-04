@@ -1,13 +1,13 @@
-import type { Binding, Phase } from "@sweet-rewrite/hygiene";
-import { coreExpressionOperators } from "@sweet-rewrite/enforestation";
-import type { MacroDefinition } from "@sweet-rewrite/macro-language";
+import type { Binding, Phase } from "@sweetener/hygiene";
+import { coreExpressionOperators } from "@sweetener/enforestation";
+import type { MacroDefinition } from "@sweetener/macro-language";
 import type {
   BindingId,
   Diagnostic,
   OriginId,
   SourceSpan,
-} from "@sweet-rewrite/shared";
-import type { SyntaxCategory } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import type { SyntaxCategory } from "@sweetener/syntax";
 import {
   ambiguousSyntaxDispatchCode,
   expansionDiagnosticRegistry,

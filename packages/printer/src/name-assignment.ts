@@ -1,4 +1,4 @@
-import type { BindingId, SyntaxId } from "@sweet-rewrite/shared";
+import type { BindingId, SyntaxId } from "@sweetener/shared";
 
 export type NameOccurrenceKind = "identifier" | "shorthand-value";
 

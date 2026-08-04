@@ -6,9 +6,9 @@ import {
   type Phase,
   type ScopeStore,
   type SyntaxSpace,
-} from "@sweet-rewrite/hygiene";
-import type { BindingId } from "@sweet-rewrite/shared";
-import type { Syntax, TokenSyntax } from "@sweet-rewrite/syntax";
+} from "@sweetener/hygiene";
+import type { BindingId } from "@sweetener/shared";
+import type { Syntax, TokenSyntax } from "@sweetener/syntax";
 import {
   assignPrintedNames,
   type NameAssignmentPlan,

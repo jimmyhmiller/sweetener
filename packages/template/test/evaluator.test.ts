@@ -6,8 +6,8 @@ import {
   createLeafShape,
   createSequenceShape,
   type CaptureShapeBinding,
-} from "@sweet-rewrite/pattern";
-import { readSyntax } from "@sweet-rewrite/reader";
+} from "@sweetener/pattern";
+import { readSyntax } from "@sweetener/reader";
 import {
   CancellationError,
   CancellationSource,
@@ -18,8 +18,8 @@ import {
   type ScopeSetId,
   type SourceId,
   type SyntaxClassId,
-} from "@sweet-rewrite/shared";
-import type { GroupSyntax, Span, Syntax } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import type { GroupSyntax, Span, Syntax } from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import {
   createConditionalTemplate,

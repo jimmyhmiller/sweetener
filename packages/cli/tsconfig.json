@@ -7,6 +7,7 @@
   },
   "include": ["src/**/*.ts", "test/**/*.ts"],
   "references": [
+    { "path": "../compiler" },
     { "path": "../expansion" },
     { "path": "../hygiene" },
     { "path": "../macro-language" },

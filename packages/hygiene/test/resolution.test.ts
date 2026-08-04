@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type { OriginId, SourceId } from "@sweet-rewrite/shared";
+import type { OriginId, SourceId } from "@sweetener/shared";
 import {
   ambiguityDiagnostic,
   createPhase,

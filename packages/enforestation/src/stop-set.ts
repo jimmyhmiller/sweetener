@@ -3,7 +3,7 @@ import type {
   Syntax,
   SyntaxCursor,
   TokenKind,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 
 export type StopCondition =
   | {

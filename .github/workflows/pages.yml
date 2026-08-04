@@ -44,7 +44,7 @@ jobs:
       - name: Build playground
         run: pnpm playground:build
         env:
-          PLAYGROUND_BASE_PATH: /sweet-rewrite/
+          PLAYGROUND_BASE_PATH: /sweetener/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: playground/dist

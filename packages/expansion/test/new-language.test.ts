@@ -9,22 +9,23 @@ import {
   StopSet,
   type ConsumerContext,
   type SyntaxConsumer,
-} from "@sweet-rewrite/enforestation";
+} from "@sweetener/enforestation";
 import {
   createPhase,
   EnvironmentStore,
+  resolveBinding,
   ScopeStore,
-} from "@sweet-rewrite/hygiene";
-import { parseMacroDefinitions } from "@sweet-rewrite/macro-language";
+} from "@sweetener/hygiene";
+import { parseMacroDefinitions } from "@sweetener/macro-language";
 import {
   createSyntaxClassConsumer,
   type SyntaxClassConsumer,
-} from "@sweet-rewrite/pattern";
+} from "@sweetener/pattern";
 import {
   createHygienicNamePlan,
   printWithAssignedNames,
-} from "@sweet-rewrite/printer";
-import { printLosslessSequence, readSyntax } from "@sweet-rewrite/reader";
+} from "@sweetener/printer";
+import { printLosslessSequence, readSyntax } from "@sweetener/reader";
 import {
   createIdAllocator,
   createResourceBudget,
@@ -35,7 +36,7 @@ import {
   type SourceId,
   type SyntaxClassId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createProtectedSyntax,
   createSyntaxCursor,
@@ -43,7 +44,7 @@ import {
   OriginStore,
   spanEnvelope,
   type Syntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import * as ts from "typescript";
 import {
@@ -258,15 +259,25 @@ function createHarness() {
           : [];
       },
       enforest: ({ syntax }) => {
-        const result = item.consume(
-          createSyntaxCursor(syntax),
-          context("item"),
-        );
-        if (!result.matched || !result.cursor.atEnd)
-          throw new TypeError(
-            `expanded new-language syntax is not one item: ${printLosslessSequence(syntax)}`,
-          );
-        return result.syntax;
+        const cursor = createSyntaxCursor(syntax);
+        const items: Syntax[] = [];
+        while (!cursor.atEnd) {
+          const start = cursor.index;
+          const result = item.consume(cursor, context("item"));
+          if (!result.matched || result.cursor.index === start)
+            throw new TypeError(
+              `expanded new-language syntax contains an invalid item: ${printLosslessSequence(syntax)}`,
+            );
+          items.push(result.syntax);
+        }
+        return createProtectedSyntax({
+          id: syntaxIds.allocate(),
+          span: spanEnvelope(syntax.map(({ span }) => span)),
+          origin: origins.composed(syntax.map(({ origin }) => origin)),
+          scopes: syntax[0]!.scopes,
+          category: "item",
+          children: createSyntaxSequence(items),
+        });
       },
       allocateSyntaxId: syntaxIds.allocate,
       allocateBindingId: bindingIds.allocate,
@@ -463,6 +474,41 @@ describe("combined new-language acceptance", () => {
       }`),
     );
     expect(extension.traces).toHaveLength(1);
+  });
+
+  test("applies declaration scopes to syntax following an item macro", () => {
+    const harness = createHarness();
+    const source = "record Entry(); record Container(value: Entry);";
+    const result = harness.expandItem(source);
+    expect(result.diagnostics).toEqual([]);
+    const followingStart = source.indexOf("record Container");
+    const pending = [...result.syntax].reverse();
+    const references = [];
+    while (pending.length > 0) {
+      const node = pending.pop()!;
+      if (node.tag === "token") {
+        if (node.raw === "Entry" && node.span.start >= followingStart)
+          references.push(node);
+      } else pending.push(...[...node.children].reverse());
+    }
+    expect(references).toHaveLength(2);
+    expect(
+      references.every(
+        (reference) =>
+          resolveBinding(
+            harness.environments,
+            result.environment,
+            harness.scopes,
+            {
+              spelling: "Entry",
+              scopes: reference.scopes,
+              phase,
+              space: "type",
+              position: reference.span.start,
+            },
+          ).kind === "resolved",
+      ),
+    ).toBe(true);
   });
 
   test("type-checks and executes the complete composed language fragment", () => {

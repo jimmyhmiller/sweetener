@@ -1,4 +1,4 @@
-import type { MissingToken, Syntax, TokenSyntax } from "@sweet-rewrite/syntax";
+import type { MissingToken, Syntax, TokenSyntax } from "@sweetener/syntax";
 import type { NameAssignmentPlan } from "./name-assignment.js";
 
 type PrintItem = Syntax | MissingToken | string;

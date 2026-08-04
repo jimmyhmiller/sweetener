@@ -4,4 +4,4 @@ export * from "./ids.js";
 export * from "./limits.js";
 export * from "./result.js";
 
-export const packageName = "@sweet-rewrite/shared" as const;
+export const packageName = "@sweetener/shared" as const;

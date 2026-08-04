@@ -26,9 +26,7 @@ function workspaceDependencies(manifest) {
     manifest.optionalDependencies,
   ];
   return sections.flatMap((section) =>
-    Object.keys(section ?? {}).filter((name) =>
-      name.startsWith("@sweet-rewrite/"),
-    ),
+    Object.keys(section ?? {}).filter((name) => name.startsWith("@sweetener/")),
   );
 }
 
@@ -76,7 +74,7 @@ export async function checkPackageBoundaries(repositoryRoot) {
 
     for (const file of await filesBelow(packageRoot)) {
       const source = await readFile(file, "utf8");
-      const packageImport = /from\s+["'](@sweet-rewrite\/[^"']+)["']/g;
+      const packageImport = /from\s+["'](@sweetener\/[^"']+)["']/g;
       for (const match of source.matchAll(packageImport)) {
         const specifier = match[1];
         if (specifier.split("/").length > 2) {

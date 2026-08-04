@@ -4,13 +4,13 @@ import { fileURLToPath } from "node:url";
 import {
   createPrattExpressionConsumer,
   StopSet,
-} from "@sweet-rewrite/enforestation";
-import { createPhase } from "@sweet-rewrite/hygiene";
+} from "@sweetener/enforestation";
+import { createPhase } from "@sweetener/hygiene";
 import {
   createSyntaxClassConsumer,
   type CaptureValue,
-} from "@sweet-rewrite/pattern";
-import { printLosslessSequence, readSyntax } from "@sweet-rewrite/reader";
+} from "@sweetener/pattern";
+import { printLosslessSequence, readSyntax } from "@sweetener/reader";
 import {
   createIdAllocator,
   createResourceBudget,
@@ -20,8 +20,8 @@ import {
   type ScopeSetId,
   type SourceId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
-import { createSyntaxCursor, OriginStore } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import { createSyntaxCursor, OriginStore } from "@sweetener/syntax";
 import { describe, expect, it } from "vitest";
 import {
   compileParsedSyntaxClasses,

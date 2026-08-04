@@ -1,4 +1,4 @@
-import type { ScopeId, ScopeSetId } from "@sweet-rewrite/shared";
+import type { ScopeId, ScopeSetId } from "@sweetener/shared";
 import { describe, expect, it } from "vitest";
 import { createScope, ScopeStore } from "../src/index.js";
 

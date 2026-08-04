@@ -1,5 +1,5 @@
-import type { ScopeSetId, SourceId } from "@sweet-rewrite/shared";
-import { syntaxStructuralEquals } from "@sweet-rewrite/syntax";
+import type { ScopeSetId, SourceId } from "@sweetener/shared";
+import { syntaxStructuralEquals } from "@sweetener/syntax";
 import { describe, expect, it } from "vitest";
 import { printLossless, readSyntax } from "../src/index.js";
 

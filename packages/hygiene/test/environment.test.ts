@@ -1,4 +1,4 @@
-import type { OriginId, ScopeSetId } from "@sweet-rewrite/shared";
+import type { OriginId, ScopeSetId } from "@sweetener/shared";
 import { describe, expect, it } from "vitest";
 import {
   createBinding,

@@ -3,11 +3,8 @@ import type {
   CardinalityGroupId,
   OriginId,
   SyntaxClassId,
-} from "@sweet-rewrite/shared";
-import {
-  createSyntaxSequence,
-  type SyntaxSequence,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import { createSyntaxSequence, type SyntaxSequence } from "@sweetener/syntax";
 
 export interface CaptureLeaf {
   readonly kind: "leaf";

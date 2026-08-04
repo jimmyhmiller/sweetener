@@ -1,5 +1,5 @@
 {
-  "name": "@sweet-rewrite/expansion",
+  "name": "@sweetener/expansion",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,17 +13,17 @@
     "dist"
   ],
   "dependencies": {
-    "@sweet-rewrite/enforestation": "workspace:*",
-    "@sweet-rewrite/hygiene": "workspace:*",
-    "@sweet-rewrite/macro-language": "workspace:*",
-    "@sweet-rewrite/pattern": "workspace:*",
-    "@sweet-rewrite/shared": "workspace:*",
-    "@sweet-rewrite/syntax": "workspace:*",
-    "@sweet-rewrite/template": "workspace:*"
+    "@sweetener/enforestation": "workspace:*",
+    "@sweetener/hygiene": "workspace:*",
+    "@sweetener/macro-language": "workspace:*",
+    "@sweetener/pattern": "workspace:*",
+    "@sweetener/shared": "workspace:*",
+    "@sweetener/syntax": "workspace:*",
+    "@sweetener/template": "workspace:*"
   },
   "devDependencies": {
-    "@sweet-rewrite/printer": "workspace:*",
-    "@sweet-rewrite/reader": "workspace:*",
+    "@sweetener/printer": "workspace:*",
+    "@sweetener/reader": "workspace:*",
     "typescript": "npm:@typescript/typescript6@6.0.2"
   }
 }

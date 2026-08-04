@@ -8,17 +8,17 @@ import {
   StopSet,
   type ConsumerContext,
   type SyntaxConsumer,
-} from "@sweet-rewrite/enforestation";
+} from "@sweetener/enforestation";
 import type {
   BindingEnvironment,
   EnvironmentStore,
   Phase,
   ScopeStore,
-} from "@sweet-rewrite/hygiene";
+} from "@sweetener/hygiene";
 import {
   createSyntaxClassConsumer,
   type SyntaxClassConsumer,
-} from "@sweet-rewrite/pattern";
+} from "@sweetener/pattern";
 import type {
   BindingId,
   EnvironmentEpoch,
@@ -28,7 +28,7 @@ import type {
   SourceId,
   SyntaxClassId,
   SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createGroup,
   createProtectedSyntax,
@@ -40,7 +40,7 @@ import {
   type Syntax,
   type SyntaxCategory,
   type SyntaxSequence,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import type { CompileParsedMacrosResult } from "./compile-macros.js";
 import type {
   CompiledMacroBinding,
@@ -89,6 +89,12 @@ export interface CreateExpansionFrontendSessionOptions {
         readonly spelling: string;
         readonly macro: CompiledMacroBinding;
         readonly position: number;
+        /**
+         * Source `position` belongs to, when it is known. Absent means the
+         * caller could not attribute the position to a source and the
+         * definition-order rule should be applied as before.
+         */
+        readonly positionSourceId?: SourceId | undefined;
       }) => boolean)
     | undefined;
   readonly sourceId: SourceId;
@@ -194,6 +200,7 @@ export function createExpansionFrontendSession(
     category: SyntaxCategory,
     lexicalModule = options.module,
     position = Number.POSITIVE_INFINITY,
+    positionSourceId?: SourceId | undefined,
   ) => {
     const imports =
       options.importsByModule?.get(lexicalModule) ??
@@ -210,6 +217,7 @@ export function createExpansionFrontendSession(
         spelling,
         macro: selected,
         position,
+        ...(positionSourceId === undefined ? {} : { positionSourceId }),
       }) === false
     )
       return undefined;
@@ -442,7 +450,11 @@ export function createExpansionFrontendSession(
     resolveMacro: extentResolver,
   });
   const type = createTypeConsumer(shared);
-  const classElement = createClassElementConsumer(shared);
+  const classElement = createClassElementConsumer({
+    ...shared,
+    enforestStatementBlock: (block, blockContext) =>
+      statement.enforestBlock(block, blockContext),
+  });
   const context = (
     category: SyntaxCategory,
     contexts: ReadonlySet<MacroContext> = new Set(),
@@ -737,6 +749,7 @@ export function createExpansionFrontendSession(
           lexicalModule,
           modules: activeModules,
           position,
+          positionSourceId,
         }) => {
           const generated = [...activeModules]
             .slice(modules.length)
@@ -744,8 +757,31 @@ export function createExpansionFrontendSession(
             .map((module) => module.get(spelling, category))
             .find((macro) => macro !== undefined);
           return (
-            generated ?? resolve(spelling, category, lexicalModule, position)
+            generated ??
+            resolve(
+              spelling,
+              category,
+              lexicalModule,
+              position,
+              positionSourceId,
+            )
           );
+        },
+        enforestStatements: ({ syntax, contexts }) => {
+          let cursor = createSyntaxCursor(syntax);
+          const statements: Syntax[] = [];
+          while (!cursor.atEnd) {
+            const before = cursor.index;
+            const attempted = statement.consume(cursor, {
+              ...context("stmt", contexts),
+              stopSet: StopSet.empty,
+            });
+            if (!attempted.matched || attempted.cursor.index <= before)
+              return undefined;
+            statements.push(attempted.syntax);
+            cursor = attempted.cursor;
+          }
+          return createSyntaxSequence(statements);
         },
         phase: options.phase,
         environmentEpoch: expansionEnvironment.epoch,

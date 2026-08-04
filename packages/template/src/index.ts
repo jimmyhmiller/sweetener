@@ -4,4 +4,4 @@ export * from "./evaluator.js";
 export * from "./instantiator.js";
 export * from "./parser.js";
 
-export const packageName = "@sweet-rewrite/template" as const;
+export const packageName = "@sweetener/template" as const;

@@ -1,5 +1,5 @@
-import { readSyntax } from "@sweet-rewrite/reader";
-import type { ScopeSetId, SourceId } from "@sweet-rewrite/shared";
+import { readSyntax } from "@sweetener/reader";
+import type { ScopeSetId, SourceId } from "@sweetener/shared";
 import { describe, expect, test } from "vitest";
 import { parseCompileTimeSyntaxImports } from "../src/index.js";
 

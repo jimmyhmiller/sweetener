@@ -1,9 +1,9 @@
 import {
   createOriginQueryIndex,
   type PrintedExpandedFile,
-} from "@sweet-rewrite/printer";
-import type { BindingId, CaptureId, SourceId } from "@sweet-rewrite/shared";
-import { OriginStore } from "@sweet-rewrite/syntax";
+} from "@sweetener/printer";
+import type { BindingId, CaptureId, SourceId } from "@sweetener/shared";
+import { OriginStore } from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import * as ts from "typescript";
 import {

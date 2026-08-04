@@ -3,7 +3,7 @@
   "generatedAt": "2026-08-03T09:47:56.186Z",
   "commit": "fbd8512",
   "dirty": true,
-  "command": "/Users/jimmyhmiller/.npm/_npx/387698761821791d/node_modules/node/bin/node /Users/jimmyhmiller/Documents/Code/projects/sweet-rewrite/scripts/run-benchmarks.mjs --warmups 2 --samples 5 --output benchmarks/baselines/node24.json",
+  "command": "/Users/jimmyhmiller/.npm/_npx/387698761821791d/node_modules/node/bin/node /Users/jimmyhmiller/Documents/Code/projects/sweetener/scripts/run-benchmarks.mjs --warmups 2 --samples 5 --output benchmarks/baselines/node24.json",
   "environment": {
     "platform": "darwin",
     "release": "25.5.0",

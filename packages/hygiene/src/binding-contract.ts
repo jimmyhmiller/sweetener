@@ -5,8 +5,8 @@ import {
   type CaptureLeaf,
   type CapturePath,
   type CaptureValue,
-} from "@sweet-rewrite/pattern";
-import type { OriginId, ScopeId, ScopeSetId } from "@sweet-rewrite/shared";
+} from "@sweetener/pattern";
+import type { OriginId, ScopeId, ScopeSetId } from "@sweetener/shared";
 import {
   createGroup,
   createMissingToken,
@@ -17,7 +17,7 @@ import {
   type Syntax,
   type SyntaxSequence,
   type TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import type { Binding, Phase, SyntaxSpace } from "./binding.js";
 import type { BindingEnvironment, EnvironmentStore } from "./environment.js";
 import type { ScopeStore } from "./scope-store.js";
@@ -287,33 +287,48 @@ export function applyBindingContract(
     const outerGroups = groups.slice(0, -1);
     const partitions = new Map<string, LocatedLeaf[]>();
     for (const binder of binders) {
-      const key = alignmentKey(binder, groups);
+      const key = alignmentKey(binder, outerGroups);
       const values = partitions.get(key) ?? [];
       values.push(binder);
       partitions.set(key, values);
     }
-    for (const binderGroup of partitions.values()) {
-      const scope = options.scopeStore.freshScope(
-        "lexical",
-        "binding contract",
-      );
-      allocated.push(scope);
-      for (const binder of binderGroup)
-        addLeafScope(scopesByLeaf, binder.leaf, scope);
-      const reference = binderGroup[0]!;
-      const binderIndex = indexFor(reference, sequentialGroup)!;
-      for (const region of regions) {
-        const sameOuter = outerGroups.every(
-          (group) => indexFor(region, group) === indexFor(reference, group),
+    for (const partition of partitions.values()) {
+      const byIndex = new Map<number, LocatedLeaf[]>();
+      for (const binder of partition) {
+        const binderIndex = indexFor(binder, sequentialGroup)!;
+        const values = byIndex.get(binderIndex) ?? [];
+        values.push(binder);
+        byIndex.set(binderIndex, values);
+      }
+      const precedingScopes: ScopeId[] = [];
+      for (const [binderIndex, binderGroup] of [...byIndex].sort(
+        ([left], [right]) => left - right,
+      )) {
+        const scope = options.scopeStore.freshScope(
+          "lexical",
+          "binding contract",
         );
-        const regionIndex = indexFor(region, sequentialGroup);
-        if (
-          sameOuter &&
-          regionIndex !== undefined &&
-          regionIndex > binderIndex
-        ) {
-          addLeafScope(scopesByLeaf, region.leaf, scope);
+        allocated.push(scope);
+        for (const binder of binderGroup) {
+          for (const preceding of precedingScopes)
+            addLeafScope(scopesByLeaf, binder.leaf, preceding);
+          addLeafScope(scopesByLeaf, binder.leaf, scope);
         }
+        const reference = binderGroup[0]!;
+        for (const region of regions) {
+          const sameOuter = outerGroups.every(
+            (group) => indexFor(region, group) === indexFor(reference, group),
+          );
+          const regionIndex = indexFor(region, sequentialGroup);
+          if (
+            sameOuter &&
+            regionIndex !== undefined &&
+            regionIndex > binderIndex
+          ) {
+            addLeafScope(scopesByLeaf, region.leaf, scope);
+          }
+        }
+        precedingScopes.push(scope);
       }
     }
   } else {

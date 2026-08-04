@@ -1,7 +1,7 @@
 import {
   createVirtualProgram,
   type VirtualTypeScriptFile,
-} from "@sweet-rewrite/typescript-host";
+} from "@sweetener/typescript-host";
 import * as ts from "typescript";
 
 export type ProjectCommand = "check" | "build";

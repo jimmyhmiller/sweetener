@@ -1,4 +1,4 @@
-import { ProjectWatchSession, runProjectCommand } from "@sweet-rewrite/cli";
+import { ProjectWatchSession, runProjectCommand } from "@sweetener/cli";
 import ts from "typescript";
 import { performance } from "node:perf_hooks";
 

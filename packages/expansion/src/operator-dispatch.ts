@@ -3,21 +3,21 @@ import type {
   MacroOperatorExpansionInput,
   MacroOperatorResolver,
   PrattFixity,
-} from "@sweet-rewrite/enforestation";
-import type { Phase } from "@sweet-rewrite/hygiene";
+} from "@sweetener/enforestation";
+import type { Phase } from "@sweetener/hygiene";
 import type {
   BindingId,
   Diagnostic,
   OriginId,
   SourceSpan,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createSyntaxSequence,
   type ProtectedSyntax,
   type SyntaxCategory,
   type SyntaxCursor,
   type SyntaxSequence,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import type { CompileParsedMacrosResult } from "./compile-macros.js";
 import type {
   ExpansionEnvironment,

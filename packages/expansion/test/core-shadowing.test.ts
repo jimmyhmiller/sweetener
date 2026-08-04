@@ -1,21 +1,17 @@
-import {
-  createBinding,
-  createPhase,
-  type Binding,
-} from "@sweet-rewrite/hygiene";
+import { createBinding, createPhase, type Binding } from "@sweetener/hygiene";
 import {
   parseMacroDefinitions,
   type MacroDefinition,
-} from "@sweet-rewrite/macro-language";
-import { readSyntax } from "@sweet-rewrite/reader";
+} from "@sweetener/macro-language";
+import { readSyntax } from "@sweetener/reader";
 import type {
   BindingId,
   OriginId,
   ScopeSetId,
   SourceId,
   SourceSpan,
-} from "@sweet-rewrite/shared";
-import type { SyntaxCategory } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import type { SyntaxCategory } from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import {
   coreFormIdentities,

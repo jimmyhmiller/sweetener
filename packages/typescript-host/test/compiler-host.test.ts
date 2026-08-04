@@ -1,9 +1,9 @@
 import { resolve } from "node:path";
-import { printExpandedFile } from "@sweet-rewrite/printer";
-import { ScopeStore } from "@sweet-rewrite/hygiene";
-import { readSyntax } from "@sweet-rewrite/reader";
-import type { SourceId } from "@sweet-rewrite/shared";
-import { OriginStore } from "@sweet-rewrite/syntax";
+import { printExpandedFile } from "@sweetener/printer";
+import { ScopeStore } from "@sweetener/hygiene";
+import { readSyntax } from "@sweetener/reader";
+import type { SourceId } from "@sweetener/shared";
+import { OriginStore } from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import ts from "typescript";
 import { createVirtualProgram } from "../src/index.js";

@@ -8,7 +8,7 @@ symbols, builds a `Program`, checks types, transforms, and emits. The
 describe this ordering. Public AST transformers operate after parsing, so a
 transformer cannot recognize syntax that TypeScript rejects.
 
-Sweet Rewrite must therefore expand before `createSourceFile` sees the file. A
+Sweetener must therefore expand before `createSourceFile` sees the file. A
 custom `CompilerHost` can present expanded virtual `.ts` files to a normal
 `Program`; the public [compiler API](https://github.com/microsoft/TypeScript/wiki/Using-the-Compiler-API)
 supports custom hosts, module resolution, printers, incremental builders, and

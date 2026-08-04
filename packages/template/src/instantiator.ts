@@ -3,7 +3,7 @@ import {
   introducedTemplateScopes,
   type InvocationScopes,
   type ScopeStore,
-} from "@sweet-rewrite/hygiene";
+} from "@sweetener/hygiene";
 import {
   createResourceBudget,
   neverCancelled,
@@ -15,7 +15,7 @@ import {
   type ResourceBudget,
   type ScopeSetId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createGroup,
   createProtectedSyntax,
@@ -31,7 +31,7 @@ import {
   type SyntaxSequence,
   type TokenKind,
   type TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import type {
   EvaluatedGroup,
   EvaluatedOperation,

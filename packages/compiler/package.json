@@ -1,0 +1,26 @@
+{
+  "name": "@sweetener/compiler",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@sweetener/expansion": "workspace:*",
+    "@sweetener/hygiene": "workspace:*",
+    "@sweetener/macro-language": "workspace:*",
+    "@sweetener/printer": "workspace:*",
+    "@sweetener/reader": "workspace:*",
+    "@sweetener/shared": "workspace:*",
+    "@sweetener/syntax": "workspace:*",
+    "@sweetener/typescript-host": "workspace:*",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
+  }
+}

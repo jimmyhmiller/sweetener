@@ -1,4 +1,4 @@
-import type { ScopeId, ScopeSetId } from "@sweet-rewrite/shared";
+import type { ScopeId, ScopeSetId } from "@sweetener/shared";
 import type { ScopeStore } from "./scope-store.js";
 
 export interface InvocationScopes {

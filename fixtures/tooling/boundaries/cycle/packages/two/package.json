@@ -1,8 +1,8 @@
 {
-  "name": "@sweet-rewrite/two",
+  "name": "@sweetener/two",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@sweet-rewrite/one": "workspace:*"
+    "@sweetener/one": "workspace:*"
   }
 }

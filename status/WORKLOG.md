@@ -948,7 +948,7 @@ Next:
 ### FND-002: shared infrastructure complete
 
 Delivered branded IDs, deterministic allocators, result combinators,
-cancellation, and resource-budget enforcement in `@sweet-rewrite/shared`.
+cancellation, and resource-budget enforcement in `@sweetener/shared`.
 
 Validation:
 
@@ -1579,7 +1579,7 @@ remaining proposed product ADRs are external release actions and remain open.
 - Added exact manifest-export binding, a production category-complete expansion
   session, full-file typed regions, lexical operator dispatch, and a default
   project provider.
-- Added the `sweet-rewrite` executable and an external no-provider project which
+- Added the `sweetener` executable and an external no-provider project which
   proves expression, statement, item, type, and operator expansion, TypeScript
   build/declarations, runtime, expansion explanations, and both call-site and
   macro-definition watch edits.

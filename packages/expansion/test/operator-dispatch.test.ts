@@ -2,15 +2,11 @@ import {
   createPrattExpressionConsumer,
   StopSet,
   type SyntaxConsumer,
-} from "@sweet-rewrite/enforestation";
-import {
-  createPhase,
-  EnvironmentStore,
-  ScopeStore,
-} from "@sweet-rewrite/hygiene";
-import { parseMacroDefinitions } from "@sweet-rewrite/macro-language";
-import { createSyntaxClassConsumer } from "@sweet-rewrite/pattern";
-import { printLosslessSequence, readSyntax } from "@sweet-rewrite/reader";
+} from "@sweetener/enforestation";
+import { createPhase, EnvironmentStore, ScopeStore } from "@sweetener/hygiene";
+import { parseMacroDefinitions } from "@sweetener/macro-language";
+import { createSyntaxClassConsumer } from "@sweetener/pattern";
+import { printLosslessSequence, readSyntax } from "@sweetener/reader";
 import {
   createIdAllocator,
   createResourceBudget,
@@ -20,7 +16,7 @@ import {
   type InvocationId,
   type SourceId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createProtectedSyntax,
   createSyntaxCursor,
@@ -29,7 +25,7 @@ import {
   spanEnvelope,
   type ProtectedSyntax,
   type Syntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import * as ts from "typescript";

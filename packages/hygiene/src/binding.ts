@@ -3,7 +3,7 @@ import type {
   DeclarationGroupId,
   OriginId,
   ScopeSetId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 
 declare const phaseBrand: unique symbol;
 

@@ -2,15 +2,11 @@ import {
   createPrattExpressionConsumer,
   StopSet,
   type ConsumerContext,
-} from "@sweet-rewrite/enforestation";
-import {
-  createPhase,
-  EnvironmentStore,
-  ScopeStore,
-} from "@sweet-rewrite/hygiene";
-import { parseMacroDefinitions } from "@sweet-rewrite/macro-language";
-import { createSyntaxClassConsumer } from "@sweet-rewrite/pattern";
-import { printLosslessSequence, readSyntax } from "@sweet-rewrite/reader";
+} from "@sweetener/enforestation";
+import { createPhase, EnvironmentStore, ScopeStore } from "@sweetener/hygiene";
+import { parseMacroDefinitions } from "@sweetener/macro-language";
+import { createSyntaxClassConsumer } from "@sweetener/pattern";
+import { printLosslessSequence, readSyntax } from "@sweetener/reader";
 import {
   createIdAllocator,
   createResourceBudget,
@@ -19,13 +15,13 @@ import {
   type InvocationId,
   type SourceId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createSyntaxCursor,
   createSyntaxSequence,
   OriginStore,
   type Syntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import {
   compileParsedMacros,

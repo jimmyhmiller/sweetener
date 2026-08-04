@@ -1,12 +1,12 @@
-import type { Binding } from "@sweet-rewrite/hygiene";
-import type { MacroDefinition } from "@sweet-rewrite/macro-language";
-import type { Diagnostic, OriginId, SourceSpan } from "@sweet-rewrite/shared";
+import type { Binding } from "@sweetener/hygiene";
+import type { MacroDefinition } from "@sweetener/macro-language";
+import type { Diagnostic, OriginId, SourceSpan } from "@sweetener/shared";
 import {
   createSyntaxSequence,
   type Syntax,
   type SyntaxCategory,
   type SyntaxSequence,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   type ExpansionEnvironment,
   type ExpansionEnvironmentStore,

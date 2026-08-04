@@ -1,11 +1,11 @@
-import { createInvocationScopes, ScopeStore } from "@sweet-rewrite/hygiene";
+import { createInvocationScopes, ScopeStore } from "@sweetener/hygiene";
 import {
   CaptureRecord,
   createCaptureLeaf,
   createLeafShape,
   type CaptureShapeBinding,
-} from "@sweet-rewrite/pattern";
-import { readSyntax } from "@sweet-rewrite/reader";
+} from "@sweetener/pattern";
+import { readSyntax } from "@sweetener/reader";
 import {
   CancellationError,
   CancellationSource,
@@ -17,13 +17,13 @@ import {
   type SourceId,
   type SyntaxClassId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   OriginStore,
   type GroupSyntax,
   type Span,
   type Syntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import {
   evaluateTemplate,

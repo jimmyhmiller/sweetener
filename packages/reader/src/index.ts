@@ -1,3 +1,4 @@
+export * from "./directive.js";
 export * from "./incremental.js";
 export * from "./lossless-print.js";
 export * from "./reader.js";
@@ -9,4 +10,4 @@ export {
 } from "./typescript-version/adapter.js";
 export type { ScannerLanguageVariant } from "./typescript-version/adapter.js";
 
-export const packageName = "@sweet-rewrite/reader" as const;
+export const packageName = "@sweetener/reader" as const;

@@ -1,16 +1,16 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readSyntax } from "@sweet-rewrite/reader";
+import { readSyntax } from "@sweetener/reader";
 import {
   compileMatcherProgram,
   createSyntaxClassConsumer,
   executeMatcher,
   inferCaptureShapes,
   serializeMatcherProgram,
-} from "@sweet-rewrite/pattern";
-import type { ScopeSetId, SourceId } from "@sweet-rewrite/shared";
-import { createSyntaxCursor } from "@sweet-rewrite/syntax";
+} from "@sweetener/pattern";
+import type { ScopeSetId, SourceId } from "@sweetener/shared";
+import { createSyntaxCursor } from "@sweetener/syntax";
 import { describe, expect, it } from "vitest";
 import {
   compileParsedBindingContracts,

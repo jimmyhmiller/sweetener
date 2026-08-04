@@ -1,0 +1,9 @@
+{
+  "name": "sweet-external-javascript-project",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@sweetener/cli": "link:../../../packages/cli",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
+  }
+}

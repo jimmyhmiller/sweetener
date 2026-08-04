@@ -3,7 +3,7 @@ import {
   type CaptureId,
   type OriginId,
   type SourceId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import { describe, expect, it } from "vitest";
 import { createSpan, OriginGraphError, OriginStore } from "../src/index.js";
 

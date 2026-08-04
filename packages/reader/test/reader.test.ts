@@ -4,7 +4,7 @@ import {
   ResourceLimitError,
   type ScopeSetId,
   type SourceId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import { describe, expect, it } from "vitest";
 import { printLossless, readSyntax } from "../src/index.js";
 

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@sweet-rewrite/cli": "link:../../../packages/cli",
+    "@sweetener/cli": "link:../../../packages/cli",
     "typescript": "npm:@typescript/typescript6@6.0.2"
   }
 }

@@ -1,0 +1,58 @@
+{
+  "name": "@sweetener/unplugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    },
+    "./vite": {
+      "types": "./dist/src/vite.d.ts",
+      "import": "./dist/src/vite.js"
+    },
+    "./rollup": {
+      "types": "./dist/src/rollup.d.ts",
+      "import": "./dist/src/rollup.js"
+    },
+    "./rolldown": {
+      "types": "./dist/src/rolldown.d.ts",
+      "import": "./dist/src/rolldown.js"
+    },
+    "./webpack": {
+      "types": "./dist/src/webpack.d.ts",
+      "import": "./dist/src/webpack.js"
+    },
+    "./rspack": {
+      "types": "./dist/src/rspack.d.ts",
+      "import": "./dist/src/rspack.js"
+    },
+    "./rsbuild": {
+      "types": "./dist/src/rsbuild.d.ts",
+      "import": "./dist/src/rsbuild.js"
+    },
+    "./esbuild": {
+      "types": "./dist/src/esbuild.d.ts",
+      "import": "./dist/src/esbuild.js"
+    },
+    "./farm": {
+      "types": "./dist/src/farm.d.ts",
+      "import": "./dist/src/farm.js"
+    },
+    "./bun": {
+      "types": "./dist/src/bun.d.ts",
+      "import": "./dist/src/bun.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@sweetener/compiler": "workspace:*",
+    "unplugin": "3.3.0"
+  },
+  "devDependencies": {
+    "vite": "8.2.0"
+  }
+}

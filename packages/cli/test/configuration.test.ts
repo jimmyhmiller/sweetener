@@ -1,7 +1,27 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { parseSweetCompilerOptions } from "../src/index.js";
+import { loadSweetProject, parseSweetCompilerOptions } from "../src/index.js";
 
 describe("sweet project configuration", () => {
+  test("preserves missing and malformed config-file diagnostics", () => {
+    const directory = mkdtempSync(join(tmpdir(), "sweet-config-"));
+    const missing = loadSweetProject(join(directory, "missing.json"));
+    expect(missing.typescript.errors).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 5083 })]),
+    );
+
+    const malformedPath = join(directory, "malformed.json");
+    writeFileSync(malformedPath, '{ "compilerOptions": ');
+    const malformed = loadSweetProject(malformedPath);
+    expect(malformed.typescript.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 1109, file: expect.anything() }),
+      ]),
+    );
+  });
+
   test("parses every expansion-affecting option deterministically", () => {
     const result = parseSweetCompilerOptions({
       languageVersion: "1",

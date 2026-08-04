@@ -2,16 +2,16 @@ import type {
   ConsumerAttempt,
   ConsumerContext,
   StatementItemMacroResolver,
-} from "@sweet-rewrite/enforestation";
-import type { SyntaxClassConsumer } from "@sweet-rewrite/pattern";
-import { executeMatcher } from "@sweet-rewrite/pattern";
+} from "@sweetener/enforestation";
+import type { SyntaxClassConsumer } from "@sweetener/pattern";
+import { executeMatcher } from "@sweetener/pattern";
 import {
   createProtectedSyntax,
   spanEnvelope,
   type OriginStore,
   type SyntaxCursor,
-} from "@sweet-rewrite/syntax";
-import type { SyntaxId } from "@sweet-rewrite/shared";
+} from "@sweetener/syntax";
+import type { SyntaxId } from "@sweetener/shared";
 import type { CompiledMacroBinding } from "./invocation.js";
 import type { InvokeMacroOptions } from "./invocation.js";
 

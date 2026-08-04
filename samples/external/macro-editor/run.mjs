@@ -1,9 +1,9 @@
-import { createOriginQueryIndex } from "@sweet-rewrite/printer";
-import { OriginStore } from "@sweet-rewrite/syntax";
+import { createOriginQueryIndex } from "@sweetener/printer";
+import { OriginStore } from "@sweetener/syntax";
 import {
   MappedLanguageService,
   VirtualLanguageServiceProject,
-} from "@sweet-rewrite/typescript-host";
+} from "@sweetener/typescript-host";
 import ts from "typescript";
 import { performance } from "node:perf_hooks";
 import { runInNewContext } from "node:vm";

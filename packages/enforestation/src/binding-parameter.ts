@@ -6,12 +6,12 @@ import type {
   EnvironmentStore,
   Phase,
   SyntaxSpace,
-} from "@sweet-rewrite/hygiene";
+} from "@sweetener/hygiene";
 import type {
   DeclarationGroupId,
   ScopeSetId,
   SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createProtectedSyntax,
   spanEnvelope,
@@ -23,7 +23,7 @@ import {
   type SyntaxCursor,
   type SyntaxSequence,
   type TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   createConsumerFailure,
   type ConsumerAttempt,

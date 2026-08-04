@@ -1,10 +1,10 @@
-import type { Diagnostic, OriginId, SourceId } from "@sweet-rewrite/shared";
+import type { Diagnostic, OriginId, SourceId } from "@sweetener/shared";
 import type {
   GroupSyntax,
   RootSyntax,
   Syntax,
   TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   macroLanguageDiagnosticRegistry,
   malformedSyntaxImportCode,

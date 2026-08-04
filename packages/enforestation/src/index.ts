@@ -1,4 +1,4 @@
-export const packageName = "@sweet-rewrite/enforestation" as const;
+export const packageName = "@sweetener/enforestation" as const;
 export * from "./consumer.js";
 export * from "./stop-set.js";
 export * from "./primary-expression.js";

@@ -1,15 +1,10 @@
 import {
   inferCaptureShapes,
   type SyntaxClassRegistry,
-} from "@sweet-rewrite/pattern";
-import type {
-  Diagnostic,
-  OriginId,
-  RuleId,
-  SourceId,
-} from "@sweet-rewrite/shared";
-import { parseTemplate, type SequenceTemplate } from "@sweet-rewrite/template";
-import type { Span } from "@sweet-rewrite/syntax";
+} from "@sweetener/pattern";
+import type { Diagnostic, OriginId, RuleId, SourceId } from "@sweetener/shared";
+import { parseTemplate, type SequenceTemplate } from "@sweetener/template";
+import type { Span } from "@sweetener/syntax";
 import type { ParseMacroDefinitionsResult } from "./parser/index.js";
 
 export interface CompileParsedTemplatesOptions {

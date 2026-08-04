@@ -1,6 +1,6 @@
-# Sweet Rewrite
+# Sweetener
 
-Sweet Rewrite is a TypeScript-to-TypeScript macro expander. It adds hygienic,
+Sweetener is a TypeScript-to-TypeScript macro expander. It adds hygienic,
 declarative, syntax-extending macros to TypeScript while leaving type checking,
 declaration generation, JavaScript emission, and editor semantics to the official
 TypeScript compiler.

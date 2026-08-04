@@ -42,7 +42,7 @@ for (const directory of packageDirectories) {
   const publishManifest = {
     name: manifest.name,
     version,
-    description: `Sweet Rewrite alpha package: ${directory}`,
+    description: `Sweetener alpha package: ${directory}`,
     type: "module",
     exports: manifest.exports,
     files: ["dist"],
@@ -57,7 +57,7 @@ for (const directory of packageDirectories) {
   );
   await writeFile(
     join(targetDirectory, "README.md"),
-    `# ${manifest.name}\n\nAlpha package from Sweet Rewrite language version 1.\n`,
+    `# ${manifest.name}\n\nAlpha package from Sweetener language version 1.\n`,
     "utf8",
   );
   const packed = execFileSync(

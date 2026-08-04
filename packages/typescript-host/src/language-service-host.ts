@@ -1,6 +1,7 @@
 import { dirname, resolve } from "node:path";
-import type { PrintedExpandedFile } from "@sweet-rewrite/printer";
+import type { PrintedExpandedFile } from "@sweetener/printer";
 import ts from "typescript";
+import { scriptKindForFileName } from "./script-kind.js";
 
 export interface VirtualLanguageServiceFile {
   readonly fileName: string;
@@ -88,8 +89,7 @@ export class VirtualLanguageServiceProject {
       getDirectories: system.getDirectories,
       useCaseSensitiveFileNames: () => system.useCaseSensitiveFileNames,
       getNewLine: () => system.newLine,
-      getScriptKind: (fileName) =>
-        fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+      getScriptKind: (fileName) => scriptKindForFileName(fileName),
     };
     this.#service = ts.createLanguageService(
       this.#host,

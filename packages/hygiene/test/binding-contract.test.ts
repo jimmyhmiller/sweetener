@@ -5,15 +5,15 @@ import {
   createCaptureSequence,
   type CaptureLeaf,
   type CaptureValue,
-} from "@sweet-rewrite/pattern";
+} from "@sweetener/pattern";
 import type {
   CaptureId,
   CardinalityGroupId,
   OriginId,
   SyntaxClassId,
   SyntaxId,
-} from "@sweet-rewrite/shared";
-import { createToken } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import { createToken } from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import {
   applyBindingContract,
@@ -21,6 +21,7 @@ import {
   createBindingContract,
   createPhase,
   EnvironmentStore,
+  resolveBinding,
   ScopeStore,
 } from "../src/index.js";
 
@@ -290,5 +291,66 @@ describe("binding contracts", () => {
     expect(bodySizes).toEqual([0, 1, 2]);
     expect(result.bindings).toHaveLength(3);
     expect(scopes.size(result.followingScopes)).toBe(3);
+  });
+
+  test("later sequential binders shadow earlier binders with the same name", () => {
+    const scopes = new ScopeStore();
+    const environments = new EnvironmentStore();
+    const rows = capture(1);
+    const nameField = capture(2);
+    const bodyField = capture(3);
+    const row = () =>
+      leaf(
+        rows,
+        "row",
+        ttClass,
+        scopes.empty(),
+        new CaptureRecord([
+          [nameField, leaf(nameField, "value", bindingClass, scopes.empty())],
+          [bodyField, leaf(bodyField, "value", ttClass, scopes.empty())],
+        ]),
+      );
+    const captures = new CaptureRecord([
+      [rows, sequence(group(7), [row(), row(), row()])],
+    ]);
+    const result = applyBindingContract(
+      createBindingContract({
+        origin: origin(1),
+        binders: createCapturePath("rows", rows, [
+          { name: "name", capture: nameField },
+        ]),
+        region: {
+          kind: "capture",
+          path: createCapturePath("rows", rows, [
+            { name: "body", capture: bodyField },
+          ]),
+        },
+        kind: "sequential",
+        space: "value",
+      }),
+      {
+        captures,
+        scopeStore: scopes,
+        environments,
+        environment: environments.createRoot(),
+        phase: createPhase(0),
+        position: 0,
+      },
+    );
+    const transformed = result.captures.get(rows);
+    if (transformed?.kind !== "sequence") throw new Error("missing rows");
+    const finalRow = transformed.elements[2];
+    if (finalRow?.kind !== "leaf") throw new Error("missing final row");
+    const referenceScopes = appliedScopes(finalRow.fields.get(bodyField)!);
+
+    expect(
+      resolveBinding(environments, result.environment, scopes, {
+        spelling: "value",
+        scopes: referenceScopes,
+        phase: createPhase(0),
+        space: "value",
+        position: 0,
+      }),
+    ).toMatchObject({ kind: "resolved", binding: result.bindings[1] });
   });
 });

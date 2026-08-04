@@ -5,7 +5,7 @@ import type {
   RepetitionId,
   SourceId,
   SyntaxClassId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import { describe, expect, it } from "vitest";
 import {
   createCapturePattern,

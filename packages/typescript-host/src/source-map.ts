@@ -1,6 +1,6 @@
-import type { PrintedExpandedFile } from "@sweet-rewrite/printer";
-import type { SourceId } from "@sweet-rewrite/shared";
-import type { OriginStore } from "@sweet-rewrite/syntax";
+import type { OriginQueryIndex, PrintedExpandedFile } from "@sweetener/printer";
+import type { SourceId } from "@sweetener/shared";
+import type { OriginStore } from "@sweetener/syntax";
 
 export interface RawSourceMap {
   readonly version: 3;
@@ -125,6 +125,63 @@ function encodeMappings(lines: readonly (readonly Segment[])[]): string {
         .join(",");
     })
     .join(";");
+}
+
+/** Emit the first-stage Source Map v3 consumed by bundlers and transpilers. */
+export function createExpansionSourceMap(options: {
+  readonly file: string;
+  readonly generated: PrintedExpandedFile;
+  readonly index: OriginQueryIndex;
+  readonly sourceName: (sourceId: SourceId) => string;
+  readonly sourceText?:
+    ((sourceId: SourceId) => string | undefined) | undefined;
+}): ComposedSourceMap {
+  const generatedStarts = lineStarts(options.generated.text);
+  const sourceIndexes = new Map<SourceId, number>();
+  const sourceStarts = new Map<SourceId, readonly number[]>();
+  const sources: string[] = [];
+  const sourcesContent: (string | null)[] = [];
+  const lines: Segment[][] = generatedStarts.map(() => []);
+
+  const sourceIndex = (sourceId: SourceId): number => {
+    const existing = sourceIndexes.get(sourceId);
+    if (existing !== undefined) return existing;
+    const index = sources.length;
+    const text = options.sourceText?.(sourceId);
+    sourceIndexes.set(sourceId, index);
+    sources.push(options.sourceName(sourceId));
+    sourcesContent.push(text ?? null);
+    if (text !== undefined) sourceStarts.set(sourceId, lineStarts(text));
+    return index;
+  };
+
+  for (const region of options.index.regions()) {
+    const generated = lineColumn(generatedStarts, region.generatedStart);
+    const originalStarts =
+      sourceStarts.get(region.primary.sourceId) ??
+      (() => {
+        sourceIndex(region.primary.sourceId);
+        return sourceStarts.get(region.primary.sourceId) ?? [0];
+      })();
+    const original = lineColumn(originalStarts, region.primary.span.start);
+    lines[generated.line]!.push({
+      generatedColumn: generated.column,
+      source: sourceIndex(region.primary.sourceId),
+      originalLine: original.line,
+      originalColumn: original.column,
+    });
+  }
+  for (const line of lines)
+    line.sort((left, right) => left.generatedColumn - right.generatedColumn);
+
+  return Object.freeze({
+    version: 3,
+    file: options.file,
+    sources: Object.freeze(sources),
+    sourcesContent: Object.freeze(sourcesContent),
+    names: Object.freeze([]),
+    mappings: encodeMappings(lines),
+  });
 }
 
 function lineStarts(text: string): number[] {

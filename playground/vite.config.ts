@@ -47,7 +47,7 @@ export default defineConfig({
         "printer",
         "typescript-host",
       ].map((name) => ({
-        find: `@sweet-rewrite/${name}`,
+        find: `@sweetener/${name}`,
         replacement: packageSource(name),
       })),
     ],

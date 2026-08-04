@@ -14,6 +14,7 @@ import {
   type ExpansionInspectionProvider,
 } from "./expansion-tools.js";
 import { createDefaultProjectExpansionProvider } from "./default-expansion-provider.js";
+import { emitStandalone } from "./standalone-emit.js";
 
 export interface CliIo {
   readonly stdout: (text: string) => void;
@@ -27,7 +28,12 @@ export type CliInvocation =
       readonly debug: boolean;
     }
   | { readonly command: "expand"; readonly fileName: string }
-  | { readonly command: "explain"; readonly position: string };
+  | { readonly command: "explain"; readonly position: string }
+  | {
+      readonly command: "emit";
+      readonly fileNames: readonly string[];
+      readonly outDir: string;
+    };
 
 export function parseCliInvocation(argv: readonly string[]): CliInvocation {
   const command = argv[0];
@@ -35,6 +41,32 @@ export function parseCliInvocation(argv: readonly string[]): CliInvocation {
     if (argv.length !== 2)
       throw new TypeError("expand requires one source file");
     return Object.freeze({ command, fileName: argv[1]! });
+  }
+  if (command === "emit") {
+    const fileNames: string[] = [];
+    let outDir: string | undefined;
+    for (let index = 1; index < argv.length; index += 1) {
+      const argument = argv[index]!;
+      if (argument === "--out-dir") {
+        const value = argv[++index];
+        if (value === undefined)
+          throw new TypeError("--out-dir requires a directory");
+        outDir = value;
+      } else if (argument.startsWith("-"))
+        throw new TypeError(`Unknown argument ${argument}`);
+      else fileNames.push(argument);
+    }
+    if (fileNames.length === 0)
+      throw new TypeError("emit requires at least one source file");
+    // Required rather than defaulted to the source directory: a file that
+    // opted in with a directive keeps its own name, so emitting alongside it
+    // would overwrite the input.
+    if (outDir === undefined) throw new TypeError("emit requires --out-dir");
+    return Object.freeze({
+      command,
+      fileNames: Object.freeze(fileNames),
+      outDir,
+    });
   }
   if (command === "explain") {
     if (argv.length !== 2)
@@ -44,7 +76,7 @@ export function parseCliInvocation(argv: readonly string[]): CliInvocation {
   }
   if (command !== "check" && command !== "build" && command !== "watch")
     throw new TypeError(
-      "Expected check, build, watch, expand, or explain command",
+      "Expected check, build, watch, expand, explain, or emit command",
     );
   let configPath = "tsconfig.json";
   let debug = false;
@@ -102,6 +134,23 @@ export function runCli(options: {
       `${result.command}: ${result.exitCode === 0 ? "success" : "failed"}\n`,
     );
   };
+  if (invocation.command === "emit") {
+    const result = emitStandalone({
+      fileNames: invocation.fileNames,
+      outDir: invocation.outDir,
+      expansionProvider,
+    });
+    for (const diagnostic of result.diagnostics)
+      options.io.stderr(`${renderDiagnostic(diagnostic)}\n`);
+    if (result.diagnostics.length > 0) {
+      options.io.stdout("emit: failed\n");
+      return Object.freeze({ exitCode: 1 });
+    }
+    for (const fileName of result.outputs.keys())
+      options.io.stdout(`${fileName}\n`);
+    options.io.stdout("emit: success\n");
+    return Object.freeze({ exitCode: 0 });
+  }
   if (invocation.command === "expand" || invocation.command === "explain") {
     if (inspectionProvider === undefined) {
       options.io.stderr("Expansion inspection is unavailable\n");

@@ -2,18 +2,18 @@ import type {
   CapturePath,
   CapturePathSegment,
   CaptureShape,
-} from "@sweet-rewrite/pattern";
+} from "@sweetener/pattern";
 import type {
   CardinalityGroupId,
   OriginId,
   ScopeSetId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import type {
   DelimiterKind,
   MissingToken,
   Syntax,
   TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 
 export interface TemplateBase {
   readonly origin: OriginId;

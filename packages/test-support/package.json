@@ -1,5 +1,5 @@
 {
-  "name": "@sweet-rewrite/test-support",
+  "name": "@sweetener/test-support",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,11 +13,11 @@
     "dist"
   ],
   "devDependencies": {
-    "@sweet-rewrite/hygiene": "workspace:*",
-    "@sweet-rewrite/pattern": "workspace:*",
-    "@sweet-rewrite/printer": "workspace:*",
-    "@sweet-rewrite/shared": "workspace:*",
-    "@sweet-rewrite/syntax": "workspace:*",
-    "@sweet-rewrite/template": "workspace:*"
+    "@sweetener/hygiene": "workspace:*",
+    "@sweetener/pattern": "workspace:*",
+    "@sweetener/printer": "workspace:*",
+    "@sweetener/shared": "workspace:*",
+    "@sweetener/syntax": "workspace:*",
+    "@sweetener/template": "workspace:*"
   }
 }

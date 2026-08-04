@@ -1,22 +1,22 @@
-import type { Binding, Phase } from "@sweet-rewrite/hygiene";
+import type { Binding, Phase } from "@sweetener/hygiene";
 import {
   StopSet,
   type ConsumerFailure,
   type SyntaxConsumer,
-} from "@sweet-rewrite/enforestation";
+} from "@sweetener/enforestation";
 import {
   neverCancelled,
   type CancellationToken,
   type Diagnostic,
   type ResourceTracker,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createSyntaxSequence,
   type ProtectedSyntax,
   type Syntax,
   type SyntaxCursor,
   type SyntaxSequence,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   processDefinitionContext,
   type DefinitionContextItem,

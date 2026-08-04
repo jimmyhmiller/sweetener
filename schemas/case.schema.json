@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://sweet-rewrite.local/schemas/case.schema.json",
-  "title": "Sweet Rewrite fixture case",
+  "$id": "https://sweetener.local/schemas/case.schema.json",
+  "title": "Sweetener fixture case",
   "type": "object",
   "required": [
     "id",

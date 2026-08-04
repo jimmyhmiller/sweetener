@@ -9,6 +9,11 @@ export default tseslint.config(
       "packages/*/dist/**",
       "playground/dist/**",
       "samples/external/*/dist/**",
+      "samples/external/*/dist-standalone/**",
+      // Macro-enabled JavaScript is not parseable by ordinary JavaScript
+      // tooling; the sample's expanded output under dist/ is linted instead.
+      "samples/external/javascript-project/src/macros.js",
+      "samples/external/javascript-project/src/main.js",
       "node_modules/**",
       "pnpm-lock.yaml",
     ],

@@ -1,4 +1,4 @@
-import type { SyntaxId } from "@sweet-rewrite/shared";
+import type { SyntaxId } from "@sweetener/shared";
 import {
   createProtectedSyntax,
   type OriginStore,
@@ -6,7 +6,7 @@ import {
   type Syntax,
   type SyntaxCursor,
   type TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   createConsumerFailure,
   type ConsumerContext,

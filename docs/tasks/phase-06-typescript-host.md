@@ -70,7 +70,7 @@ Join the reader, declarative macro-module compiler, source-ordered expansion,
 printer, origin index, TypeScript host, and command layer behind one public
 default implementation. Resolve compile-time macro imports from `.sts` and
 `.stsx` files without requiring an application to construct compiler internals.
-Ship an executable `sweet-rewrite` entry point whose `check`, `build`, `watch`,
+Ship an executable `sweetener` entry point whose `check`, `build`, `watch`,
 `expand`, and `explain` commands use that implementation by default.
 
 Acceptance requires a clean external project which imports a declarative macro,

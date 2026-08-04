@@ -157,7 +157,7 @@ function App() {
   return (
     <main className="shell">
       <header className="toolbar">
-        <strong>Sweet Rewrite Playground</strong>
+        <strong>Sweetener Playground</strong>
         <label htmlFor="examples">Example</label>
         <select
           id="examples"

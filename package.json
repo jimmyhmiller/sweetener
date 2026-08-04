@@ -1,5 +1,5 @@
 {
-  "name": "sweet-rewrite",
+  "name": "sweetener",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -33,8 +33,8 @@
     "benchmark:check": "pnpm build && node --expose-gc scripts/run-benchmarks.mjs --baseline benchmarks/baselines/node24.json",
     "compatibility:probe": "pnpm build && node scripts/compatibility-probe.mjs",
     "check:release-spec": "node scripts/release-spec-check.mjs",
-    "samples:setup": "pnpm --dir samples/external/project-graph --ignore-workspace install --lockfile=false && pnpm --dir samples/external/macro-editor --ignore-workspace install --lockfile=false && pnpm --dir samples/external/default-project --ignore-workspace install --lockfile=false",
-    "samples:check": "pnpm build && pnpm samples:setup && node samples/external/project-graph/run.mjs && node samples/external/macro-editor/run.mjs && node samples/external/default-project/run.mjs",
+    "samples:setup": "pnpm --dir samples/external/project-graph --ignore-workspace install --lockfile=false && pnpm --dir samples/external/macro-editor --ignore-workspace install --lockfile=false && pnpm --dir samples/external/default-project --ignore-workspace install --lockfile=false && pnpm --dir samples/external/javascript-project --ignore-workspace install --lockfile=false",
+    "samples:check": "pnpm build && pnpm samples:setup && node samples/external/project-graph/run.mjs && node samples/external/macro-editor/run.mjs && node samples/external/default-project/run.mjs && node samples/external/javascript-project/run.mjs",
     "playground": "pnpm --dir playground dev",
     "playground:build": "pnpm --dir playground build",
     "release:stage": "pnpm build && node scripts/stage-alpha-release.mjs",

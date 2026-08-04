@@ -3,8 +3,8 @@ import type {
   OriginId,
   ScopeSetId,
   SyntaxId,
-} from "@sweet-rewrite/shared";
-import { createRootSyntax, createToken } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import { createRootSyntax, createToken } from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import { assignPrintedNames, printWithAssignedNames } from "../src/index.js";
 

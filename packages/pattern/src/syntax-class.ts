@@ -6,9 +6,9 @@ import type {
   RuleId,
   SourceId,
   SyntaxClassId,
-} from "@sweet-rewrite/shared";
-import type { Span, Syntax, SyntaxCursor } from "@sweet-rewrite/syntax";
-import { createSyntaxSequence } from "@sweet-rewrite/syntax";
+} from "@sweetener/shared";
+import type { Span, Syntax, SyntaxCursor } from "@sweetener/syntax";
+import { createSyntaxSequence } from "@sweetener/syntax";
 import type { PatternNode } from "./ast.js";
 import {
   CaptureRecord,

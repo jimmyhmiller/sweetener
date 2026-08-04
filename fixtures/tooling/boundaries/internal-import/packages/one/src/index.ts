@@ -1,3 +1,3 @@
-import { hidden } from "@sweet-rewrite/two/internal";
+import { hidden } from "@sweetener/two/internal";
 
 export { hidden };

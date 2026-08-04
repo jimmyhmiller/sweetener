@@ -32,28 +32,61 @@ importers:
 
   packages/cli:
     dependencies:
-      '@sweet-rewrite/expansion':
+      '@sweetener/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@sweetener/expansion':
         specifier: workspace:*
         version: link:../expansion
-      '@sweet-rewrite/hygiene':
+      '@sweetener/hygiene':
         specifier: workspace:*
         version: link:../hygiene
-      '@sweet-rewrite/macro-language':
+      '@sweetener/macro-language':
         specifier: workspace:*
         version: link:../macro-language
-      '@sweet-rewrite/printer':
+      '@sweetener/printer':
         specifier: workspace:*
         version: link:../printer
-      '@sweet-rewrite/reader':
+      '@sweetener/reader':
         specifier: workspace:*
         version: link:../reader
-      '@sweet-rewrite/shared':
+      '@sweetener/shared':
         specifier: workspace:*
         version: link:../shared
-      '@sweet-rewrite/syntax':
+      '@sweetener/syntax':
         specifier: workspace:*
         version: link:../syntax
-      '@sweet-rewrite/typescript-host':
+      '@sweetener/typescript-host':
+        specifier: workspace:*
+        version: link:../typescript-host
+      typescript:
+        specifier: npm:@typescript/typescript6@6.0.2
+        version: '@typescript/typescript6@6.0.2'
+
+  packages/compiler:
+    dependencies:
+      '@sweetener/expansion':
+        specifier: workspace:*
+        version: link:../expansion
+      '@sweetener/hygiene':
+        specifier: workspace:*
+        version: link:../hygiene
+      '@sweetener/macro-language':
+        specifier: workspace:*
+        version: link:../macro-language
+      '@sweetener/printer':
+        specifier: workspace:*
+        version: link:../printer
+      '@sweetener/reader':
+        specifier: workspace:*
+        version: link:../reader
+      '@sweetener/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@sweetener/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+      '@sweetener/typescript-host':
         specifier: workspace:*
         version: link:../typescript-host
       typescript:
@@ -62,17 +95,17 @@ importers:
 
   packages/enforestation:
     dependencies:
-      '@sweet-rewrite/hygiene':
+      '@sweetener/hygiene':
         specifier: workspace:*
         version: link:../hygiene
-      '@sweet-rewrite/shared':
+      '@sweetener/shared':
         specifier: workspace:*
         version: link:../shared
-      '@sweet-rewrite/syntax':
+      '@sweetener/syntax':
         specifier: workspace:*
         version: link:../syntax
     devDependencies:
-      '@sweet-rewrite/reader':
+      '@sweetener/reader':
         specifier: workspace:*
         version: link:../reader
       typescript:
@@ -81,32 +114,32 @@ importers:
 
   packages/expansion:
     dependencies:
-      '@sweet-rewrite/enforestation':
+      '@sweetener/enforestation':
         specifier: workspace:*
         version: link:../enforestation
-      '@sweet-rewrite/hygiene':
+      '@sweetener/hygiene':
         specifier: workspace:*
         version: link:../hygiene
-      '@sweet-rewrite/macro-language':
+      '@sweetener/macro-language':
         specifier: workspace:*
         version: link:../macro-language
-      '@sweet-rewrite/pattern':
+      '@sweetener/pattern':
         specifier: workspace:*
         version: link:../pattern
-      '@sweet-rewrite/shared':
+      '@sweetener/shared':
         specifier: workspace:*
         version: link:../shared
-      '@sweet-rewrite/syntax':
+      '@sweetener/syntax':
         specifier: workspace:*
         version: link:../syntax
-      '@sweet-rewrite/template':
+      '@sweetener/template':
         specifier: workspace:*
         version: link:../template
     devDependencies:
-      '@sweet-rewrite/printer':
+      '@sweetener/printer':
         specifier: workspace:*
         version: link:../printer
-      '@sweet-rewrite/reader':
+      '@sweetener/reader':
         specifier: workspace:*
         version: link:../reader
       typescript:
@@ -115,68 +148,68 @@ importers:
 
   packages/hygiene:
     dependencies:
-      '@sweet-rewrite/pattern':
+      '@sweetener/pattern':
         specifier: workspace:*
         version: link:../pattern
-      '@sweet-rewrite/shared':
+      '@sweetener/shared':
         specifier: workspace:*
         version: link:../shared
-      '@sweet-rewrite/syntax':
+      '@sweetener/syntax':
         specifier: workspace:*
         version: link:../syntax
 
   packages/macro-language:
     dependencies:
-      '@sweet-rewrite/hygiene':
+      '@sweetener/hygiene':
         specifier: workspace:*
         version: link:../hygiene
-      '@sweet-rewrite/pattern':
+      '@sweetener/pattern':
         specifier: workspace:*
         version: link:../pattern
-      '@sweet-rewrite/shared':
+      '@sweetener/shared':
         specifier: workspace:*
         version: link:../shared
-      '@sweet-rewrite/syntax':
+      '@sweetener/syntax':
         specifier: workspace:*
         version: link:../syntax
-      '@sweet-rewrite/template':
+      '@sweetener/template':
         specifier: workspace:*
         version: link:../template
     devDependencies:
-      '@sweet-rewrite/enforestation':
+      '@sweetener/enforestation':
         specifier: workspace:*
         version: link:../enforestation
-      '@sweet-rewrite/reader':
+      '@sweetener/reader':
         specifier: workspace:*
         version: link:../reader
 
   packages/pattern:
     dependencies:
-      '@sweet-rewrite/shared':
+      '@sweetener/shared':
         specifier: workspace:*
         version: link:../shared
-      '@sweet-rewrite/syntax':
+      '@sweetener/syntax':
         specifier: workspace:*
         version: link:../syntax
 
   packages/printer:
     dependencies:
-      '@sweet-rewrite/hygiene':
+      '@sweetener/hygiene':
         specifier: workspace:*
         version: link:../hygiene
-      '@sweet-rewrite/shared':
+      '@sweetener/shared':
         specifier: workspace:*
         version: link:../shared
-      '@sweet-rewrite/syntax':
+      '@sweetener/syntax':
         specifier: workspace:*
         version: link:../syntax
 
   packages/reader:
     dependencies:
-      '@sweet-rewrite/shared':
+      '@sweetener/shared':
         specifier: workspace:*
         version: link:../shared
-      '@sweet-rewrite/syntax':
+      '@sweetener/syntax':
         specifier: workspace:*
         version: link:../syntax
       typescript:
@@ -187,70 +220,83 @@ importers:
 
   packages/syntax:
     dependencies:
-      '@sweet-rewrite/shared':
+      '@sweetener/shared':
         specifier: workspace:*
         version: link:../shared
 
   packages/template:
     dependencies:
-      '@sweet-rewrite/hygiene':
+      '@sweetener/hygiene':
         specifier: workspace:*
         version: link:../hygiene
-      '@sweet-rewrite/pattern':
+      '@sweetener/pattern':
         specifier: workspace:*
         version: link:../pattern
-      '@sweet-rewrite/shared':
+      '@sweetener/shared':
         specifier: workspace:*
         version: link:../shared
-      '@sweet-rewrite/syntax':
+      '@sweetener/syntax':
         specifier: workspace:*
         version: link:../syntax
     devDependencies:
-      '@sweet-rewrite/reader':
+      '@sweetener/reader':
         specifier: workspace:*
         version: link:../reader
 
   packages/test-support:
     devDependencies:
-      '@sweet-rewrite/hygiene':
+      '@sweetener/hygiene':
         specifier: workspace:*
         version: link:../hygiene
-      '@sweet-rewrite/pattern':
+      '@sweetener/pattern':
         specifier: workspace:*
         version: link:../pattern
-      '@sweet-rewrite/printer':
+      '@sweetener/printer':
         specifier: workspace:*
         version: link:../printer
-      '@sweet-rewrite/shared':
+      '@sweetener/shared':
         specifier: workspace:*
         version: link:../shared
-      '@sweet-rewrite/syntax':
+      '@sweetener/syntax':
         specifier: workspace:*
         version: link:../syntax
-      '@sweet-rewrite/template':
+      '@sweetener/template':
         specifier: workspace:*
         version: link:../template
 
   packages/typescript-host:
     dependencies:
-      '@sweet-rewrite/hygiene':
+      '@sweetener/hygiene':
         specifier: workspace:*
         version: link:../hygiene
-      '@sweet-rewrite/printer':
+      '@sweetener/printer':
         specifier: workspace:*
         version: link:../printer
-      '@sweet-rewrite/reader':
+      '@sweetener/reader':
         specifier: workspace:*
         version: link:../reader
-      '@sweet-rewrite/shared':
+      '@sweetener/shared':
         specifier: workspace:*
         version: link:../shared
-      '@sweet-rewrite/syntax':
+      '@sweetener/syntax':
         specifier: workspace:*
         version: link:../syntax
       typescript:
         specifier: npm:@typescript/typescript6@6.0.2
         version: '@typescript/typescript6@6.0.2'
+
+  packages/unplugin:
+    dependencies:
+      '@sweetener/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      unplugin:
+        specifier: 3.3.0
+        version: 3.3.0(rolldown@1.2.1)(vite@8.2.0(@types/node@24.13.3))
+    devDependencies:
+      vite:
+        specifier: 8.2.0
+        version: 8.2.0(@types/node@24.13.3)
 
   playground:
     dependencies:
@@ -404,8 +450,21 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
+  '@jridgewell/gen-mapping@0.3.13':
+    resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
+
+  '@jridgewell/remapping@2.3.5':
+    resolution: {integrity: sha512-LI9u/+laYG4Ds1TDKSJW2YPrIlcVYOwi2fUC6xB43lueCjgxV4lffOCZCtYFiH6TNOX+tQKXx97T4IKHbhyHEQ==}
+
+  '@jridgewell/resolve-uri@3.1.2':
+    resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
+    engines: {node: '>=6.0.0'}
+
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
+
+  '@jridgewell/trace-mapping@0.3.31':
+    resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
   '@lezer/common@1.5.2':
     resolution: {integrity: sha512-sxQE460fPZyU3sdc8lafxiPwJHBzZRy/udNFynGQky1SePYBdhkBl1kOagA9uT3pxR8K09bOrmTUqA9wb/PjSQ==}
@@ -1203,6 +1262,39 @@ packages:
   undici-types@7.18.2:
     resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
 
+  unplugin@3.3.0:
+    resolution: {integrity: sha512-qa66K+crbfyE6JK10GjvbJeRrOsuC/JpbnHctfyp/i4oBTxWOzJfRZyDiOk1PtErMFRu8JhsU/wPvOdBNWe5Rg==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    peerDependencies:
+      '@farmfe/core': '*'
+      '@rspack/core': '*'
+      bun-types-no-globals: '*'
+      esbuild: '*'
+      rolldown: '*'
+      rollup: '*'
+      unloader: '*'
+      vite: '*'
+      webpack: '*'
+    peerDependenciesMeta:
+      '@farmfe/core':
+        optional: true
+      '@rspack/core':
+        optional: true
+      bun-types-no-globals:
+        optional: true
+      esbuild:
+        optional: true
+      rolldown:
+        optional: true
+      rollup:
+        optional: true
+      unloader:
+        optional: true
+      vite:
+        optional: true
+      webpack:
+        optional: true
+
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
 
@@ -1335,6 +1427,9 @@ packages:
 
   w3c-keyname@2.2.8:
     resolution: {integrity: sha512-dpojBhNsCNN7T82Tm7k26A6G9ML3NkhDsnw9n/eoxSRlVBB4CEtIQ/KTCLI2Fwf3ataSXRhYFkQi3SlnFwPvPQ==}
+
+  webpack-virtual-modules@0.6.2:
+    resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
 
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
@@ -1494,7 +1589,24 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
+  '@jridgewell/gen-mapping@0.3.13':
+    dependencies:
+      '@jridgewell/sourcemap-codec': 1.5.5
+      '@jridgewell/trace-mapping': 0.3.31
+
+  '@jridgewell/remapping@2.3.5':
+    dependencies:
+      '@jridgewell/gen-mapping': 0.3.13
+      '@jridgewell/trace-mapping': 0.3.31
+
+  '@jridgewell/resolve-uri@3.1.2': {}
+
   '@jridgewell/sourcemap-codec@1.5.5': {}
+
+  '@jridgewell/trace-mapping@0.3.31':
+    dependencies:
+      '@jridgewell/resolve-uri': 3.1.2
+      '@jridgewell/sourcemap-codec': 1.5.5
 
   '@lezer/common@1.5.2': {}
 
@@ -2208,6 +2320,15 @@ snapshots:
 
   undici-types@7.18.2: {}
 
+  unplugin@3.3.0(rolldown@1.2.1)(vite@8.2.0(@types/node@24.13.3)):
+    dependencies:
+      '@jridgewell/remapping': 2.3.5
+      picomatch: 4.0.5
+      webpack-virtual-modules: 0.6.2
+    optionalDependencies:
+      rolldown: 1.2.1
+      vite: 8.2.0(@types/node@24.13.3)
+
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
@@ -2262,6 +2383,8 @@ snapshots:
       - msw
 
   w3c-keyname@2.2.8: {}
+
+  webpack-virtual-modules@0.6.2: {}
 
   which@2.0.2:
     dependencies:

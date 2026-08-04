@@ -7,7 +7,7 @@ import type {
   RuleId,
   SourceId,
   SyntaxClassId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import { describe, expect, it } from "vitest";
 import {
   compileMatcherProgram,

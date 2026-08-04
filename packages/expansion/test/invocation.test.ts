@@ -3,19 +3,19 @@ import {
   createPhase,
   EnvironmentStore,
   ScopeStore,
-} from "@sweet-rewrite/hygiene";
+} from "@sweetener/hygiene";
 import {
   compileParsedBindingContracts,
   compileParsedSyntaxClasses,
   compileParsedTemplates,
   parseMacroDefinitions,
-} from "@sweet-rewrite/macro-language";
+} from "@sweetener/macro-language";
 import {
   compileMatcherProgram,
   createSyntaxClassConsumer,
   inferCaptureShapes,
-} from "@sweet-rewrite/pattern";
-import { readSyntax } from "@sweet-rewrite/reader";
+} from "@sweetener/pattern";
+import { readSyntax } from "@sweetener/reader";
 import {
   createIdAllocator,
   createResourceBudget,
@@ -25,13 +25,13 @@ import {
   type InvocationId,
   type SourceId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createProtectedSyntax,
   createSyntaxCursor,
   OriginStore,
   type Syntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import {
   invokeMacro,

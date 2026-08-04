@@ -1,4 +1,4 @@
-export const packageName = "@sweet-rewrite/expansion" as const;
+export const packageName = "@sweetener/expansion" as const;
 export * from "./environment.js";
 export * from "./definition-context.js";
 export * from "./diagnostics.js";

@@ -1,5 +1,5 @@
-import { createPhase } from "@sweet-rewrite/hygiene";
-import { printLosslessSequence, readSyntax } from "@sweet-rewrite/reader";
+import { createPhase } from "@sweetener/hygiene";
+import { printLosslessSequence, readSyntax } from "@sweetener/reader";
 import {
   createIdAllocator,
   createResourceBudget,
@@ -8,14 +8,14 @@ import {
   type ScopeSetId,
   type SourceId,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   createProtectedSyntax,
   createSyntaxCursor,
   OriginStore,
   type GroupSyntax,
   type Syntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import ts from "typescript";
 import { describe, expect, test } from "vitest";
 import {

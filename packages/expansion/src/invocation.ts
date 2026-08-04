@@ -8,7 +8,7 @@ import {
   type EnvironmentStore,
   type Phase,
   type ScopeStore,
-} from "@sweet-rewrite/hygiene";
+} from "@sweetener/hygiene";
 import {
   expectationKey,
   executeMatcher,
@@ -18,7 +18,7 @@ import {
   type MatchFailure,
   type MatcherProgram,
   type SyntaxClassConsumer,
-} from "@sweet-rewrite/pattern";
+} from "@sweetener/pattern";
 import {
   neverCancelled,
   type BindingId,
@@ -33,7 +33,7 @@ import {
   type ScopeSetId,
   type SourceSpan,
   type SyntaxId,
-} from "@sweet-rewrite/shared";
+} from "@sweetener/shared";
 import {
   SyntaxRange,
   type OriginStore,
@@ -42,14 +42,14 @@ import {
   type SyntaxCategory,
   type SyntaxCursor,
   type TokenSyntax,
-} from "@sweet-rewrite/syntax";
+} from "@sweetener/syntax";
 import {
   evaluateTemplate,
   instantiateTemplate,
   type FreshBinding,
   type SequenceTemplate,
   type TemplateOperationTrace,
-} from "@sweet-rewrite/template";
+} from "@sweetener/template";
 import {
   expansionDiagnosticRegistry,
   noMatchingMacroRuleCode,
