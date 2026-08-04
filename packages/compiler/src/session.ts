@@ -42,6 +42,7 @@ export interface SweetenerSession {
 interface CacheEntry {
   readonly result: SweetenerTransformResult;
   readonly dependencies: ReadonlySet<string>;
+  readonly dependencyFingerprint: string;
 }
 
 function canonical(fileName: string): string {
@@ -72,6 +73,17 @@ function fingerprint(parts: readonly string[]): string {
     hash.update(part);
   }
   return hash.digest("hex");
+}
+
+function fingerprintDependencies(paths: Iterable<string>): string {
+  return fingerprint(
+    [...paths]
+      .sort()
+      .flatMap((fileName) => [
+        fileName,
+        existsSync(fileName) ? readFileSync(fileName, "utf8") : "<missing>",
+      ]),
+  );
 }
 
 /**
@@ -112,7 +124,13 @@ export function createSweetenerSession(
         request.mode ?? "development",
       ]);
       const existing = cache.get(cacheKey);
-      if (existing !== undefined) return existing.result;
+      if (
+        existing !== undefined &&
+        existing.dependencyFingerprint ===
+          fingerprintDependencies(existing.dependencies)
+      )
+        return existing.result;
+      if (existing !== undefined) cache.delete(cacheKey);
 
       const project = loadSweetProject(configFile);
       const expanded = provider.expandProject(project);
@@ -148,6 +166,7 @@ export function createSweetenerSession(
       cache.set(cacheKey, {
         result,
         dependencies: new Set(dependencies),
+        dependencyFingerprint: fingerprintDependencies(dependencies),
       });
       return result;
     },

@@ -10,7 +10,7 @@ const defaultInclude = /\.s(?:ts|js)x?(?:\?.*)?$/u;
 
 export const sweetenerUnplugin = createUnplugin<
   SweetenerPluginOptions | undefined
->((options = {}) => {
+>((options = {}, meta) => {
   const session = createSweetenerSession();
   const include = options.include ?? defaultInclude;
   return {
@@ -44,19 +44,18 @@ export const sweetenerUnplugin = createUnplugin<
           map: {
             ...result.map,
             sources: [...result.map.sources],
-            sourcesContent: [...result.map.sourcesContent],
+            sourcesContent: [...(result.map.sourcesContent ?? [])],
             names: [...result.map.names],
           },
         };
       } catch (error) {
-        this.error(error instanceof Error ? error : new Error(String(error)));
+        const normalized =
+          error instanceof Error ? error : new Error(String(error));
+        this.error(meta.framework === "farm" ? normalized.message : normalized);
       }
     },
     watchChange(id) {
       session.invalidate([id]);
-    },
-    async buildEnd() {
-      await session.close();
     },
   };
 });
@@ -68,5 +67,4 @@ export const webpack = sweetenerUnplugin.webpack;
 export const rspack = sweetenerUnplugin.rspack;
 export const rsbuild = sweetenerUnplugin.rsbuild;
 export const esbuild = sweetenerUnplugin.esbuild;
-export const farm = sweetenerUnplugin.farm;
 export const bun = sweetenerUnplugin.bun;

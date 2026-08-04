@@ -1,0 +1,27 @@
+{
+  "name": "@sweetener/jest",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@babel/core": "8.0.1",
+    "@babel/preset-typescript": "8.0.1",
+    "@sweetener/compiler": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/babel__core": "7.20.5",
+    "jest": "30.4.2"
+  },
+  "peerDependencies": {
+    "jest": ">=29"
+  }
+}

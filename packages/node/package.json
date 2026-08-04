@@ -1,0 +1,19 @@
+{
+  "name": "@sweetener/node",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./register": "./dist/src/register.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@sweetener/compiler": "workspace:*",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
+  },
+  "engines": {
+    "node": ">=22.15"
+  }
+}

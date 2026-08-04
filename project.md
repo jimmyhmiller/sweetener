@@ -18,6 +18,7 @@ these documents are permanent until the first vertical prototype tests them.
 - [Proposed architecture](docs/design/architecture.md)
 - [Declarative macro language](docs/design/macro-language.md)
 - [Testing and performance plan](docs/design/testing-performance.md)
+- [Build-tool integrations](docs/integrations.md)
 - [Implementation roadmap](docs/implementation-roadmap.md)
 - [Phase proposals](docs/proposals/README.md)
 - [Playground expressiveness review](docs/proposals/00-expressiveness-contract.md)

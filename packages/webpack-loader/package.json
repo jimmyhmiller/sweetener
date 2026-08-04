@@ -1,0 +1,35 @@
+{
+  "name": "@sweetener/webpack-loader",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@sweetener/compiler": "workspace:*"
+  },
+  "devDependencies": {
+    "@rspack/core": "2.1.7",
+    "@types/webpack": "5.28.5",
+    "next": "16.2.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "webpack": "5.109.2"
+  },
+  "peerDependencies": {
+    "webpack": ">=5"
+  },
+  "peerDependenciesMeta": {
+    "webpack": {
+      "optional": true
+    }
+  }
+}

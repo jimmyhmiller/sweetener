@@ -15,7 +15,14 @@ const scopes = 0 as ScopeSetId;
 async function typescriptSources(directory: string): Promise<string[]> {
   const output: string[] = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (entry.name === "dist" || entry.name === "test") continue;
+    if (
+      entry.name.startsWith(".") ||
+      entry.name.startsWith("_") ||
+      entry.name === "dist" ||
+      entry.name === "node_modules" ||
+      entry.name === "test"
+    )
+      continue;
     const entryPath = path.join(directory, entry.name);
     if (entry.isDirectory())
       output.push(...(await typescriptSources(entryPath)));

@@ -1,0 +1,46 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+export interface IntegrationFixture {
+  readonly root: string;
+  readonly entry: string;
+  readonly macros: string;
+  readonly config: string;
+}
+
+export function integrationFixture(
+  host: string,
+  options: {
+    readonly entryExtension?: ".sts" | ".ts" | undefined;
+    readonly directive?: boolean | undefined;
+  } = {},
+): IntegrationFixture {
+  const root = mkdtempSync(join(tmpdir(), `sweet-${host}-`));
+  const entryName = `main${options.entryExtension ?? ".sts"}`;
+  const entry = join(root, entryName);
+  const macros = join(root, "macros.sts");
+  const config = join(root, "tsconfig.json");
+  writeFileSync(
+    macros,
+    `export syntax duplicate:expr { rule { duplicate($value:tt) } => { [$value, $value] } }\n`,
+  );
+  writeFileSync(
+    entry,
+    `${options.directive === true ? '"use sweetener";\n' : ""}import { duplicate } from "./macros.sts" for syntax;\nexport const answer = duplicate(21);\n`,
+  );
+  writeFileSync(
+    config,
+    JSON.stringify({
+      compilerOptions: { module: "ESNext", target: "ES2022" },
+      files: ["macros.sts", entryName],
+    }),
+  );
+  return { root, entry, macros, config };
+}
+
+export function expectExpanded(code: string): void {
+  if (!code.includes("21")) throw new Error("bundle omitted expanded value");
+  if (code.includes("duplicate") || code.includes("for syntax"))
+    throw new Error("bundle retained compile-time Sweetener syntax");
+}

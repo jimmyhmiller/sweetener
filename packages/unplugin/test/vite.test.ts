@@ -43,7 +43,12 @@ describe("Vite adapter", () => {
       expect(result?.code).toContain("[21,21]");
       expect(result?.code).not.toContain("for syntax");
       expect(
-        result?.map?.sources.some((source) => source.endsWith("main.sts")),
+        result?.map !== null &&
+          result?.map !== undefined &&
+          "sources" in result.map &&
+          result.map.sources.some((source: string) =>
+            source.endsWith("main.sts"),
+          ),
       ).toBe(true);
       expect(server.watcher.getWatched()).not.toEqual({});
     } finally {
@@ -76,13 +81,12 @@ describe("Vite adapter", () => {
       .join("\n");
     expect(output).toContain("21");
     expect(output).not.toContain("duplicate");
-    const maps = builds
+    const mapAsset = builds
       .flatMap((result) => ("output" in result ? result.output : []))
-      .filter(
-        (item) => item.type === "asset" && item.fileName.endsWith(".map"),
-      );
-    expect(maps).toHaveLength(1);
-    const map = JSON.parse(String(maps[0]!.source)) as {
+      .find((item) => item.type === "asset" && item.fileName.endsWith(".map"));
+    expect(mapAsset?.type).toBe("asset");
+    if (mapAsset?.type !== "asset") throw new Error("Missing source map asset");
+    const map = JSON.parse(String(mapAsset.source)) as {
       sources: readonly string[];
       mappings: string;
     };

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -21,7 +21,27 @@ for (const field of [
   "fixtureVersion",
 ])
   if (release[field] === undefined) problems.push(`missing ${field}`);
-if (release.packages.length !== 13) problems.push("expected thirteen packages");
+const expectedPackageNames = new Set(
+  await Promise.all(
+    (await readdir(join(root, "packages"), { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory())
+      .map(async (entry) => {
+        const manifest = JSON.parse(
+          await readFile(
+            join(root, "packages", entry.name, "package.json"),
+            "utf8",
+          ),
+        );
+        return manifest.name;
+      }),
+  ),
+);
+const releasedPackageNames = new Set(release.packages.map((item) => item.name));
+if (
+  expectedPackageNames.size !== releasedPackageNames.size ||
+  [...expectedPackageNames].some((name) => !releasedPackageNames.has(name))
+)
+  problems.push("release package set does not match the workspace");
 for (const item of release.packages) {
   const bytes = await readFile(join(releaseRoot, item.file));
   const sha256 = createHash("sha256").update(bytes).digest("hex");
