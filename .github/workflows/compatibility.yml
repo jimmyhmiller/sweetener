@@ -29,6 +29,4 @@ jobs:
           done
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm compatibility:probe
-      - name: Refresh generated status dashboard
-        run: pnpm status > /dev/null
       - run: pnpm check

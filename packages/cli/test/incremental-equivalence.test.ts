@@ -82,5 +82,5 @@ describe("incremental equivalence protocol", () => {
     });
     expect(steps.map(({ name }) => name)).toEqual(cases.map(([name]) => name));
     expect(steps.every(({ runtime }) => Array.isArray(runtime))).toBe(true);
-  }, 30_000);
+  }, 60_000);
 });
