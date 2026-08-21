@@ -15,67 +15,106 @@ real expansion pipeline locally in a Web Worker, with no server-side compiler.
 > release artifacts are complete, but the packages have not yet been published
 > to npm.
 
-## See it transform
+## Define your own syntax
 
 Sweetener macros are syntax-aware transformations rather than text
-substitutions. They can match typed grammatical forms, introduce bindings,
-define operators, and safely rewrite core forms.
+substitutions. You define them with concrete patterns and templates in `.sts`
+modules, then import them explicitly for syntax.
 
-### Implicit returns
+### A pipeline operator
+
+Define an infix operator, including its precedence and associativity:
 
 ```ts
-const calculate = function (value: number) {
-  const doubled = value * 2;
-  doubled + 1;
-};
+// operators.sts
+export operator (|>):expr {
+  fixity infix;
+  associativity left;
+  precedence 40;
+
+  rule { $value:expr |> $callee:ident } => {
+    $callee($value)
+  }
+}
 ```
 
-expands to:
+Then import and use it:
 
 ```ts
-const calculate = function (value: number) {
-  const doubled = value * 2;
-  return doubled + 1;
-};
+// main.sts
+import { (|>) } from "./operators.sts" for syntax;
+
+const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
+const result = [1, 2, 3] |> sum;
 ```
 
-### Custom operators
+### Rewriting a core form
+
+Core TypeScript syntax can only be intercepted when both the definition and the
+import explicitly opt in with `shadows core`. Fallback rules preserve ordinary
+behavior outside the special case:
 
 ```ts
-const result = #[1, 2, 3] |> sum == 6;
+// forms.sts
+export syntax typeof:expr shadows core {
+  literal globalThis.NaN as NaN;
+
+  rule { typeof NaN } => {
+    "NaN"
+  }
+
+  fallback rule { typeof $value:expr } => {
+    #core(typeof $value)
+  }
+}
 ```
 
-expands to ordinary, type-checkable TypeScript:
-
 ```ts
-const result = globalThis.Object.is(sum(vector(1, 2, 3)), 6);
+// main.sts
+import { typeof } from "./forms.sts" for syntax shadows core;
+
+const special = typeof NaN;
+const value = { answer: 42 };
+const ordinary = typeof value;
 ```
 
-Here `#` constructs a vector, `|>` pipes it into `sum`, and `==` is deliberately
-redefined as `Object.is`. Precedence and associativity are part of each operator
-declaration.
+### Recursive syntax
 
-### Algebraic data types and matching
+Macros can recursively consume syntax while every capture remains a grammatical
+unit—in this case an `expr`, `ident`, or token tree (`tt`):
 
 ```ts
-data Option<T> = None() | Some(value: T);
+// threading.sts
+export rec syntax (->):expr {
+  rule { (-> $value:expr) } => {
+    $value
+  }
 
-const result = match (Some(3)) {
-  Some(value) => value + 1;
-  None() => 0;
-};
+  rule {
+    (-> $value:expr, $next:ident($($argument:expr),*), $($rest:tt)+)
+  } => {
+    (-> $next($value, $($argument),*), $($rest)+)
+  }
+
+  rule { (-> $value:expr, $next:ident($($argument:expr),*),) } => {
+    $next($value, $($argument),*)
+  }
+
+  rule { (-> $value:expr, $next:ident($($argument:expr),*)) } => {
+    $next($value, $($argument),*)
+  }
+}
 ```
 
-expands into a discriminated union, typed constructors, and tag-based matching:
-
 ```ts
-type Option<T> = { readonly tag: "None" } | { readonly tag: "Some"; value: T };
+// main.sts
+import { (->) } from "./threading.sts" for syntax;
 
-const None = <T>(): Option<T> => ({ tag: "None" });
-const Some = <T>(value: T): Option<T> => ({ tag: "Some", value });
-
-// The generated match tests `value.tag`, binds the payload, and preserves
-// TypeScript's narrowing in each branch.
+const result = (->
+  [1, 2, 3],
+  map((value) => value + 1),
+  filter((value) => value > 2),
+);
 ```
 
 The playground also includes threading, do notation, currying, protocols, CSP
