@@ -168,29 +168,41 @@ select {
     monospace;
 }
 @media (max-width: 760px) {
+  html,
+  body,
+  #root {
+    height: auto;
+    min-height: 100%;
+  }
+  .shell {
+    display: block;
+    min-height: 100dvh;
+  }
   .toolbar {
+    position: sticky;
+    z-index: 10;
+    top: 0;
     flex-wrap: wrap;
   }
   .toolbar strong {
     width: 100%;
   }
   .toolbar select {
-    width: auto;
+    width: 0;
+    min-width: 0;
     flex: 1;
   }
   .state {
     display: none;
   }
   .workspace {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(520px, 1fr) minmax(520px, 1fr);
-    overflow: auto;
-  }
-  .shell {
-    height: auto;
-    min-height: 100%;
+    display: block;
+    overflow: visible;
   }
   .pane {
-    height: 70vh;
+    height: max(620px, 100dvh);
+  }
+  .pane + .pane {
+    border-top: 1px solid #d0d7de;
   }
 }

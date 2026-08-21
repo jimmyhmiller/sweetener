@@ -11,6 +11,12 @@ export function existsSync(fileName: string): boolean {
   return files.has(normalize(fileName));
 }
 
+export function realpathSync(fileName: string): string {
+  const normalized = normalize(fileName);
+  if (!files.has(normalized)) throw new Error(`ENOENT: ${fileName}`);
+  return normalized;
+}
+
 export function readFileSync(fileName: string, encoding?: string): string {
   const source = files.get(normalize(fileName));
   if (source === undefined) throw new Error(`ENOENT: ${fileName}`);
