@@ -13,6 +13,13 @@
     { "path": "packages/printer" },
     { "path": "packages/typescript-host" },
     { "path": "packages/test-support" },
-    { "path": "packages/cli" }
+    { "path": "packages/compiler" },
+    { "path": "packages/cli" },
+    { "path": "packages/babel" },
+    { "path": "packages/jest" },
+    { "path": "packages/node" },
+    { "path": "packages/parcel-transformer" },
+    { "path": "packages/unplugin" },
+    { "path": "packages/webpack-loader" }
   ]
 }

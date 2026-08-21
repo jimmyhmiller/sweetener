@@ -64,7 +64,6 @@ test("Parcel builds Sweetener with its native transformer", async () => {
     }),
   );
   const parcel = new Parcel({
-    projectRoot: resolve("."),
     entries: join(root, "main.sts"),
     defaultConfig: "@parcel/config-default",
     config: join(root, ".parcelrc"),
