@@ -465,3 +465,61 @@ describe("where an expansion lands", () => {
     expect(text).toContain("return [1]");
   });
 });
+
+describe("expansions of more than one node", () => {
+  test("expands a class element macro to several members", () => {
+    const { text, messages } = expand(
+      `export syntax withMembers:classElement {
+         rule { withMembers { $($member:ident: $memberType:type),+ } } => {
+           $(readonly $member: $memberType;)+
+         }
+       }`,
+      `import { withMembers } from "./macros.sts" for syntax;
+       export class Shape {
+         withMembers { width: number, height: number }
+         constructor(
+           readonly width: number,
+           readonly height: number,
+         ) {}
+       }`,
+    );
+    // A member list is a sequence like a statement or item list, and a macro
+    // that fills one may emit more than a single member.
+    expect(messages.filter((message) => message.includes("SWR"))).toEqual([]);
+    expect(text).toContain("readonly width: number;");
+    expect(text).toContain("readonly height: number;");
+  });
+
+  test("expands a type macro over a repetition", () => {
+    const { text, messages } = expand(
+      `export syntax matrix:type {
+         rule { matrix<$($dimension:type),+> } => {
+           globalThis.Array<[$($dimension),+]>
+         }
+       }`,
+      `import { matrix } from "./macros.sts" for syntax;
+       export const grid: matrix<number, string> = [[1, "a"]];`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain("globalThis.Array<[number, string]>");
+  });
+
+  test("expands nested repetitions", () => {
+    const { text, messages } = expand(
+      `export syntax table:item {
+         rule { table $name:binding { $($row:ident: [$($cell:expr),+];)+ } }
+         bind $name in following as lexical value;
+         => { const $name = { $($row: [$($cell),+],)+ }; }
+       }`,
+      `import { table } from "./macros.sts" for syntax;
+       table Lookup {
+         first: [1, 2, 3];
+         second: [4, 5];
+       }
+       export const rows = Lookup;`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain("first: [1, 2, 3]");
+    expect(text).toContain("second: [4, 5]");
+  });
+});

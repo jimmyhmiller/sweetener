@@ -120,6 +120,14 @@ export interface ExpandMacroSyntaxOptions extends Omit<
         readonly lexicalModule?: CompileParsedMacrosResult | undefined;
       }) => SyntaxSequence | undefined)
     | undefined;
+  /** Enforests a run of class members, for a macro that emits several. */
+  readonly enforestClassElements?:
+    | ((request: {
+        readonly syntax: SyntaxSequence;
+        readonly contexts: ReadonlySet<MacroContext>;
+        readonly lexicalModule?: CompileParsedMacrosResult | undefined;
+      }) => SyntaxSequence | undefined)
+    | undefined;
   /** Enforest one expression without throwing when the sequence is a fragment. */
   readonly enforestExpression?:
     | ((request: {
@@ -277,6 +285,28 @@ export function expandMacroSyntax(
           scopes: statements[0]!.scopes,
           category: "stmt",
           children: statements,
+        });
+      }
+    }
+    if (category === "classElement") {
+      const members = options.enforestClassElements?.({
+        syntax,
+        contexts,
+        lexicalModule,
+      });
+      if (members !== undefined && members.length > 0) {
+        if (members.length === 1) return members[0] as ProtectedSyntax;
+        const origins = [...new Set(members.map(({ origin }) => origin))];
+        return createProtectedSyntax({
+          id: options.allocateSyntaxId(),
+          span: spanEnvelope(members.map(({ span }) => span)),
+          origin:
+            origins.length === 1
+              ? origins[0]!
+              : options.origins.composed(origins),
+          scopes: members[0]!.scopes,
+          category: "classElement",
+          children: members,
         });
       }
     }
