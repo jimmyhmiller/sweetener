@@ -405,10 +405,10 @@ export function expandMacroSyntax(
   };
 
   /**
-   * Whether a parenthesis group holds a control-flow condition. The header of
-   * `if`, `while`, `switch`, or `with` is an expression, so a macro written
-   * there has to be looked up in the expression space rather than walked as
-   * part of the statement around it.
+   * Whether a parenthesis group holds a control-flow header. What stands
+   * there is an expression — the iterable of a `for`, the condition of the
+   * rest — so a macro written in one is looked up in the expression space
+   * rather than walked as part of the statement around it.
    */
   /** Whether the next node stands where a declaration names what it binds. */
   const binderFollows = (preceding: readonly Syntax[]): boolean => {
@@ -444,7 +444,7 @@ export function expandMacroSyntax(
     const previous = preceding.at(-1);
     return (
       previous?.tag === "token" &&
-      ["if", "while", "switch", "with"].includes(previous.raw)
+      ["if", "while", "switch", "with", "for"].includes(previous.raw)
     );
   };
 

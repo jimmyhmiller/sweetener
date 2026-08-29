@@ -604,3 +604,56 @@ describe("statement operators", () => {
     expect(text).toContain("left < -right");
   });
 });
+
+describe("where a macro may be written", () => {
+  const macros = `export syntax twice:expr {
+       rule { twice($value:expr) } => { [$value, $value] }
+     }`;
+
+  test("expands in every expression position", () => {
+    const { text, messages } = expand(
+      macros,
+      `import { twice } from "./macros.sts" for syntax;
+       export const inTemplate = \`pair: \${twice(1)}\`;
+       export const inArray = [twice(2), 3];
+       export const inObject = { key: twice(3) };
+       export const inTernary = true ? twice(4) : twice(5);
+       export const inSpread = [...twice(6)];
+       export const inNested = twice(twice(7));
+       export function inSwitch(value: number): number[] {
+         switch (value) {
+           case 1: return twice(8);
+           default: return twice(9);
+         }
+       }
+       export function inHeaders(values: number[]): void {
+         for (const entry of twice(10)) { globalThis.console.log(entry); }
+         while (twice(11).length > 0) { break; }
+       }`,
+    );
+    expect(messages).toEqual([]);
+    // A control-flow header holds an expression, the iterable of a `for`
+    // included, so nothing may be left unexpanded anywhere here.
+    expect(text).not.toContain("twice(");
+  });
+
+  test("leaves the loops it does not appear in alone", () => {
+    const { text, messages } = expand(
+      macros,
+      `import { twice } from "./macros.sts" for syntax;
+       export function loops(values: number[]): number {
+         let total = 0;
+         for (let index = 0; index < values.length; index += 1) {
+           total += values[index]!;
+         }
+         for (const entry of values) { total += entry; }
+         for (const key in { a: 1 }) { total += key.length; }
+         return total;
+       }`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain("for (let index = 0; index < values.length;");
+    expect(text).toContain("for (const entry of values)");
+    expect(text).toContain("for (const key in { a: 1 })");
+  });
+});
