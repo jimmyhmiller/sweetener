@@ -60,6 +60,7 @@ import {
 import { invokeMacro, type MacroTraceEvent } from "./invocation.js";
 import {
   expandMacroSyntax,
+  operatorWidthAt,
   type ExpandMacroSyntaxResult,
 } from "./recursive-expander.js";
 import type { ExpansionGuard } from "./progress.js";
@@ -471,13 +472,35 @@ export function createExpansionFrontendSession(
     ...shared,
     resolveMacro: bindingMacroResolver(extentResolver),
   });
+  /**
+   * A statement operator has to be offered its statement before the ordinary
+   * parse commits, because `a <- b` also reads as a comparison against a
+   * negation. A run holding one is left for the expander to walk.
+   */
+  const holdsStatementOperator = (children: readonly Syntax[]): boolean => {
+    const infix = modules
+      .flatMap(({ operators }) => operators)
+      .filter(
+        (operator) =>
+          operator.category === "stmt" && operator.fixity === "infix",
+      );
+    if (infix.length === 0) return false;
+    return children.some((_, at) =>
+      infix.some(
+        (operator) =>
+          operatorWidthAt(children, at, operator.spelling) !== undefined,
+      ),
+    );
+  };
   const statement = createStatementConsumer({
     ...consumerShared,
     resolveMacro: extentResolver,
+    holdsStatementOperator,
   });
   const item = createItemConsumer({
     ...consumerShared,
     resolveMacro: extentResolver,
+    holdsStatementOperator,
   });
   const type = createTypeConsumer(shared);
   const jsxChild = createJsxChildConsumer(shared);

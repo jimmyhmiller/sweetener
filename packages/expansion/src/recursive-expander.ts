@@ -170,7 +170,7 @@ function punctuationSpelled(spelling: string): boolean {
   return !/^[\p{ID_Start}_$]/u.test(spelling);
 }
 
-function operatorWidthAt(
+export function operatorWidthAt(
   syntax: SyntaxSequence,
   index: number,
   spelling: string,
@@ -416,6 +416,27 @@ export function expandMacroSyntax(
     return (
       previous?.tag === "token" &&
       ["const", "let", "var", "using"].includes(previous.raw)
+    );
+  };
+
+  /**
+   * Whether a run of statements holds a statement operator. `a <- b` is also a
+   * comparison against a negation, so enforesting first would commit to the
+   * ordinary reading and the operator would never be offered the statement.
+   */
+  const holdsStatementOperator = (children: readonly Syntax[]): boolean => {
+    const infix = activeModules
+      .flatMap(({ operators }) => operators)
+      .filter(
+        (operator) =>
+          operator.category === "stmt" && operator.fixity === "infix",
+      );
+    if (infix.length === 0) return false;
+    return children.some((_, at) =>
+      infix.some(
+        (operator) =>
+          operatorWidthAt(children, at, operator.spelling) !== undefined,
+      ),
     );
   };
 
@@ -918,7 +939,8 @@ export function expandMacroSyntax(
             // an unexpanded invocation the parser cannot place — is walked raw
             // exactly as before.
             const preEnforested =
-              request.category === "stmt"
+              request.category === "stmt" &&
+              !holdsStatementOperator(request.syntax)
                 ? options.enforestStatements?.({
                     syntax: request.syntax,
                     contexts,
@@ -1263,6 +1285,7 @@ export function expandMacroSyntax(
           node.tag === "group" &&
           node.delimiter === "brace" &&
           bodyCategory === "stmt" &&
+          !holdsStatementOperator(node.children) &&
           node.children.some((child) => child.tag === "token")
             ? options.enforestStatements?.({
                 syntax: node.children,

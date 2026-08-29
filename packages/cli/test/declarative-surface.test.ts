@@ -565,3 +565,42 @@ declare global {
     expect(text).toContain("second: [4, 5]");
   });
 });
+
+describe("statement operators", () => {
+  const macros = `export operator (<-):stmt {
+       fixity infix;
+       associativity none;
+       precedence 20;
+       rule { $name:binding <- $source:expr; }
+       bind $name in following as lexical value;
+       => { const $name = ($source); }
+     }`;
+
+  test("dispatches on its own, not only beside another operator", () => {
+    const { text, messages } = expand(
+      macros,
+      `import { (<-) } from "./macros.sts" for syntax;
+       export function run(): number {
+         received <- 41;
+         return received + 1;
+       }`,
+    );
+    expect(messages).toEqual([]);
+    // `received <- 41` also reads as `received < (-41)`, so the ordinary parse
+    // must not commit before the operator is offered the statement.
+    expect(text).toContain("const received =");
+    expect(text).not.toContain("<-");
+  });
+
+  test("leaves an ordinary comparison against a negation alone", () => {
+    const { text, messages } = expand(
+      macros,
+      `import { (<-) } from "./macros.sts" for syntax;
+       declare const left: number;
+       declare const right: number;
+       export const smaller = left < -right;`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain("left < -right");
+  });
+});

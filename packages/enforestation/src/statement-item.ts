@@ -36,6 +36,14 @@ export type StatementItemMacroResolver = MacroExtentResolver;
 
 export interface StatementItemConsumerOptions extends PrattExpressionConsumerOptions {
   readonly resolveMacro?: StatementItemMacroResolver | undefined;
+  /**
+   * Reports a statement operator standing in this run. Such a statement often
+   * reads as ordinary TypeScript too — `a <- b` is a comparison against a
+   * negation — so enforesting it would commit to that reading before the
+   * operator was ever offered the statement.
+   */
+  readonly holdsStatementOperator?:
+    ((children: readonly Syntax[]) => boolean) | undefined;
 }
 
 const statementStarts = new Set([
@@ -399,6 +407,8 @@ class StatementConsumer implements SyntaxConsumer {
     allowYield?: boolean,
   ): Syntax {
     if (block.children.length === 0) return block;
+    if (this.options.holdsStatementOperator?.(block.children) === true)
+      return block;
     let inner = createSyntaxCursor(block.children);
     const statements: Syntax[] = [];
     const blockContext = Object.freeze({
