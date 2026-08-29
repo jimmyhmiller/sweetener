@@ -637,6 +637,27 @@ describe("where a macro may be written", () => {
     expect(text).not.toContain("twice(");
   });
 
+  test("expands after an equals sign, wherever it stands", () => {
+    const { text, messages } = expand(
+      macros,
+      `import { twice } from "./macros.sts" for syntax;
+       export function defaulted(value: number[] = twice(1)): number[] {
+         return value;
+       }
+       export class Holder {
+         field = twice(2);
+         static shared = twice(3);
+       }`,
+    );
+    expect(messages).toEqual([]);
+    // A parameter default and a class field initializer are expressions even
+    // though the syntax around them is a parameter list and a member list.
+    expect(text).not.toContain("twice(");
+    expect(text).toContain("value: number[] = [1,1]");
+    expect(text).toContain("field = [2,2]");
+    expect(text).toContain("static shared = [3,3]");
+  });
+
   test("leaves the loops it does not appear in alone", () => {
     const { text, messages } = expand(
       macros,
@@ -655,5 +676,50 @@ describe("where a macro may be written", () => {
     expect(text).toContain("for (let index = 0; index < values.length;");
     expect(text).toContain("for (const entry of values)");
     expect(text).toContain("for (const key in { a: 1 })");
+  });
+});
+
+describe("type positions", () => {
+  const macros = `export syntax boxed:type {
+       rule { boxed<$inner:type> } => { globalThis.Array<$inner> }
+     }`;
+
+  test("expands wherever a type is written, not only in an annotation", () => {
+    const { text, messages } = expand(
+      macros,
+      `import { boxed } from "./macros.sts" for syntax;
+       export const annotated: boxed<number> = [1];
+       export function returns(): boxed<string> { return ["a"]; }
+       export function takes(value: boxed<number>): void {
+         globalThis.console.log(value);
+       }
+       export type Alias = boxed<boolean>;
+       export interface Holder { readonly field: boxed<number>; }
+       export type Union = boxed<number> | undefined;
+       export type Nested = globalThis.Map<string, boxed<number>>;
+       export const asserted = [1] as boxed<number>;
+       export function generic<T extends boxed<number>>(value: T): T {
+         return value;
+       }`,
+    );
+    expect(messages).toEqual([]);
+    // A return type, a constraint, a union member, and the right-hand side of
+    // a type alias are all types, however the syntax around them is walked.
+    expect(text).not.toContain("boxed<");
+  });
+
+  test("leaves a value of the same spelling alone", () => {
+    const { text, messages } = expand(
+      macros,
+      `import { boxed } from "./macros.sts" for syntax;
+       export function use(): number {
+         const boxed = 1;
+         return boxed + 1;
+       }`,
+    );
+    // The name is only read as a type where a type is written.
+    expect(messages).toEqual([]);
+    expect(text).toContain("const boxed = 1");
+    expect(text).toContain("return boxed + 1");
   });
 });

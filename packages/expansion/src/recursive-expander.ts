@@ -410,6 +410,42 @@ export function expandMacroSyntax(
    * rest — so a macro written in one is looked up in the expression space
    * rather than walked as part of the statement around it.
    */
+  /**
+   * Whether the next node stands where a type is written. A type macro is
+   * looked up only after one of these, so a name that also happens to be a
+   * value is not mistaken for one.
+   */
+  const typePositionFollows = (preceding: readonly Syntax[]): boolean => {
+    const previous = preceding.at(-1);
+    if (previous?.tag !== "token") return false;
+    if (
+      [":", "as", "satisfies", "extends", "|", "&", "<", ","].includes(
+        previous.raw,
+      )
+    )
+      return true;
+    // The `=` of a type alias introduces a type, unlike every other `=`.
+    if (previous.raw !== "=") return false;
+    for (let at = preceding.length - 2; at >= 0; at -= 1) {
+      const node = preceding[at]!;
+      if (node.tag !== "token") return false;
+      if (node.raw === ";" || node.raw === "}") return false;
+      if (node.raw === "type") return true;
+    }
+    return false;
+  };
+
+  /**
+   * Whether the next node stands after an `=`. What follows one is an
+   * expression wherever it appears — a parameter's default, a class field's
+   * initializer — even when the syntax around it is being walked as something
+   * else.
+   */
+  const initializerFollows = (preceding: readonly Syntax[]): boolean => {
+    const previous = preceding.at(-1);
+    return previous?.tag === "token" && previous.raw === "=";
+  };
+
   /** Whether the next node stands where a declaration names what it binds. */
   const binderFollows = (preceding: readonly Syntax[]): boolean => {
     const previous = preceding.at(-1);
@@ -652,6 +688,36 @@ export function expandMacroSyntax(
         node.tag === "token"
           ? resolveSpelling(node.raw, node.span.start, sourceOf(node))
           : undefined;
+      // A type is written in many places the surrounding syntax is not a type:
+      // an annotation, a return type, a constraint, a member of a union.
+      if (
+        resolvedMacro === undefined &&
+        node.tag === "token" &&
+        category !== "type" &&
+        typePositionFollows(output)
+      ) {
+        resolvedMacro = resolveSpelling(
+          node.raw,
+          node.span.start,
+          sourceOf(node),
+          "type",
+        );
+        if (resolvedMacro !== undefined) resolvedCategory = "type";
+      }
+      if (
+        resolvedMacro === undefined &&
+        node.tag === "token" &&
+        category !== "expr" &&
+        initializerFollows(output)
+      ) {
+        resolvedMacro = resolveSpelling(
+          node.raw,
+          node.span.start,
+          sourceOf(node),
+          "expr",
+        );
+        if (resolvedMacro !== undefined) resolvedCategory = "expr";
+      }
       // The binder of a declaration is its own category, so a macro standing
       // there is looked up among binding macros rather than the statements or
       // items around it.
@@ -1276,9 +1342,10 @@ export function expandMacroSyntax(
                 functionBodyFollows(output)
               ? "stmt"
               : node.tag === "group" &&
-                  node.delimiter === "parenthesis" &&
                   category !== "expr" &&
-                  conditionFollows(output)
+                  ((node.delimiter === "parenthesis" &&
+                    conditionFollows(output)) ||
+                    initializerFollows(output))
                 ? "expr"
                 : category;
         const statementBody =
