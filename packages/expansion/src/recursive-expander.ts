@@ -449,10 +449,14 @@ export function expandMacroSyntax(
   /** Whether the next node stands where a declaration names what it binds. */
   const binderFollows = (preceding: readonly Syntax[]): boolean => {
     const previous = preceding.at(-1);
-    return (
-      previous?.tag === "token" &&
-      ["const", "let", "var", "using"].includes(previous.raw)
-    );
+    if (previous?.tag !== "token") return false;
+    return ["const", "let", "var", "using"].includes(previous.raw);
+  };
+
+  /** Whether a parenthesis group names what a `catch` binds. */
+  const catchBinderFollows = (preceding: readonly Syntax[]): boolean => {
+    const previous = preceding.at(-1);
+    return previous?.tag === "token" && previous.raw === "catch";
   };
 
   /**
@@ -724,7 +728,7 @@ export function expandMacroSyntax(
       if (
         resolvedMacro === undefined &&
         node.tag === "token" &&
-        (category === "item" || category === "stmt") &&
+        category !== "binding" &&
         binderFollows(output)
       ) {
         resolvedMacro = resolveSpelling(
@@ -1342,12 +1346,16 @@ export function expandMacroSyntax(
                 functionBodyFollows(output)
               ? "stmt"
               : node.tag === "group" &&
-                  category !== "expr" &&
-                  ((node.delimiter === "parenthesis" &&
-                    conditionFollows(output)) ||
-                    initializerFollows(output))
-                ? "expr"
-                : category;
+                  node.delimiter === "parenthesis" &&
+                  catchBinderFollows(output)
+                ? "binding"
+                : node.tag === "group" &&
+                    category !== "expr" &&
+                    ((node.delimiter === "parenthesis" &&
+                      conditionFollows(output)) ||
+                      initializerFollows(output))
+                  ? "expr"
+                  : category;
         const statementBody =
           node.tag === "group" &&
           node.delimiter === "brace" &&

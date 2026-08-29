@@ -319,6 +319,23 @@ describe("binder position", () => {
     expect(text).toContain("let [third, fourth] = more");
   });
 
+  test("dispatches in a loop binder and a catch binder", () => {
+    const { text, messages } = expand(
+      macros,
+      `import { pair } from "./macros.sts" for syntax;
+       declare const rows: readonly (readonly number[])[];
+       export function walk(): number {
+         let total = 0;
+         for (const pair(first, second) of rows) { total += first + second; }
+         try { total += 1; } catch (pair(code, detail)) { total += 1; }
+         return total;
+       }`,
+    );
+    expect(messages.filter((message) => message.includes("SWR"))).toEqual([]);
+    expect(text).toContain("for (const [first, second] of rows)");
+    expect(text).toContain("catch ([code, detail])");
+  });
+
   test("leaves an ordinary binder exactly as written", () => {
     const { text, messages } = expand(
       macros,
