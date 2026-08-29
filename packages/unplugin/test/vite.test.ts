@@ -16,7 +16,7 @@ function fixture() {
   );
   writeFileSync(
     entry,
-    `import { duplicate } from "./macros.sts" for syntax;\nexport const answer = duplicate(21);\n`,
+    `import { duplicate } from "./macros.sts" for syntax;\nexport interface Answer { readonly values: number[] }\nexport const answer: Answer = { values: duplicate(21) };\n`,
   );
   writeFileSync(
     config,
@@ -40,7 +40,8 @@ describe("Vite adapter", () => {
     });
     try {
       const result = await server.transformRequest("/main.sts");
-      expect(result?.code).toContain("[21,21]");
+      expect(result?.code).toContain("[21, 21]");
+      expect(result?.code).not.toContain("interface Answer");
       expect(result?.code).not.toContain("for syntax");
       expect(
         result?.map !== null &&

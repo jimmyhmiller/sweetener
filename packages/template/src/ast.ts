@@ -2,6 +2,7 @@ import type {
   CapturePath,
   CapturePathSegment,
   CaptureShape,
+  IdentifierJoinSpec,
 } from "@sweetener/pattern";
 import type {
   CardinalityGroupId,
@@ -80,12 +81,17 @@ export type HygieneOperation =
         "callsite" | "definition" | "capture" | "text" | "trim" | "count";
       readonly path: CapturePath;
     }
+  | {
+      readonly kind: "join";
+      readonly spec: IdentifierJoinSpec;
+    }
   | { readonly kind: "index" };
 
 export interface HygieneOperationTemplate extends TemplateBase {
   readonly kind: "operation";
   readonly operation: HygieneOperation;
   readonly driverShape: CaptureShape | undefined;
+  readonly prototype: TokenSyntax | undefined;
 }
 
 export type FoldLocal = "accumulator" | "element" | "index";
@@ -237,6 +243,7 @@ export function createHygieneOperationTemplate(
   origin: OriginId,
   operation: HygieneOperation,
   driverShape?: CaptureShape,
+  prototype?: TokenSyntax,
 ): HygieneOperationTemplate {
   if (
     (operation.kind === "fresh" || operation.kind === "metavar") &&
@@ -247,11 +254,25 @@ export function createHygieneOperationTemplate(
   if ("path" in operation && !Object.isFrozen(operation.path)) {
     throw new TypeError("Operation capture path must be immutable");
   }
+  if (operation.kind === "join") {
+    if (!Object.isFrozen(operation.spec.path))
+      throw new TypeError("Identifier join capture path must be immutable");
+  }
+  if (prototype !== undefined && !Object.isFrozen(prototype))
+    throw new TypeError("Operation token prototype must be immutable");
   return Object.freeze({
     kind: "operation",
     origin,
-    operation: Object.freeze({ ...operation }),
+    operation: Object.freeze(
+      operation.kind === "join"
+        ? {
+            ...operation,
+            spec: Object.freeze({ ...operation.spec }),
+          }
+        : { ...operation },
+    ),
     driverShape,
+    prototype,
   });
 }
 

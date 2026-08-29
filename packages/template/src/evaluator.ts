@@ -1,8 +1,9 @@
-import type {
-  CaptureLeaf,
-  CapturePath,
-  CaptureRecord,
-  CaptureValue,
+import {
+  joinedIdentifierText,
+  type CaptureLeaf,
+  type CapturePath,
+  type CaptureRecord,
+  type CaptureValue,
 } from "@sweetener/pattern";
 import {
   createResourceBudget,
@@ -52,6 +53,7 @@ export type EvaluatedOperation =
       readonly operation: "fresh";
       readonly hint: string;
       readonly ordinal: number;
+      readonly prototype?: TokenSyntax | undefined;
     }
   | {
       readonly kind: "operation";
@@ -59,6 +61,7 @@ export type EvaluatedOperation =
       readonly operation: "metavar";
       readonly hint: string;
       readonly indices: readonly number[];
+      readonly prototype?: TokenSyntax | undefined;
     }
   | {
       readonly kind: "operation";
@@ -72,12 +75,24 @@ export type EvaluatedOperation =
       readonly origin: OriginId;
       readonly operation: "text";
       readonly text: string;
+      readonly prototype?: TokenSyntax | undefined;
+    }
+  | {
+      readonly kind: "operation";
+      readonly origin: OriginId;
+      readonly operation: "join";
+      readonly text: string;
+      readonly capture: CaptureId;
+      readonly scopes: ScopeSetId;
+      readonly prototype?: TokenSyntax | undefined;
+      readonly sourceOrigin: OriginId;
     }
   | {
       readonly kind: "operation";
       readonly origin: OriginId;
       readonly operation: "index" | "count";
       readonly value: number;
+      readonly prototype?: TokenSyntax | undefined;
     };
 
 export type EvaluatedTemplate =
@@ -358,7 +373,9 @@ class Evaluator {
           : this.#nested(() => this.#sequence(branch, indices, locals));
       }
       case "operation":
-        return [this.#operation(node.origin, node.operation, indices)];
+        return [
+          this.#operation(node.origin, node.operation, indices, node.prototype),
+        ];
       case "local": {
         if (locals === undefined) {
           throw new TemplateCaptureError(
@@ -369,7 +386,9 @@ class Evaluator {
           return [...locals.accumulator];
         }
         if (node.local === "index") {
-          return [this.#indexOperation(node.origin, locals.index, indices)];
+          return [
+            this.#indexOperation(node.origin, locals.index, indices, undefined),
+          ];
         }
         const value = selectFields(locals.element, node.fields, "Fold element");
         if (value.kind !== "leaf") {
@@ -409,6 +428,7 @@ class Evaluator {
     origin: OriginId,
     operation: HygieneOperation,
     indices: readonly number[],
+    prototype: TokenSyntax | undefined,
   ): EvaluatedOperation {
     if (operation.kind === "fresh") {
       const ordinal = this.#freshOrdinal;
@@ -420,6 +440,7 @@ class Evaluator {
         operation: "fresh",
         hint: operation.hint,
         ordinal,
+        prototype,
       });
     }
     if (operation.kind === "metavar") {
@@ -445,6 +466,7 @@ class Evaluator {
         operation: "metavar",
         hint: operation.hint,
         indices: Object.freeze([...indices]),
+        prototype,
       });
     }
     if (operation.kind === "index") {
@@ -452,7 +474,33 @@ class Evaluator {
       if (value === undefined) {
         throw new TemplateCaptureError("#index used outside repetition");
       }
-      return this.#indexOperation(origin, value, indices);
+      return this.#indexOperation(origin, value, indices, prototype);
+    }
+    if (operation.kind === "join") {
+      const value = resolvePath(this.#captures, operation.spec.path, indices);
+      if (value.kind !== "leaf")
+        throw new TemplateCaptureError("#join requires one identifier capture");
+      const first = value.syntax[0];
+      if (first === undefined)
+        throw new TemplateCaptureError(
+          "#join requires a nonempty identifier capture",
+        );
+      const text = joinedIdentifierText(
+        operation.spec,
+        stableSyntaxText(value.syntax),
+      );
+      const capture = finalCaptureId(operation.spec.path);
+      this.#record(operation.kind, origin, capture, indices, text);
+      return Object.freeze({
+        kind: "operation",
+        origin,
+        operation: "join",
+        text,
+        capture,
+        scopes: first.scopes,
+        prototype,
+        sourceOrigin: value.origin,
+      });
     }
     const value = resolvePath(this.#captures, operation.path, indices);
     if (operation.kind === "count") {
@@ -471,6 +519,7 @@ class Evaluator {
         origin,
         operation: "count",
         value: result,
+        prototype,
       });
     }
     if (value.kind !== "leaf") {
@@ -487,6 +536,7 @@ class Evaluator {
         origin,
         operation: operation.kind,
         text,
+        prototype,
       });
     }
     this.#record(operation.kind, origin, capture, indices, undefined);
@@ -503,6 +553,7 @@ class Evaluator {
     origin: OriginId,
     value: number,
     indices: readonly number[],
+    prototype: TokenSyntax | undefined,
   ): EvaluatedOperation {
     this.#record("index", origin, undefined, indices, value);
     return Object.freeze({
@@ -510,6 +561,7 @@ class Evaluator {
       origin,
       operation: "index",
       value,
+      prototype,
     });
   }
 

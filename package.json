@@ -37,10 +37,11 @@
     "samples:check": "pnpm build && pnpm samples:setup && node samples/external/project-graph/run.mjs && node samples/external/macro-editor/run.mjs && node samples/external/default-project/run.mjs && node samples/external/javascript-project/run.mjs",
     "playground": "pnpm --dir playground dev",
     "playground:build": "pnpm --dir playground build",
+    "examples:build": "pnpm --filter '@sweetener-example/*' --workspace-concurrency=1 run build",
     "release:stage": "pnpm build && node scripts/stage-alpha-release.mjs",
     "release:check": "pnpm release:stage && node scripts/release-check.mjs",
     "release:verify": "pnpm release:stage && node scripts/verify-alpha-release.mjs",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm check:boundaries && pnpm check:declarative-boundary && pnpm acceptance:check && pnpm check:release-spec && pnpm samples:check && pnpm release:check && pnpm status > /dev/null && pnpm status:check"
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm check:boundaries && pnpm check:declarative-boundary && pnpm acceptance:check && pnpm check:release-spec && pnpm samples:check && pnpm examples:build && pnpm release:check && pnpm status > /dev/null && pnpm status:check"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

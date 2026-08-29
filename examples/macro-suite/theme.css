@@ -1,0 +1,44 @@
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  color: #271c19;
+  background: #fff7e8;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 70rem;
+  margin: auto;
+  padding: 4rem 1.5rem;
+}
+h1 {
+  font-size: clamp(2.5rem, 8vw, 6rem);
+  line-height: 0.9;
+  margin: 0 0 1rem;
+  color: #c43b1c;
+}
+.hero {
+  font-size: 1.3rem;
+  padding: 1rem;
+  background: #ffe066;
+  border: 3px solid #271c19;
+  transform: rotate(-1deg);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+article {
+  background: white;
+  border: 2px solid #271c19;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 5px 5px 0 #271c19;
+}
+small {
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #765;
+}

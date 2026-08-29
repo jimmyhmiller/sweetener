@@ -1,0 +1,11 @@
+{
+  "name": "@sweetener-example/deno",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "deno task verify"
+  },
+  "dependencies": {
+    "@sweetener/cli": "workspace:*"
+  }
+}

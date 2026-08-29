@@ -1,6 +1,7 @@
 import type { SyntaxId } from "@sweetener/shared";
 import {
   createProtectedSyntax,
+  createSyntaxSequence,
   spanEnvelope,
   type GroupSyntax,
   type OriginStore,
@@ -176,6 +177,26 @@ function validateMacro(
 
 function angleWidth(raw: string, character: "<" | ">") {
   return [...raw].every((item) => item === character) ? raw.length : 0;
+}
+
+/**
+ * Reads one balanced TypeScript angle-delimited region without committing the
+ * caller's cursor on failure. Expressions use this to distinguish a generic
+ * call such as `useState<number>(0)` from relational operators.
+ */
+export function consumeBalancedTypeArguments(
+  cursor: SyntaxCursor,
+  context: ConsumerContext,
+) {
+  const working = cursor.fork();
+  const children: Syntax[] = [];
+  const first = working.peek();
+  if (!token(first) || angleWidth(first.raw, "<") === 0) return undefined;
+  if (!consumeAngles(working, context, children)) return undefined;
+  return Object.freeze({
+    syntax: createSyntaxSequence(children),
+    width: working.index - cursor.index,
+  });
 }
 
 function consumeAngles(

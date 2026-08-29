@@ -109,6 +109,19 @@ export interface ExpandMacroSyntaxOptions extends Omit<
         readonly contexts: ReadonlySet<MacroContext>;
       }) => SyntaxSequence | undefined)
     | undefined;
+  readonly enforestItems?:
+    | ((request: {
+        readonly syntax: SyntaxSequence;
+        readonly contexts: ReadonlySet<MacroContext>;
+      }) => SyntaxSequence | undefined)
+    | undefined;
+  /** Enforest one expression without throwing when the sequence is a fragment. */
+  readonly enforestExpression?:
+    | ((request: {
+        readonly syntax: SyntaxSequence;
+        readonly contexts: ReadonlySet<MacroContext>;
+      }) => ProtectedSyntax | undefined)
+    | undefined;
 }
 
 export interface ExpandMacroSyntaxResult {
@@ -200,6 +213,42 @@ export function expandMacroSyntax(
     lexicalModule: CompileParsedMacrosResult,
     contexts: ReadonlySet<MacroContext>,
   ): ProtectedSyntax => {
+    if (category === "stmt") {
+      const statements = options.enforestStatements?.({ syntax, contexts });
+      if (statements !== undefined) {
+        if (statements.length === 1) return statements[0] as ProtectedSyntax;
+        const origins = [...new Set(statements.map(({ origin }) => origin))];
+        return createProtectedSyntax({
+          id: options.allocateSyntaxId(),
+          span: spanEnvelope(statements.map(({ span }) => span)),
+          origin:
+            origins.length === 1
+              ? origins[0]!
+              : options.origins.composed(origins),
+          scopes: statements[0]!.scopes,
+          category: "stmt",
+          children: statements,
+        });
+      }
+    }
+    if (category === "item") {
+      const items = options.enforestItems?.({ syntax, contexts });
+      if (items !== undefined) {
+        if (items.length === 1) return items[0] as ProtectedSyntax;
+        const origins = [...new Set(items.map(({ origin }) => origin))];
+        return createProtectedSyntax({
+          id: options.allocateSyntaxId(),
+          span: spanEnvelope(items.map(({ span }) => span)),
+          origin:
+            origins.length === 1
+              ? origins[0]!
+              : options.origins.composed(origins),
+          scopes: items[0]!.scopes,
+          category: "item",
+          children: items,
+        });
+      }
+    }
     if (
       (category === "item" || category === "stmt") &&
       syntax.length > 1 &&
@@ -302,19 +351,25 @@ export function expandMacroSyntax(
           continue;
         }
         const origins = [...new Set(nested.syntax.map(({ origin }) => origin))];
-        output.push(
-          createProtectedSyntax({
-            id: options.allocateSyntaxId(),
-            span: spanEnvelope(nested.syntax.map(({ span }) => span)),
-            origin:
-              origins.length === 1
-                ? origins[0]!
-                : options.origins.composed(origins),
-            scopes: nested.syntax[0]?.scopes ?? node.scopes,
-            category,
-            children: nested.syntax,
-          }),
-        );
+        const categorized =
+          category === "item"
+            ? enforestSequence(nested.syntax, category, lexicalModule, contexts)
+            : undefined;
+        const completed = createProtectedSyntax({
+          id: options.allocateSyntaxId(),
+          span: spanEnvelope(nested.syntax.map(({ span }) => span)),
+          origin:
+            origins.length === 1
+              ? origins[0]!
+              : options.origins.composed(origins),
+          scopes: nested.syntax[0]?.scopes ?? node.scopes,
+          category,
+          children:
+            categorized === undefined
+              ? nested.syntax
+              : createSyntaxSequence([categorized]),
+        });
+        output.push(completed);
         currentEnvironment = nested.environment;
         index += coreBody === compactCoreBody ? 2 : 3;
         continue;
@@ -806,6 +861,77 @@ export function expandMacroSyntax(
           index += 1;
           continue;
         }
+        if (
+          node.tag === "group" &&
+          node.delimiter === "brace" &&
+          category === "expr" &&
+          node.children.some(
+            (child) => child.tag === "token" && child.raw === ":",
+          )
+        ) {
+          const children: Syntax[] = [];
+          let member: Syntax[] = [];
+          const expandExpression = (syntax: readonly Syntax[]): Syntax[] => {
+            if (syntax.length === 0) return [];
+            const enforested = options.enforestExpression?.({
+              syntax: createSyntaxSequence(syntax),
+              contexts,
+            });
+            const nested = visit(
+              enforested === undefined
+                ? createSyntaxSequence(syntax)
+                : createSyntaxSequence([enforested]),
+              currentEnvironment,
+              "expr",
+              parentInvocation,
+              lexicalModule,
+              contexts,
+              false,
+              recursiveBinding,
+            );
+            currentEnvironment = nested.environment;
+            return [...nested.syntax];
+          };
+          const expandMember = () => {
+            if (member.length === 0) return;
+            const colon = member.findIndex(
+              (child) => child.tag === "token" && child.raw === ":",
+            );
+            const methodHead =
+              colon >= 0 &&
+              member
+                .slice(0, colon)
+                .some(
+                  (child) =>
+                    child.tag === "group" && child.delimiter === "parenthesis",
+                );
+            if (colon >= 0 && !methodHead) {
+              children.push(
+                ...member.slice(0, colon + 1),
+                ...expandExpression(member.slice(colon + 1)),
+              );
+            } else {
+              children.push(...expandExpression(member));
+            }
+            member = [];
+          };
+          for (const child of node.children) {
+            if (child.tag === "token" && child.raw === ",") {
+              expandMember();
+              children.push(child);
+            } else member.push(child);
+          }
+          expandMember();
+          output.push(
+            createGroup({
+              ...node,
+              id: options.allocateSyntaxId(),
+              children: createSyntaxSequence(children),
+            }),
+          );
+          index += 1;
+          continue;
+        }
         // A raw brace body reached under a statement or item category is a
         // statement list. Enforesting it here assigns interior categories, so
         // an expression macro inside it is seen as an expression rather than
@@ -815,7 +941,7 @@ export function expandMacroSyntax(
         const statementBody =
           node.tag === "group" &&
           node.delimiter === "brace" &&
-          (category === "stmt" || category === "item") &&
+          category === "stmt" &&
           node.children.some((child) => child.tag === "token")
             ? options.enforestStatements?.({
                 syntax: node.children,

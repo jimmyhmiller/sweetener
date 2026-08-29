@@ -1,0 +1,19 @@
+{
+  "name": "@sweetener-example/sveltekit",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@sveltejs/adapter-auto": "latest",
+    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/vite-plugin-svelte": "latest",
+    "@sweetener/unplugin": "workspace:*",
+    "svelte": "^5.56.10",
+    "vite": "^8.2.2"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2"
+  }
+}

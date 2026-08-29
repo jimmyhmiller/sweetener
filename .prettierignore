@@ -1,6 +1,7 @@
 artifacts/
 docs/acceptance-capability-ledger.md
 fixtures/legacy/
+examples/tanstack-start/src/routeTree.gen.ts
 STATUS.md
 pnpm-lock.yaml
 samples/external/*/dist/

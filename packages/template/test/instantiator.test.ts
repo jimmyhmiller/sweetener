@@ -247,7 +247,9 @@ describe("template instantiator", () => {
   });
 
   test("materializes fresh, stable text, and indices with identities", () => {
-    const context = setup('{ #fresh("tmp") #text($expr) }');
+    const context = setup(
+      '{ #fresh("tmp") #text($expr) #join($name, prefix: "set", casing: "upper-first") }',
+    );
     const result = context.instantiate();
     expect(result.syntax).toMatchObject([
       { tag: "token", kind: "identifier", raw: "tmp" },
@@ -257,7 +259,17 @@ describe("template instantiator", () => {
         raw: '"(a + b)"',
         value: "(a + b)",
       },
+      { tag: "token", kind: "identifier", raw: "setCaller" },
     ]);
+    expect(
+      result.syntax[2]?.tag === "token" && result.syntax[2].leadingTrivia,
+    ).toMatchObject([{ kind: "whitespace", raw: " " }]);
+    expect(
+      result.syntax[0]?.tag === "token" && result.syntax[0].leadingTrivia,
+    ).toMatchObject([{ kind: "whitespace", raw: " " }]);
+    expect(
+      result.syntax[1]?.tag === "token" && result.syntax[1].leadingTrivia,
+    ).toMatchObject([{ kind: "whitespace", raw: " " }]);
     expect(result.freshBindings).toEqual([
       {
         binding: 1_000,

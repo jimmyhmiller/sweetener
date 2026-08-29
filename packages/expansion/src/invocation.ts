@@ -461,6 +461,7 @@ export function invokeMacro(
         },
         allocateSyntaxId: options.allocateSyntaxId,
         allocateBindingId: options.allocateBindingId,
+        generatedBindings: contracts.generatedBindings,
         tracker: options.tracker,
         cancellation,
       });

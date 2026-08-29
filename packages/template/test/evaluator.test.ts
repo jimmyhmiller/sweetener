@@ -105,7 +105,8 @@ function raws(output: ReturnType<typeof evaluateTemplate>["output"]): string[] {
           syntax.tag === "token" ? syntax.raw : syntax.tag,
         ),
       );
-    else if (item.operation === "text") values.push(item.text);
+    else if (item.operation === "text" || item.operation === "join")
+      values.push(item.text);
     else if (item.operation === "index" || item.operation === "count")
       values.push(String(item.value));
     else if (item.operation === "fresh") values.push(item.hint);
@@ -278,7 +279,7 @@ describe("template evaluator", () => {
     const items = captureId(3);
     const cardinality = groupId(1);
     const template = compile(
-      '{ #fresh("tmp") #callsite($name) #definition($name) #capture($name) #text($expr) #count($items) $($items #index()),* }',
+      '{ #fresh("tmp") #callsite($name) #definition($name) #capture($name) #text($expr) #join($name, prefix: "set", casing: "upper-first") #count($items) $($items #index()),* }',
       [
         binding("name", name, 0, []),
         binding("expr", expr, 0, []),
@@ -304,6 +305,7 @@ describe("template evaluator", () => {
       { kind: "operation", operation: "definition" },
       { kind: "operation", operation: "capture" },
       { kind: "operation", operation: "text", text: "(a + b)" },
+      { kind: "operation", operation: "join", text: "setCaller" },
       { kind: "operation", operation: "count", value: 2 },
       { kind: "syntax", syntax: [{ raw: "x" }] },
       { kind: "operation", operation: "index", value: 0 },
@@ -317,6 +319,7 @@ describe("template evaluator", () => {
       "definition",
       "capture",
       "text",
+      "join",
       "count",
       "index",
       "index",

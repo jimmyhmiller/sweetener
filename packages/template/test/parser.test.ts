@@ -299,7 +299,7 @@ describe("template parser", () => {
       minimum: 0,
     });
     const result = parse(
-      '{ #fresh("tmp") #callsite($name) #definition($name) #capture($name) #text($expr) #count($items) $($items #index()),* }',
+      '{ #fresh("tmp") #callsite($name) #definition($name) #capture($name) #text($expr) #join($name, prefix: "set", casing: "upper-first") #count($items) $($items #index()),* }',
       [
         binding("name", 1, createLeafShape(identClass)),
         binding("expr", 2, createLeafShape(exprClass)),
@@ -315,6 +315,17 @@ describe("template parser", () => {
       { kind: "operation", operation: { kind: "definition" } },
       { kind: "operation", operation: { kind: "capture" } },
       { kind: "operation", operation: { kind: "text" } },
+      {
+        kind: "operation",
+        operation: {
+          kind: "join",
+          spec: {
+            prefix: "set",
+            suffix: "",
+            casing: "upper-first",
+          },
+        },
+      },
       { kind: "operation", operation: { kind: "count" } },
       {
         kind: "repeat",
@@ -358,12 +369,13 @@ describe("template parser", () => {
     const identClass = id<SyntaxClassId>(1);
     const exprClass = id<SyntaxClassId>(2);
     const result = parse(
-      '{ #fresh("") #callsite($expr) #index() }',
+      '{ #fresh("") #callsite($expr) #join() #index() }',
       [binding("expr", 1, createLeafShape(exprClass))],
       undefined,
       [identClass],
     );
     expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual([
+      "SWR2017",
       "SWR2017",
       "SWR2017",
       "SWR2017",

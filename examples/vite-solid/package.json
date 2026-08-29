@@ -1,0 +1,17 @@
+{
+  "name": "@sweetener-example/vite-solid",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@sweetener/unplugin": "workspace:*",
+    "solid-js": "^1.9.15",
+    "vite-plugin-solid": "latest"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "vite": "^8.2.2"
+  }
+}

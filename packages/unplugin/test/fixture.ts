@@ -14,6 +14,7 @@ export function integrationFixture(
   options: {
     readonly entryExtension?: ".sts" | ".ts" | undefined;
     readonly directive?: boolean | undefined;
+    readonly typed?: boolean | undefined;
   } = {},
 ): IntegrationFixture {
   const root = mkdtempSync(join(tmpdir(), `sweet-${host}-`));
@@ -27,7 +28,7 @@ export function integrationFixture(
   );
   writeFileSync(
     entry,
-    `${options.directive === true ? '"use sweetener";\n' : ""}import { duplicate } from "./macros.sts" for syntax;\nexport const answer = duplicate(21);\n`,
+    `${options.directive === true ? '"use sweetener";\n' : ""}import { duplicate } from "./macros.sts" for syntax;\n${options.typed === true ? "export interface Answer { readonly values: number[] }\nexport const answer: Answer = { values: duplicate(21) };\n" : "export const answer = duplicate(21);\n"}`,
   );
   writeFileSync(
     config,

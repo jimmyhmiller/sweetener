@@ -1,0 +1,19 @@
+{
+  "name": "@sweetener-example/solid-start",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@solidjs/router": "latest",
+    "@solidjs/start": "^2.0.4",
+    "@sweetener/unplugin": "workspace:*",
+    "nitro": "latest",
+    "solid-js": "^1.9.15",
+    "vite": "^8.2.2"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2"
+  }
+}

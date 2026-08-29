@@ -110,6 +110,22 @@ export interface CreateExpansionFrontendSessionOptions {
   readonly allocateInvocationId: () => InvocationId;
 }
 
+function diagnosticSyntaxText(syntax: readonly Syntax[]): string {
+  const parts: string[] = [];
+  const visit = (node: Syntax): void => {
+    if (node.tag === "token") {
+      parts.push(node.raw);
+      return;
+    }
+    if (node.tag === "group") parts.push(node.open.raw);
+    for (const child of node.children) visit(child);
+    if (node.tag === "group" && node.close.tag === "token")
+      parts.push(node.close.raw);
+  };
+  for (const node of syntax) visit(node);
+  return parts.join(" ");
+}
+
 export interface ExpansionFrontendSession {
   readonly consumeClass: SyntaxClassConsumer;
   readonly environment: BindingEnvironment;
@@ -574,7 +590,9 @@ export function createExpansionFrontendSession(
       activeOperatorModule = previousOperatorModule;
     }
     if (!attempted.matched || !attempted.cursor.atEnd)
-      throw new TypeError(`expanded syntax is not one ${category}`);
+      throw new TypeError(
+        `expanded syntax is not one ${category}: ${diagnosticSyntaxText(syntax)}`,
+      );
     return attempted.syntax;
   };
   const protect = (
@@ -782,6 +800,31 @@ export function createExpansionFrontendSession(
             cursor = attempted.cursor;
           }
           return createSyntaxSequence(statements);
+        },
+        enforestItems: ({ syntax, contexts }) => {
+          let cursor = createSyntaxCursor(syntax);
+          const items: Syntax[] = [];
+          while (!cursor.atEnd) {
+            const before = cursor.index;
+            const attempted = item.consume(cursor, {
+              ...context("item", contexts),
+              stopSet: StopSet.empty,
+            });
+            if (!attempted.matched || attempted.cursor.index <= before)
+              return undefined;
+            items.push(attempted.syntax);
+            cursor = attempted.cursor;
+          }
+          return createSyntaxSequence(items);
+        },
+        enforestExpression: ({ syntax, contexts }) => {
+          const attempted = expression.consume(createSyntaxCursor(syntax), {
+            ...context("expr", contexts),
+            stopSet: StopSet.empty,
+          });
+          return attempted.matched && attempted.cursor.atEnd
+            ? attempted.syntax
+            : undefined;
         },
         phase: options.phase,
         environmentEpoch: expansionEnvironment.epoch,

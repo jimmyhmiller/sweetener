@@ -1,0 +1,17 @@
+{
+  "name": "@sweetener-example/vite-preact",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@preact/preset-vite": "latest",
+    "@sweetener/unplugin": "workspace:*",
+    "preact": "latest"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "vite": "^8.2.2"
+  }
+}

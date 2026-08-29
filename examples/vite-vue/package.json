@@ -1,0 +1,17 @@
+{
+  "name": "@sweetener-example/vite-vue",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@sweetener/unplugin": "workspace:*",
+    "@vitejs/plugin-vue": "latest",
+    "vue": "^3.5.42"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "vite": "^8.2.2"
+  }
+}

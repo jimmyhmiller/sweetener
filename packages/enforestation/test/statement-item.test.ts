@@ -13,6 +13,7 @@ import {
   createProtectedSyntax,
   createSyntaxCursor,
   OriginStore,
+  type GroupSyntax,
   type SyntaxCategory,
 } from "@sweetener/syntax";
 import ts from "typescript";
@@ -74,6 +75,14 @@ function output(source: string, category: "stmt" | "item") {
 }
 
 describe("statement and item consumers", () => {
+  test("consumes a generic-arrow variable item", () => {
+    const source =
+      'const Some = <T>(value: T): Option<T> => ({ tag: "Some", value });';
+    const { result } = parse(source, "item");
+    expect(result.matched).toBe(true);
+    if (!result.matched) throw new Error("expected variable item");
+    expect(result.cursor.atEnd).toBe(true);
+  });
   test.each([
     ";",
     "{ value(); }",
@@ -88,6 +97,8 @@ describe("statement and item consumers", () => {
     "const value = source + 1;",
     "function run(value) { return value; }",
     "class Box { value = 1; }",
+    "outer: for (;;) { break outer; }",
+    "@sealed class DecoratedBox { value = 1; }",
     "target.call(value);",
   ])("consumes the complete statement extent: %s", (source) => {
     const { result } = parse(`${source} after();`, "stmt");
@@ -96,6 +107,36 @@ describe("statement and item consumers", () => {
     expect(printLosslessSequence(result.syntax.children)).toBe(source);
     expect(result.cursor.atEnd).toBe(false);
     expect(result.syntax.category).toBe("stmt");
+  });
+
+  test("enforests statements inside switch clauses", () => {
+    const { result } = parse(
+      "switch (value) { case 1: work(); break; default: stop(); }",
+      "stmt",
+    );
+    expect(result.matched).toBe(true);
+    if (!result.matched) throw new Error("expected switch statement");
+    const body = result.syntax.children.find(
+      (syntax): syntax is GroupSyntax =>
+        syntax.tag === "group" && syntax.delimiter === "brace",
+    );
+    expect(
+      body?.children.filter(
+        (syntax) => syntax.tag === "protected" && syntax.category === "stmt",
+      ),
+    ).toHaveLength(3);
+  });
+
+  test.each([
+    "using resource = acquire();",
+    "@sealed class DecoratedBox { value: number; }",
+    "await using resource = acquireAsync();",
+  ])("consumes explicit resource-management statement %s", (source) => {
+    const { result } = parse(source, "stmt");
+    expect(result.matched).toBe(true);
+    if (!result.matched) throw new Error("expected using declaration");
+    expect(result.cursor.atEnd).toBe(true);
+    expect(printLosslessSequence(result.syntax.children)).toBe(source);
   });
 
   test("implements restricted-production and automatic-semicolon rules", () => {
@@ -132,6 +173,7 @@ describe("statement and item consumers", () => {
     "type Value = string | number;",
     "enum Mode { One, Two }",
     "namespace Local { export const value = 1; }",
+    "using resource = acquire();",
   ])("consumes the complete module-item extent: %s", (source) => {
     const { result } = parse(`${source}\nconst after = 1;`, "item");
     expect(result.matched).toBe(true);

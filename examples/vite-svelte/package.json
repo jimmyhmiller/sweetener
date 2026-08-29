@@ -1,0 +1,17 @@
+{
+  "name": "@sweetener-example/vite-svelte",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@sweetener/unplugin": "workspace:*",
+    "@sveltejs/vite-plugin-svelte": "latest",
+    "svelte": "^5.56.10"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "vite": "^8.2.2"
+  }
+}

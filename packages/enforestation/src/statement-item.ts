@@ -41,6 +41,7 @@ export interface StatementItemConsumerOptions extends PrattExpressionConsumerOpt
 const statementStarts = new Set([
   "abstract",
   "async",
+  "await",
   "break",
   "class",
   "const",
@@ -66,12 +67,14 @@ const statementStarts = new Set([
   "try",
   "type",
   "var",
+  "using",
   "while",
   "with",
 ]);
 
 const itemStarts = new Set([
   "abstract",
+  "await",
   "class",
   "const",
   "declare",
@@ -88,6 +91,7 @@ const itemStarts = new Set([
   "syntax",
   "type",
   "var",
+  "using",
 ]);
 
 const blockItemHeads = new Set([
@@ -268,6 +272,28 @@ class StatementConsumer implements SyntaxConsumer {
     if (first === undefined || context.stopSet.matches(cursor)) {
       return failure("stmt", cursor, start, ["statement"], 1);
     }
+    if (token(first, "@")) {
+      const children: Syntax[] = [];
+      while (token(cursor.peek(), "@")) {
+        children.push(cursor.consume()!);
+        const decorator = this.#expression.consume(cursor, {
+          ...context,
+          category: "expr",
+          stopSet: StopSet.empty,
+        });
+        if (!decorator.matched)
+          return failure("stmt", cursor, start, ["decorator expression"], 35);
+        children.push(decorator.syntax);
+      }
+      const declaration = this.consume(cursor, context);
+      if (!declaration.matched) return declaration;
+      children.push(declaration.syntax);
+      return Object.freeze({
+        matched: true,
+        syntax: protect("stmt", this.options, children),
+        cursor,
+      });
+    }
     if (first.tag === "group" && first.delimiter === "brace") {
       cursor.advance();
       return Object.freeze({
@@ -287,13 +313,25 @@ class StatementConsumer implements SyntaxConsumer {
       });
     }
     const keyword = raw(first);
+    if ((first as Syntax).tag === "token" && token(cursor.peek(1), ":")) {
+      const children = [cursor.consume()!, cursor.consume()!];
+      const body = this.#consumeNested(cursor, context);
+      if (!body.matched) return body;
+      children.push(body.syntax);
+      return Object.freeze({
+        matched: true,
+        syntax: protect("stmt", this.options, children),
+        cursor,
+      });
+    }
     if (keyword === "if") return this.#consumeIf(cursor, context, start);
     if (keyword === "do") return this.#consumeDo(cursor, context, start);
     if (keyword === "try") return this.#consumeTry(cursor, context, start);
     if (["for", "while", "with"].includes(keyword ?? "")) {
       return this.#consumeHeaderAndBody(cursor, context, start);
     }
-    if (keyword === "switch") return this.#consumeSwitch(cursor, start);
+    if (keyword === "switch")
+      return this.#consumeSwitch(cursor, context, start);
     if (
       ["return", "throw", "break", "continue", "debugger"].includes(
         keyword ?? "",
@@ -301,8 +339,16 @@ class StatementConsumer implements SyntaxConsumer {
     ) {
       return this.#consumeRestricted(cursor, context, start, keyword!);
     }
-    if (["const", "let", "var"].includes(keyword ?? "")) {
-      return this.#consumeVariable(cursor, context, start);
+    if (
+      ["const", "let", "var", "using"].includes(keyword ?? "") ||
+      (keyword === "await" && raw(cursor.peek(1)) === "using")
+    ) {
+      return this.#consumeVariable(
+        cursor,
+        context,
+        start,
+        keyword === "await" ? 2 : 1,
+      );
     }
     if (
       [
@@ -433,7 +479,11 @@ class StatementConsumer implements SyntaxConsumer {
     });
   }
 
-  #consumeSwitch(cursor: SyntaxCursor, start: number): ConsumerAttempt {
+  #consumeSwitch(
+    cursor: SyntaxCursor,
+    context: ConsumerContext,
+    start: number,
+  ): ConsumerAttempt {
     const children: Syntax[] = [cursor.consume()!];
     if (!consumeHeaderGroup(cursor, children)) {
       return failure(
@@ -448,11 +498,57 @@ class StatementConsumer implements SyntaxConsumer {
     if (body?.tag !== "group" || body.delimiter !== "brace") {
       return failure("stmt", cursor, start, ["switch block"], 40);
     }
-    children.push(cursor.consume()!);
+    cursor.advance();
+    children.push(this.#enforestSwitchBody(body, context));
     return Object.freeze({
       matched: true,
       syntax: protect("stmt", this.options, children),
       cursor,
+    });
+  }
+
+  #enforestSwitchBody(
+    body: GroupSyntax,
+    context: ConsumerContext,
+  ): GroupSyntax {
+    let cursor = createSyntaxCursor(body.children);
+    const children: Syntax[] = [];
+    const statementContext = Object.freeze({
+      ...context,
+      category: "stmt" as const,
+      stopSet: StopSet.empty,
+    });
+    while (!cursor.atEnd) {
+      const clause = raw(cursor.peek());
+      if (clause !== "case" && clause !== "default") return body;
+      children.push(cursor.consume()!);
+      if (clause === "case") {
+        const expression = this.#expression.consume(cursor, {
+          ...context,
+          category: "expr",
+          stopSet: new StopSet([{ kind: "token", raw: ":" }]),
+        });
+        if (!expression.matched) return body;
+        children.push(expression.syntax);
+      }
+      if (!token(cursor.peek(), ":")) return body;
+      children.push(cursor.consume()!);
+      while (
+        !cursor.atEnd &&
+        raw(cursor.peek()) !== "case" &&
+        raw(cursor.peek()) !== "default"
+      ) {
+        const before = cursor.index;
+        const statement = this.consume(cursor, statementContext);
+        if (!statement.matched || statement.cursor.index <= before) return body;
+        children.push(statement.syntax);
+        cursor = statement.cursor;
+      }
+    }
+    return createGroup({
+      ...body,
+      id: this.options.allocateSyntaxId(),
+      children: createSyntaxSequence(children),
     });
   }
 
@@ -598,8 +694,11 @@ class StatementConsumer implements SyntaxConsumer {
     cursor: SyntaxCursor,
     context: ConsumerContext,
     start: number,
+    headWidth = 1,
   ): ConsumerAttempt {
-    const children: Syntax[] = [cursor.consume()!];
+    const children: Syntax[] = [];
+    for (let index = 0; index < headWidth; index += 1)
+      children.push(cursor.consume()!);
     while (!cursor.atEnd && !context.stopSet.matches(cursor)) {
       checkWork(context);
       const next = cursor.peek()!;
@@ -786,9 +885,12 @@ class ItemConsumer implements SyntaxConsumer {
     const children: Syntax[] = [];
     while (raw(cursor.peek()) === "export" || raw(cursor.peek()) === "declare")
       children.push(cursor.consume()!);
-    if (!["const", "let", "var"].includes(raw(cursor.peek()) ?? ""))
-      return undefined;
-    children.push(cursor.consume()!);
+    const declaration = raw(cursor.peek());
+    if (declaration === "await" && raw(cursor.peek(1)) === "using") {
+      children.push(cursor.consume()!, cursor.consume()!);
+    } else if (["const", "let", "var", "using"].includes(declaration ?? "")) {
+      children.push(cursor.consume()!);
+    } else return undefined;
     while (!cursor.atEnd && !context.stopSet.matches(cursor)) {
       const binding = this.#binding.consume(cursor, {
         ...context,
@@ -877,6 +979,28 @@ class ItemConsumer implements SyntaxConsumer {
     if (first === undefined || context.stopSet.matches(cursor)) {
       return failure("item", cursor, start, ["module item"], 1);
     }
+    if (token(first, "@")) {
+      const children: Syntax[] = [];
+      while (token(cursor.peek(), "@")) {
+        children.push(cursor.consume()!);
+        const decorator = this.#expression.consume(cursor, {
+          ...context,
+          category: "expr",
+          stopSet: StopSet.empty,
+        });
+        if (!decorator.matched)
+          return failure("item", cursor, start, ["decorator expression"], 35);
+        children.push(decorator.syntax);
+      }
+      const declaration = this.consume(cursor, context);
+      if (!declaration.matched) return declaration;
+      children.push(declaration.syntax);
+      return Object.freeze({
+        matched: true,
+        syntax: protect("item", this.options, children),
+        cursor,
+      });
+    }
     const variable = this.#consumeVariable(cursor.fork(), context, start);
     if (variable !== undefined) return variable;
     if (itemStarts.has(raw(first) ?? "")) {
@@ -902,8 +1026,16 @@ class ItemConsumer implements SyntaxConsumer {
       }
       if (
         endsAtBlock &&
+        braceGroup(children.at(-1)) &&
+        token(cursor.peek(), ";")
+      ) {
+        children.push(cursor.consume()!);
+      }
+      if (
+        endsAtBlock &&
         !token(children.at(-1), ";") &&
-        !braceGroup(children.at(-1))
+        !braceGroup(children.at(-1)) &&
+        !braceGroup(children.at(-2))
       ) {
         return failure("item", cursor, start, ["declaration body"], 40);
       }
@@ -914,7 +1046,9 @@ class ItemConsumer implements SyntaxConsumer {
       ) {
         return failure("item", cursor, start, ["module-item terminator"], 30);
       }
-      const body = children.at(-1);
+      const body = token(children.at(-1), ";")
+        ? children.at(-2)
+        : children.at(-1);
       if (body?.tag === "group" && body.delimiter === "brace") {
         const bodyCategory = headWords.includes("class")
           ? "classElement"
@@ -923,8 +1057,11 @@ class ItemConsumer implements SyntaxConsumer {
             : headWords.includes("module") || headWords.includes("namespace")
               ? "item"
               : undefined;
-        if (bodyCategory !== undefined)
-          children[children.length - 1] = protect(bodyCategory, this.options, [
+        if (bodyCategory !== undefined) {
+          const bodyIndex = token(children.at(-1), ";")
+            ? children.length - 2
+            : children.length - 1;
+          children[bodyIndex] = protect(bodyCategory, this.options, [
             // A function body is a statement list and a class body is an
             // element list; both are enforested as such. Protecting the raw
             // group instead only let the expander walk its tokens under the
@@ -940,6 +1077,7 @@ class ItemConsumer implements SyntaxConsumer {
                 ? this.#enforestClassBody(body, context)
                 : body,
           ]);
+        }
       }
       return Object.freeze({
         matched: true,

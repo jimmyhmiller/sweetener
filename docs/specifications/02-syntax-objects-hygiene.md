@@ -208,6 +208,7 @@ produced by syntax consumers. It MUST NOT resolve scope through printed text.
 #definition($identifier)
 #capture($identifier)
 #text($syntax)
+#join($identifier, prefix: "set", casing: "upper-first")
 ```
 
 - `#fresh` creates a new identifier with a fresh binding identity and template
@@ -218,6 +219,22 @@ produced by syntax consumers. It MUST NOT resolve scope through printed text.
   call-site syntax. The compiler emits a trace event and optional warning.
 - `#text` returns stable raw token text for an accepted token or group. It does
   not expose scope IDs or generated printer names.
+- `#join` constructs one identifier from an identifier capture plus optional
+  `prefix`, `suffix`, and `casing` options. `casing` is one of `preserve`,
+  `upper-first`, `lower-first`, `upper`, or `lower`. Definition-time validation
+  restricts the capture to identifier syntax classes, and expansion rejects a
+  result that is not a valid ECMAScript identifier.
+
+A constructed identifier can be declared by a binding contract:
+
+```text
+bind #join($name, prefix: "set", casing: "upper-first") in following as lexical value;
+```
+
+This is a generated binding, not a textual convention. The contract derives
+the spelling, allocates its lexical scope, declares it in the hygiene
+environment, attaches that scope to matching `#join` output, and exports the
+scope to following syntax. The source capture is not rebound by this contract.
 
 These operations validate argument classes at macro-definition time.
 

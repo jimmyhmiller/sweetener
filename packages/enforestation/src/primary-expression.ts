@@ -15,6 +15,7 @@ import {
   type ConsumerContext,
   type SyntaxConsumer,
 } from "./consumer.js";
+import { consumeBalancedTypeArguments } from "./type-class-element.js";
 
 export const primaryExpressionPrecedence: Precedence = createPrecedence(1_000);
 
@@ -33,7 +34,16 @@ const literalKinds = new Set<TokenSyntax["kind"]>([
   "no-substitution-template",
 ]);
 
-const literalKeywords = new Set(["this", "super", "null", "true", "false"]);
+const literalKeywords = new Set([
+  "this",
+  "super",
+  "null",
+  "true",
+  "false",
+  "async",
+  "import",
+  "new",
+]);
 
 function isPrimaryAtom(syntax: Syntax | undefined): boolean {
   if (syntax?.tag === "protected") return syntax.category === "expr";
@@ -63,17 +73,62 @@ function functionExpressionWidth(cursor: SyntaxCursor): number | undefined {
   offset += 1;
   const star = cursor.peek(offset);
   if (star?.tag === "token" && star.raw === "*") offset += 1;
-  const possibleName = cursor.peek(offset);
-  if (possibleName?.tag === "token" && possibleName.kind === "identifier")
-    offset += 1;
+  let parametersOffset: number | undefined;
+  for (let candidate = offset; candidate < offset + 32; candidate += 1) {
+    const node = cursor.peek(candidate);
+    if (node === undefined) return undefined;
+    if (node.tag === "group" && node.delimiter === "parenthesis") {
+      parametersOffset = candidate;
+      break;
+    }
+  }
+  if (parametersOffset === undefined) return undefined;
+  for (
+    let candidate = parametersOffset + 1;
+    candidate < parametersOffset + 33;
+    candidate += 1
+  ) {
+    const node = cursor.peek(candidate);
+    if (node === undefined) return undefined;
+    if (node.tag === "group" && node.delimiter === "brace")
+      return candidate + 1;
+  }
+  return undefined;
+}
+
+function classExpressionWidth(cursor: SyntaxCursor): number | undefined {
+  const first = cursor.peek();
+  if (first?.tag !== "token" || first.raw !== "class") return undefined;
+  for (let candidate = 1; candidate < 33; candidate += 1) {
+    const node = cursor.peek(candidate);
+    if (node === undefined) return undefined;
+    if (node.tag === "group" && node.delimiter === "brace")
+      return candidate + 1;
+  }
+  return undefined;
+}
+
+function genericArrowWidth(
+  cursor: SyntaxCursor,
+  context: ConsumerContext,
+): number | undefined {
+  const typeParameters = consumeBalancedTypeArguments(cursor, context);
+  if (typeParameters === undefined) return undefined;
+  let offset = typeParameters.width;
   const parameters = cursor.peek(offset);
-  const body = cursor.peek(offset + 1);
-  return parameters?.tag === "group" &&
-    parameters.delimiter === "parenthesis" &&
-    body?.tag === "group" &&
-    body.delimiter === "brace"
-    ? offset + 2
-    : undefined;
+  if (parameters?.tag !== "group" || parameters.delimiter !== "parenthesis")
+    return undefined;
+  offset += 1;
+  while (offset < typeParameters.width + 65) {
+    const node = cursor.peek(offset);
+    if (node === undefined) return undefined;
+    if (node.tag === "token" && node.raw === "=>") {
+      const body = cursor.peek(offset + 1);
+      return body === undefined ? undefined : offset + 2;
+    }
+    offset += 1;
+  }
+  return undefined;
 }
 
 function isPropertyName(syntax: Syntax | undefined): boolean {
@@ -154,6 +209,22 @@ function consumePostfix(
     cursor.advance();
     return undefined;
   }
+  if (isPunctuation(next, "<")) {
+    const typeArguments = consumeBalancedTypeArguments(cursor, context);
+    const following =
+      typeArguments === undefined
+        ? undefined
+        : cursor.peek(typeArguments.width);
+    if (
+      typeArguments !== undefined &&
+      following?.tag === "group" &&
+      (following.delimiter === "parenthesis" ||
+        following.delimiter === "template")
+    ) {
+      cursor.advance(typeArguments.width + 1);
+      return undefined;
+    }
+  }
   if (
     next.tag === "group" &&
     (next.delimiter === "parenthesis" || next.delimiter === "template")
@@ -208,7 +279,14 @@ class PrimaryExpressionConsumer implements SyntaxConsumer {
       });
     }
     const functionWidth = functionExpressionWidth(cursor);
-    if (functionWidth === undefined && !isPrimaryAtom(cursor.peek())) {
+    const classWidth = classExpressionWidth(cursor);
+    const arrowWidth = genericArrowWidth(cursor, context);
+    if (
+      functionWidth === undefined &&
+      classWidth === undefined &&
+      arrowWidth === undefined &&
+      !isPrimaryAtom(cursor.peek())
+    ) {
       return failure(
         cursor,
         start,
@@ -218,7 +296,7 @@ class PrimaryExpressionConsumer implements SyntaxConsumer {
         1,
       );
     }
-    cursor.advance(functionWidth ?? 1);
+    cursor.advance(functionWidth ?? classWidth ?? arrowWidth ?? 1);
     let optionalChain = false;
     while (!cursor.atEnd && !context.stopSet.matches(cursor)) {
       const before = cursor.index;

@@ -1,6 +1,7 @@
 export * from "./ast.js";
 export * from "./capture-record.js";
 export * from "./capture-shape.js";
+export * from "./identifier-join.js";
 export * from "./diagnostics.js";
 export * from "./matcher-compiler.js";
 export * from "./matcher-failure.js";

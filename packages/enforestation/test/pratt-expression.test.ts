@@ -82,6 +82,20 @@ function operatorAt(syntax: ProtectedSyntax, index = 1): string | undefined {
 }
 
 describe("Pratt expression consumer", () => {
+  test("consumes TypeScript generic calls as primary postfix expressions", () => {
+    const { result } = parse("useState<number>(0)");
+    expect(result.matched).toBe(true);
+    if (!result.matched) throw new Error("expected generic call expression");
+    expect(result.cursor.atEnd).toBe(true);
+  });
+  test("consumes generic arrows with explicit return types", () => {
+    const source = '<T>(value: T): Option<T> => ({ tag: "Some", value })';
+    const { result } = parse(source);
+    expect(result.matched).toBe(true);
+    if (!result.matched) throw new Error("expected generic arrow expression");
+    expect(result.cursor.atEnd).toBe(true);
+    expect(output(source)).toBe(source);
+  });
   test("publishes one deterministic entry per core fixity and spelling", () => {
     const keys = coreExpressionOperators.map(
       ({ fixity, spelling }) => `${fixity}|${spelling}`,
@@ -105,6 +119,11 @@ describe("Pratt expression consumer", () => {
     "a = b = c",
     "a += b * c",
     "x => x + 1",
+    "import('./module.js')",
+    "import.meta.url",
+    "class Named { method() { return 1; } }",
+    "function <T>(value: T): T { return value; }",
+    "new.target",
     "typeof value === 'string'",
     "new Factory().value",
     "++counter + value--",

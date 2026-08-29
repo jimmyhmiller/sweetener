@@ -5,6 +5,14 @@ export default tseslint.config(
   {
     ignores: [
       "artifacts/**",
+      "examples/*/.astro/**",
+      "examples/*/.next/**",
+      "examples/*/.nuxt/**",
+      "examples/*/.output/**",
+      "examples/*/.svelte-kit/**",
+      "examples/*/dist/**",
+      "examples/*/.sweetener/**",
+      "examples/tanstack-start/src/routeTree.gen.ts",
       "fixtures/legacy/**",
       "packages/*/dist/**",
       "playground/dist/**",
@@ -38,7 +46,12 @@ export default tseslint.config(
     },
   },
   {
-    files: ["playground/src/**/*.ts", "playground/src/**/*.tsx"],
+    files: [
+      "examples/**/*.ts",
+      "examples/**/*.tsx",
+      "playground/src/**/*.ts",
+      "playground/src/**/*.tsx",
+    ],
     languageOptions: {
       globals: {
         document: "readonly",

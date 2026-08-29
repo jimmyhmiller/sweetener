@@ -1,0 +1,17 @@
+{
+  "name": "@sweetener-example/bun",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run server.ts",
+    "dev": "bun --watch run server.ts",
+    "build": "bun run build.ts"
+  },
+  "dependencies": {
+    "@sweetener/unplugin": "workspace:*"
+  },
+  "devDependencies": {
+    "bun": "1.2.22",
+    "typescript": "^6.0.2"
+  }
+}

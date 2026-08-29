@@ -16,6 +16,15 @@ export const sweetenerUnplugin = createUnplugin<
   return {
     name: "sweetener",
     enforce: "pre",
+    bun: {
+      loader(_code, id) {
+        const filename = id.replace(/[?#].*$/u, "");
+        if (/\.stsx$/u.test(filename)) return "tsx";
+        if (/\.sts$/u.test(filename)) return "ts";
+        if (/\.sjsx$/u.test(filename)) return "jsx";
+        return "js";
+      },
+    },
     async transform(code, id) {
       const filename = id.replace(/[?#].*$/u, "");
       if (!include.test(id)) return;

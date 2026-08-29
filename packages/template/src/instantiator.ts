@@ -1,6 +1,7 @@
 import {
   capturedInvocationScopes,
   introducedTemplateScopes,
+  type GeneratedContractBinding,
   type InvocationScopes,
   type ScopeStore,
 } from "@sweetener/hygiene";
@@ -60,6 +61,7 @@ export interface InstantiateTemplateOptions {
   readonly budget?: Partial<ResourceBudget> | undefined;
   readonly tracker?: ResourceTracker | undefined;
   readonly cancellation?: CancellationToken | undefined;
+  readonly generatedBindings?: readonly GeneratedContractBinding[] | undefined;
 }
 
 export interface InstantiateTemplateResult {
@@ -177,6 +179,7 @@ class Instantiator {
           piece.hint,
           origin,
           this.#introducedScopes(this.#options.definitionScopes),
+          piece.prototype,
         );
         this.#freshBindings.push(
           Object.freeze({
@@ -199,6 +202,7 @@ class Instantiator {
             raw,
             origin,
             this.#introducedScopes(this.#options.definitionScopes),
+            piece.prototype,
           ),
         ];
       }
@@ -211,6 +215,38 @@ class Instantiator {
             piece.text,
             origin,
             this.#introducedScopes(this.#options.definitionScopes),
+            piece.prototype,
+          ),
+        ];
+      }
+      case "join": {
+        const origin = this.#introduced(piece.origin);
+        const matches = (this.#options.generatedBindings ?? []).filter(
+          (binding) =>
+            binding.spelling === piece.text &&
+            binding.origin === piece.sourceOrigin,
+        );
+        if (matches.length > 1) {
+          throw new TypeError(
+            `Generated identifier ${piece.text} has ambiguous binding contracts`,
+          );
+        }
+        const scopes =
+          matches[0] === undefined
+            ? this.#introducedScopes(this.#options.definitionScopes)
+            : capturedInvocationScopes(
+                this.#options.scopeStore,
+                matches[0].scopes,
+                this.#options.invocationScopes,
+              );
+        return [
+          this.#generatedToken(
+            "identifier",
+            piece.text,
+            piece.text,
+            origin,
+            scopes,
+            piece.prototype,
           ),
         ];
       }
@@ -224,6 +260,7 @@ class Instantiator {
             piece.value,
             origin,
             this.#introducedScopes(this.#options.definitionScopes),
+            piece.prototype,
           ),
         ];
       }
@@ -442,6 +479,7 @@ class Instantiator {
     value: string | number | undefined,
     origin: OriginId,
     scopes: ScopeSetId,
+    prototype?: TokenSyntax | undefined,
   ): TokenSyntax {
     this.#step();
     this.#tracker.chargeOutputTokens();
@@ -453,6 +491,12 @@ class Instantiator {
       kind,
       raw,
       value,
+      ...(prototype === undefined
+        ? {}
+        : {
+            leadingTrivia: prototype.leadingTrivia,
+            trailingTrivia: prototype.trailingTrivia,
+          }),
     });
     this.#recordOrigin(origin);
     return token;

@@ -1,0 +1,15 @@
+{
+  "name": "@sweetener-example/vite-vanilla",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@sweetener/unplugin": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "vite": "^8.2.2"
+  }
+}

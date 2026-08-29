@@ -14,6 +14,7 @@ import {
   createCapturePath,
   createSequenceShape,
   inferCaptureShapes,
+  parseIdentifierJoinArguments,
   type CapturePath,
   type CaptureShape,
   type LeafShape,
@@ -29,6 +30,7 @@ import type {
 } from "@sweetener/shared";
 import type {
   Span,
+  GroupSyntax,
   Syntax,
   SyntaxCategory,
   TokenSyntax,
@@ -62,6 +64,16 @@ interface ResolvedPath {
 
 function token(node: Syntax | undefined, raw?: string): node is TokenSyntax {
   return node?.tag === "token" && (raw === undefined || node.raw === raw);
+}
+
+function group(
+  node: Syntax | undefined,
+  delimiter?: GroupSyntax["delimiter"],
+): node is GroupSyntax {
+  return (
+    node?.tag === "group" &&
+    (delimiter === undefined || node.delimiter === delimiter)
+  );
 }
 
 function baseLeaf(shape: CaptureShape): LeafShape {
@@ -179,8 +191,11 @@ export function compileParsedBindingContracts(
         clause.kind === "binding" ? [...clause.syntax] : [],
       );
       const contracts: BindingContract[] = [];
-      const resolvePath = (start: number): ResolvedPath | undefined => {
-        const rootToken = nodes[start];
+      const resolvePath = (
+        start: number,
+        source: readonly Syntax[] = nodes,
+      ): ResolvedPath | undefined => {
+        const rootToken = source[start];
         if (!token(rootToken) || !rootToken.raw.startsWith("$"))
           return undefined;
         const rootName = rootToken.raw.slice(1);
@@ -190,8 +205,8 @@ export function compileParsedBindingContracts(
         const fields: { readonly name: string; readonly capture: CaptureId }[] =
           [];
         let next = start + 1;
-        while (token(nodes[next], ".") && token(nodes[next + 1])) {
-          const fieldToken = nodes[next + 1] as TokenSyntax;
+        while (token(source[next], ".") && token(source[next + 1])) {
+          const fieldToken = source[next + 1] as TokenSyntax;
           const leaf = baseLeaf(shape);
           const field = options.syntaxClasses
             .get(leaf.classId)
@@ -217,7 +232,25 @@ export function compileParsedBindingContracts(
           continue;
         }
         const origin = nodes[index]!.origin;
-        const binder = resolvePath(index + 1);
+        const joinGroup =
+          group(nodes[index + 2], "parenthesis") &&
+          token(nodes[index + 1], "#join")
+            ? (nodes[index + 2] as GroupSyntax)
+            : undefined;
+        const joined =
+          joinGroup === undefined
+            ? undefined
+            : parseIdentifierJoinArguments(joinGroup.children, (start) =>
+                resolvePath(start, joinGroup.children),
+              );
+        const binder: ResolvedPath | undefined =
+          joined === undefined
+            ? resolvePath(index + 1)
+            : {
+                path: joined.path,
+                shape: joined.shape,
+                next: index + 3,
+              };
         const inIndex = binder?.next;
         let region: BindingContractRegion | undefined;
         let regionShape: CaptureShape | undefined;
@@ -331,6 +364,14 @@ export function compileParsedBindingContracts(
               region,
               kind,
               space,
+              generatedName:
+                joined === undefined
+                  ? undefined
+                  : {
+                      prefix: joined.prefix,
+                      suffix: joined.suffix,
+                      casing: joined.casing,
+                    },
             }),
           );
         }

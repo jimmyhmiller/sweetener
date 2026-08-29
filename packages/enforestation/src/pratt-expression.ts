@@ -284,7 +284,17 @@ function parsePrefix(
   context: PrattContext,
 ): ParsedExpression | ConsumerAttempt {
   checkWork(context);
-  const prefix = resolveOperator(cursor, "prefix", context);
+  const dot = cursor.peek(1);
+  const target = cursor.peek(2);
+  const newTarget =
+    tokenSpelling(cursor) === "new" &&
+    dot?.tag === "token" &&
+    dot.raw === "." &&
+    target?.tag === "token" &&
+    target.raw === "target";
+  const prefix = newTarget
+    ? undefined
+    : resolveOperator(cursor, "prefix", context);
   if (prefix !== undefined) {
     if (prefix.spelling === "yield" && context.consumer.allowYield === false) {
       return fail(cursor, context, ["yield inside a generator"], 9);
@@ -292,14 +302,17 @@ function parsePrefix(
     const operator = consumeOperator(cursor, prefix);
     const right = parseExpression(cursor, prefix.precedence, context);
     if ("matched" in right) return right;
+    const coreChildren =
+      prefix.spelling === "new"
+        ? [...operator, ...right.syntax.children]
+        : [...operator, right.syntax];
     const syntax =
       prefix.macro?.expand({
         operator,
         left: undefined,
         right: right.syntax,
         context: context.consumer,
-      }) ??
-      protect(context.options, [...operator, right.syntax], prefix.precedence);
+      }) ?? protect(context.options, coreChildren, prefix.precedence);
     if (syntax.category !== "expr") {
       throw new TypeError(
         "Macro prefix operator returned non-expression syntax",

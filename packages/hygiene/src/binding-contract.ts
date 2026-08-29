@@ -2,9 +2,11 @@ import {
   CaptureRecord,
   createCaptureLeaf,
   createCaptureSequence,
+  joinedIdentifierText,
   type CaptureLeaf,
   type CapturePath,
   type CaptureValue,
+  type IdentifierCasing,
 } from "@sweetener/pattern";
 import type { OriginId, ScopeId, ScopeSetId } from "@sweetener/shared";
 import {
@@ -34,6 +36,19 @@ export interface BindingContract {
   readonly region: BindingContractRegion;
   readonly space: SyntaxSpace;
   readonly kind: BindingContractKind;
+  readonly generatedName?: GeneratedBindingName | undefined;
+}
+
+export interface GeneratedBindingName {
+  readonly prefix: string;
+  readonly suffix: string;
+  readonly casing: IdentifierCasing;
+}
+
+export interface GeneratedContractBinding {
+  readonly spelling: string;
+  readonly origin: OriginId;
+  readonly scopes: ScopeSetId;
 }
 
 export function createBindingContract(
@@ -50,6 +65,10 @@ export function createBindingContract(
   }
   return Object.freeze({
     ...options,
+    generatedName:
+      options.generatedName === undefined
+        ? undefined
+        : Object.freeze({ ...options.generatedName }),
     region: Object.freeze({ ...options.region }),
   });
 }
@@ -256,6 +275,7 @@ export interface ApplyBindingContractResult {
   readonly bindings: readonly Binding[];
   readonly followingScopes: ScopeSetId;
   readonly introducedScopes: readonly ScopeId[];
+  readonly generatedBindings: readonly GeneratedContractBinding[];
 }
 
 export function applyBindingContract(
@@ -275,6 +295,7 @@ export function applyBindingContract(
   }
 
   const scopesByLeaf = new Map<CaptureLeaf, ScopeId[]>();
+  const bindingScopesByLeaf = new Map<CaptureLeaf, ScopeId[]>();
   const allocated: ScopeId[] = [];
   const groups = commonGroups(binders, regions);
   if (contract.kind === "sequential") {
@@ -310,9 +331,15 @@ export function applyBindingContract(
         );
         allocated.push(scope);
         for (const binder of binderGroup) {
-          for (const preceding of precedingScopes)
-            addLeafScope(scopesByLeaf, binder.leaf, preceding);
-          addLeafScope(scopesByLeaf, binder.leaf, scope);
+          for (const preceding of precedingScopes) {
+            addLeafScope(bindingScopesByLeaf, binder.leaf, preceding);
+            if (contract.generatedName === undefined)
+              addLeafScope(scopesByLeaf, binder.leaf, preceding);
+          }
+          addLeafScope(bindingScopesByLeaf, binder.leaf, scope);
+          if (contract.generatedName === undefined) {
+            addLeafScope(scopesByLeaf, binder.leaf, scope);
+          }
         }
         const reference = binderGroup[0]!;
         for (const region of regions) {
@@ -345,8 +372,11 @@ export function applyBindingContract(
         "binding contract",
       );
       allocated.push(scope);
-      for (const binder of binderGroup)
-        addLeafScope(scopesByLeaf, binder.leaf, scope);
+      for (const binder of binderGroup) {
+        addLeafScope(bindingScopesByLeaf, binder.leaf, scope);
+        if (contract.generatedName === undefined)
+          addLeafScope(scopesByLeaf, binder.leaf, scope);
+      }
       for (const region of regions) {
         if (groups.length === 0 || alignmentKey(region, groups) === key) {
           addLeafScope(scopesByLeaf, region.leaf, scope);
@@ -365,27 +395,45 @@ export function applyBindingContract(
   );
   let environment = options.environment;
   const bindings: Binding[] = [];
+  const generatedBindings: GeneratedContractBinding[] = [];
   for (const binder of binders) {
-    const extracted = options.extractBindings?.(binder.leaf.syntax);
     const fallbackSpelling = tokenSpelling(binder.leaf.syntax);
     const names =
-      extracted ??
-      (fallbackSpelling === undefined
-        ? []
-        : [
-            {
-              spelling: fallbackSpelling,
-              origin: binder.leaf.origin,
-              scopes:
-                binder.leaf.syntax[0]?.scopes ?? options.scopeStore.empty(),
-            },
-          ]);
+      contract.generatedName === undefined
+        ? (options.extractBindings?.(binder.leaf.syntax) ??
+          (fallbackSpelling === undefined
+            ? []
+            : [
+                {
+                  spelling: fallbackSpelling,
+                  origin: binder.leaf.origin,
+                  scopes:
+                    binder.leaf.syntax[0]?.scopes ?? options.scopeStore.empty(),
+                },
+              ]))
+        : fallbackSpelling === undefined
+          ? []
+          : [
+              {
+                spelling: joinedIdentifierText(
+                  contract.generatedName,
+                  fallbackSpelling,
+                ),
+                origin: binder.leaf.origin,
+                scopes:
+                  binder.leaf.syntax[0]?.scopes ?? options.scopeStore.empty(),
+              },
+            ];
     if (names.length === 0) {
       throw new TypeError("Binding capture does not contain an identifier");
     }
     for (const name of names) {
       let bindingScopes = name.scopes;
-      for (const scope of scopesByLeaf.get(binder.leaf) ?? []) {
+      const declaredScopes =
+        contract.generatedName === undefined
+          ? scopesByLeaf.get(binder.leaf)
+          : bindingScopesByLeaf.get(binder.leaf);
+      for (const scope of declaredScopes ?? []) {
         bindingScopes = options.scopeStore.add(bindingScopes, scope);
       }
       const declared = options.environments.declare(environment, {
@@ -402,6 +450,15 @@ export function applyBindingContract(
       });
       environment = declared.environment;
       bindings.push(declared.binding);
+      if (contract.generatedName !== undefined) {
+        generatedBindings.push(
+          Object.freeze({
+            spelling: name.spelling,
+            origin: name.origin,
+            scopes: bindingScopes,
+          }),
+        );
+      }
     }
   }
   let followingScopes = options.followingScopes ?? options.scopeStore.empty();
@@ -416,6 +473,7 @@ export function applyBindingContract(
     bindings: Object.freeze(bindings),
     followingScopes,
     introducedScopes: Object.freeze(allocated),
+    generatedBindings: Object.freeze(generatedBindings),
   });
 }
 
@@ -432,6 +490,7 @@ export function applyBindingContracts(
   let followingScopes = options.followingScopes ?? options.scopeStore.empty();
   const bindings: Binding[] = [];
   const introducedScopes: ScopeId[] = [];
+  const generatedBindings: GeneratedContractBinding[] = [];
 
   for (const contract of options.contracts) {
     const result = applyBindingContract(contract, {
@@ -445,6 +504,7 @@ export function applyBindingContracts(
     followingScopes = result.followingScopes;
     bindings.push(...result.bindings);
     introducedScopes.push(...result.introducedScopes);
+    generatedBindings.push(...result.generatedBindings);
   }
 
   return Object.freeze({
@@ -453,5 +513,6 @@ export function applyBindingContracts(
     bindings: Object.freeze(bindings),
     followingScopes,
     introducedScopes: Object.freeze(introducedScopes),
+    generatedBindings: Object.freeze(generatedBindings),
   });
 }

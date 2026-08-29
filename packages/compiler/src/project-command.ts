@@ -7,6 +7,7 @@ import {
   type SweetConfigurationProblem,
 } from "./configuration.js";
 import { createDefaultProjectExpansionProvider } from "./default-expansion-provider.js";
+import type { ExpansionInspectionProvider } from "./expansion-tools.js";
 import { selectSweetSources } from "./source-kind.js";
 
 export type ConfiguredProjectCommand = "check" | "build";
@@ -44,6 +45,68 @@ function configurationDiagnostic(
     start: undefined,
     length: undefined,
     messageText: `${problem.code} ${problem.path} ${problem.message}`,
+  });
+}
+
+function remapGeneratedDiagnostics(options: {
+  readonly diagnostics: readonly ts.Diagnostic[];
+  readonly provider: ProjectExpansionProvider;
+  readonly virtualBySource: ReadonlyMap<string, string>;
+  readonly target: ts.ScriptTarget;
+}): readonly ts.Diagnostic[] {
+  if (!("inspectSource" in options.provider)) return options.diagnostics;
+  const inspectionProvider = options.provider as ProjectExpansionProvider &
+    ExpansionInspectionProvider;
+  const sourceByVirtual = new Map(
+    [...options.virtualBySource].map(([source, virtual]) => [virtual, source]),
+  );
+  const inspections = new Map(
+    [...options.virtualBySource.keys()].flatMap((source) => {
+      const inspection = inspectionProvider.inspectSource(source);
+      return inspection === undefined ? [] : [[source, inspection] as const];
+    }),
+  );
+  const sourceById = new Map(
+    [...inspections].map(([source, inspection]) => [
+      inspection.sourceId,
+      source,
+    ]),
+  );
+  const sourceFiles = new Map<string, ts.SourceFile>();
+  return options.diagnostics.map((diagnostic) => {
+    const virtualName = diagnostic.file?.fileName;
+    const generatedStart = diagnostic.start;
+    if (virtualName === undefined || generatedStart === undefined)
+      return diagnostic;
+    const originalOwner = sourceByVirtual.get(virtualName);
+    const inspection =
+      originalOwner === undefined ? undefined : inspections.get(originalOwner);
+    const mapped = inspection?.index.generatedToOriginal(generatedStart)[0];
+    if (mapped === undefined) return diagnostic;
+    const sourceName = sourceById.get(mapped.primary.sourceId);
+    if (sourceName === undefined) return diagnostic;
+    const sourceInspection = inspections.get(sourceName);
+    if (sourceInspection === undefined) return diagnostic;
+    let sourceFile = sourceFiles.get(sourceName);
+    if (sourceFile === undefined) {
+      sourceFile = ts.createSourceFile(
+        sourceName,
+        sourceInspection.sourceText,
+        options.target,
+        true,
+        sourceName.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+      );
+      sourceFiles.set(sourceName, sourceFile);
+    }
+    const start = mapped.projectedOriginalOffset;
+    const length = Math.max(
+      0,
+      Math.min(
+        mapped.primary.span.end - start,
+        diagnostic.length ?? mapped.primary.span.end - start,
+      ),
+    );
+    return Object.freeze({ ...diagnostic, file: sourceFile, start, length });
   });
 }
 
@@ -135,12 +198,20 @@ export function runConfiguredProjectCommand(options: {
       ? {}
       : { writeThrough: options.writeThrough }),
   });
-  const diagnostics = [...ts.getPreEmitDiagnostics(created.program)];
+  let diagnostics = [...ts.getPreEmitDiagnostics(created.program)];
   const emit =
     options.command === "build" && diagnostics.length === 0
       ? created.program.emit()
       : undefined;
   diagnostics.push(...(emit?.diagnostics ?? []));
+  diagnostics = [
+    ...remapGeneratedDiagnostics({
+      diagnostics,
+      provider: expansionProvider,
+      virtualBySource,
+      target: project.typescript.options.target ?? ts.ScriptTarget.Latest,
+    }),
+  ];
   return Object.freeze({
     command: options.command,
     exitCode: diagnostics.length === 0 && emit?.emitSkipped !== true ? 0 : 1,

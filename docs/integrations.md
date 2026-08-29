@@ -17,7 +17,7 @@ never enter the runtime module graph.
 | `/webpack`  | webpack production build                                |
 | `/rspack`   | Rspack production build                                 |
 | `/rsbuild`  | Rsbuild production build                                |
-| `/bun`      | Bun production build                                    |
+| `/bun`      | Bun runtime loading and production builds               |
 | `/farm`     | Farm native load/transform adapter and production build |
 
 Vite-based frameworks such as Astro, SvelteKit, SolidStart, Vitest, and Nuxt
@@ -30,8 +30,67 @@ cannot assign a module type after attempting to load an unknown `.sts` file.
 import { defineConfig } from "vite";
 import sweetener from "@sweetener/unplugin/vite";
 
-export default defineConfig({ plugins: [sweetener()] });
+export default defineConfig({ plugins: [...sweetener()] });
 ```
+
+### React and Fast Refresh
+
+React hook macros work in `.stsx`, but `@vitejs/plugin-react` does not include
+custom extensions in its default transform filter. Include `.stsx` explicitly
+so the expanded module receives Fast Refresh instrumentation:
+
+```ts
+export default defineConfig({
+  plugins: [
+    ...sweetener({ configFile }),
+    react({ include: /\.(?:[jt]sx|stsx)$/u }),
+  ],
+});
+```
+
+The React example emits an ignored `.sweetener/main.tsx` for
+`eslint-plugin-react-hooks`. This makes the official Rules of Hooks inspect the
+real expanded hook calls rather than attempting to parse macro syntax. Normal
+Sweetener checking remaps TypeScript diagnostics from generated hook calls back
+to their captured `.stsx` source regions.
+
+## Bun runtime and bundler
+
+The Bun entry is a native synchronous-setup plugin, so the same adapter works
+with both `Bun.plugin()` at runtime and the `plugins` option of `Bun.build()`.
+For direct `.sts` imports, preload a small registration module from
+`bunfig.toml`:
+
+```toml
+preload = ["./sweetener.preload.ts"]
+```
+
+```ts
+// sweetener.preload.ts
+import sweetener from "@sweetener/unplugin/bun";
+
+Bun.plugin(sweetener());
+```
+
+Typed `.sts` and `.stsx` output is handed back through Bun's TypeScript loaders.
+Macro dependencies participate in the compiler session's content-aware cache,
+so Bun watch-mode reloads see changes made only to an imported macro module.
+
+## Deno tasks
+
+Deno does not currently provide a custom module-loader hook for arbitrary file
+extensions. The checked-in Deno example therefore uses Deno-native tasks to
+expand `.sts` into an ignored `.sweetener` tree before Deno checks or runs it:
+
+```sh
+deno task check
+deno task start
+deno task dev
+```
+
+`deno task dev` watches the macro sources, re-expands them, and restarts the
+Deno server. This keeps the generated boundary explicit while preserving
+Deno's native checker, permission model, watcher, test runner, and HTTP server.
 
 ## webpack, Rspack, and Turbopack loader
 
@@ -72,7 +131,7 @@ exports imported from `.sts` modules.
 Tools such as Turborepo, Nx, Storybook, Electron, tsup, and unbuild orchestrate
 or embed one of the verified hosts above; select the adapter for their chosen
 builder. SWC and Oxc AST plugins cannot parse arbitrary Sweetener syntax, so
-Sweetener must run before them. Deno currently requires CLI pre-expansion.
+Sweetener must run before them.
 
 ## Test policy
 

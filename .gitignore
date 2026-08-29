@@ -11,3 +11,12 @@ playground/.wrangler/
 coverage/
 *.tsbuildinfo
 .DS_Store
+/build
+examples/*/dist/
+examples/*/.next/
+examples/*/.astro/
+examples/*/.nuxt/
+examples/*/.output/
+examples/*/.svelte-kit/
+examples/*/.sweetener/
+examples/*/node_modules/.nitro/

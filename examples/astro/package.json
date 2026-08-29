@@ -1,0 +1,12 @@
+{
+  "name": "@sweetener-example/astro",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "astro build"
+  },
+  "dependencies": {
+    "@sweetener/unplugin": "workspace:*",
+    "astro": "7.2.8"
+  }
+}

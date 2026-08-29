@@ -90,8 +90,8 @@ invokeMacro(binding, cursor, category, context):
     if matcher succeeds:
       ask surrounding consumer whether the consumed extent is admissible
       if inadmissible, retain boundary failure
-      instantiate template with captures and introduction scope
       apply binding contracts
+      instantiate template with scoped captures and introduction scope
       check progress and resource limits
       expand replacement in category
       return expanded result and original unconsumed cursor
@@ -100,6 +100,12 @@ invokeMacro(binding, cursor, category, context):
 
 The macro consumes original input once. Nested expansion of its replacement does
 not consume more original tokens unless the macro pattern captured them.
+
+A `stmt` replacement may enforest as one or more consecutive statements. The
+result remains one macro replacement container while its statement children are
+expanded and then flattened into the surrounding statement list. This permits a
+single declaration macro to introduce multiple same-scope declarations without
+adding a JavaScript block scope.
 
 ## 6. Progress and termination
 

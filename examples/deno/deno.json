@@ -1,0 +1,10 @@
+{
+  "tasks": {
+    "expand": "deno run --allow-read=../.. --allow-write=.sweetener --allow-env build.ts",
+    "check": "deno task expand && deno check app.ts",
+    "start": "deno task expand && deno run --allow-net app.ts",
+    "dev": "deno run --allow-read=../.. --allow-write=.sweetener --allow-env --allow-net --allow-run dev.ts",
+    "verify": "deno task check && deno test --allow-read=. app.test.ts"
+  },
+  "exclude": [".sweetener"]
+}

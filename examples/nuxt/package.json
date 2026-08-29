@@ -1,0 +1,13 @@
+{
+  "name": "@sweetener-example/nuxt",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build"
+  },
+  "dependencies": {
+    "@sweetener/unplugin": "workspace:*",
+    "nuxt": "^4.5.2",
+    "vue": "^3.5.42"
+  }
+}

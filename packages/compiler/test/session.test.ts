@@ -106,6 +106,30 @@ describe("public compiler session", () => {
       }),
     ).rejects.toThrow(/closed/u);
   });
+
+  test("preserves constructor calls captured by a statement macro", async () => {
+    const fixture = project();
+    writeFileSync(
+      fixture.macros,
+      `export syntax unless:stmt { rule { unless($condition:expr) $body:stmt } => { if (!($condition)) $body } }\n`,
+    );
+    writeFileSync(
+      fixture.main,
+      `import { unless } from "./macros.sts" for syntax;\nexport function check(ok: boolean) { unless(ok) { throw new Error("nope"); } }\n`,
+    );
+    const session = createSweetenerSession();
+    const result = await session.transform({
+      code: readFile(fixture.main),
+      filename: fixture.main,
+      configFile: fixture.config,
+      mode: "test",
+    });
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.code).toContain('new Error("nope")');
+    expect(result.code).not.toContain("new( Error");
+    await session.close();
+  });
 });
 
 function readFile(fileName: string): string {

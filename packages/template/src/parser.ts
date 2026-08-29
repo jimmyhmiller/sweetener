@@ -2,6 +2,7 @@ import {
   captureShapeDepth,
   createCapturePath,
   createSequenceShape,
+  parseIdentifierJoinArguments,
   type CaptureShape,
   type CaptureShapeBinding,
   type LeafShape,
@@ -270,12 +271,49 @@ class TemplateParser {
           "text",
           "trim",
           "count",
+          "join",
           "index",
         ].includes(operationName) &&
         group(nodes[index + 1], "parenthesis")
       ) {
         const argumentsGroup = nodes[index + 1] as GroupSyntax;
-        if (operationName === "metavar") {
+        if (operationName === "join") {
+          const resolved = parseIdentifierJoinArguments(
+            argumentsGroup.children,
+            (start) =>
+              this.#resolveConditionalPath(argumentsGroup.children, start),
+          );
+          const allowedClasses = this.#options.identifierClassIds;
+          const valid =
+            resolved !== undefined &&
+            captureShapeDepth(resolved.shape) <= depth &&
+            (allowedClasses === undefined ||
+              allowedClasses.includes(baseLeaf(resolved.shape).classId));
+          if (!valid) {
+            this.#diagnostic(
+              invalidTemplateOperationCode,
+              current.origin,
+              operationName,
+            );
+          } else {
+            elements.push(
+              createHygieneOperationTemplate(
+                current.origin,
+                {
+                  kind: "join",
+                  spec: {
+                    path: resolved.path,
+                    prefix: resolved.prefix,
+                    suffix: resolved.suffix,
+                    casing: resolved.casing,
+                  },
+                },
+                resolved.shape,
+                current as TokenSyntax,
+              ),
+            );
+          }
+        } else if (operationName === "metavar") {
           const hint = argumentsGroup.children[0];
           const resolved = this.#resolveConditionalPath(
             argumentsGroup.children,
@@ -306,6 +344,7 @@ class TemplateParser {
                   path: resolved.path,
                 },
                 resolved.shape,
+                current as TokenSyntax,
               ),
             );
           }
@@ -325,10 +364,12 @@ class TemplateParser {
             );
           } else {
             elements.push(
-              createHygieneOperationTemplate(current.origin, {
-                kind: "fresh",
-                hint: hint.value,
-              }),
+              createHygieneOperationTemplate(
+                current.origin,
+                { kind: "fresh", hint: hint.value },
+                undefined,
+                current as TokenSyntax,
+              ),
             );
           }
         } else if (operationName === "index") {
@@ -340,9 +381,12 @@ class TemplateParser {
             );
           } else {
             elements.push(
-              createHygieneOperationTemplate(current.origin, {
-                kind: "index",
-              }),
+              createHygieneOperationTemplate(
+                current.origin,
+                { kind: "index" },
+                undefined,
+                current as TokenSyntax,
+              ),
             );
           }
         } else {
@@ -370,16 +414,21 @@ class TemplateParser {
             );
           } else {
             elements.push(
-              createHygieneOperationTemplate(current.origin, {
-                kind: operationName as
-                  | "callsite"
-                  | "definition"
-                  | "capture"
-                  | "text"
-                  | "trim"
-                  | "count",
-                path: resolved.path,
-              }),
+              createHygieneOperationTemplate(
+                current.origin,
+                {
+                  kind: operationName as
+                    | "callsite"
+                    | "definition"
+                    | "capture"
+                    | "text"
+                    | "trim"
+                    | "count",
+                  path: resolved.path,
+                },
+                undefined,
+                current as TokenSyntax,
+              ),
             );
           }
         }

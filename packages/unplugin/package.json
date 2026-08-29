@@ -63,5 +63,13 @@
     "rollup": "4.62.4",
     "vite": "8.2.0",
     "webpack": "5.109.2"
+  },
+  "peerDependencies": {
+    "vite": ">=6"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
   }
 }

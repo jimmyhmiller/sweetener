@@ -353,4 +353,134 @@ describe("binding contracts", () => {
       }),
     ).toMatchObject({ kind: "resolved", binding: result.bindings[1] });
   });
+
+  test("derives and declares a following binding without rebinding its source", () => {
+    const scopes = new ScopeStore();
+    const environments = new EnvironmentStore();
+    const name = capture(1);
+    const captures = new CaptureRecord([
+      [name, leaf(name, "count", bindingClass, scopes.empty())],
+    ]);
+    const result = applyBindingContract(
+      createBindingContract({
+        origin: origin(1),
+        binders: createCapturePath("name", name),
+        generatedName: {
+          prefix: "set",
+          suffix: "",
+          casing: "upper-first",
+        },
+        region: { kind: "following" },
+        kind: "lexical",
+        space: "value",
+      }),
+      {
+        captures,
+        scopeStore: scopes,
+        environments,
+        environment: environments.createRoot(),
+        phase: createPhase(0),
+        position: 4,
+      },
+    );
+    const transformed = result.captures.get(name);
+    if (transformed?.kind !== "leaf") throw new Error("missing name");
+    expect(scopes.size(appliedScopes(transformed))).toBe(0);
+    expect(result.bindings).toHaveLength(1);
+    expect(result.bindings[0]).toMatchObject({ spelling: "setCount" });
+    expect(scopes.size(result.bindings[0]!.scopes)).toBe(1);
+    expect(
+      scopes.subset(result.bindings[0]!.scopes, result.followingScopes),
+    ).toBe(true);
+    expect(result.generatedBindings).toEqual([
+      {
+        spelling: "setCount",
+        origin: transformed.origin,
+        scopes: result.bindings[0]!.scopes,
+      },
+    ]);
+    expect(
+      resolveBinding(environments, result.environment, scopes, {
+        spelling: "setCount",
+        scopes: result.followingScopes,
+        phase: createPhase(0),
+        space: "value",
+        position: 4,
+      }),
+    ).toMatchObject({ kind: "resolved", binding: result.bindings[0] });
+  });
+
+  test("keeps sequential generated scopes on declarations and out of source captures", () => {
+    const scopes = new ScopeStore();
+    const environments = new EnvironmentStore();
+    const names = capture(1);
+    const regions = capture(2);
+    const cardinality = group(9);
+    const captures = new CaptureRecord([
+      [
+        names,
+        sequence(cardinality, [
+          leaf(names, "first", bindingClass, scopes.empty()),
+          leaf(names, "second", bindingClass, scopes.empty()),
+          leaf(names, "third", bindingClass, scopes.empty()),
+        ]),
+      ],
+      [
+        regions,
+        sequence(cardinality, [
+          leaf(regions, "one", ttClass, scopes.empty()),
+          leaf(regions, "two", ttClass, scopes.empty()),
+          leaf(regions, "three", ttClass, scopes.empty()),
+        ]),
+      ],
+    ]);
+    const result = applyBindingContract(
+      createBindingContract({
+        origin: origin(1),
+        binders: createCapturePath("names", names),
+        generatedName: {
+          prefix: "set",
+          suffix: "",
+          casing: "upper-first",
+        },
+        region: {
+          kind: "capture",
+          path: createCapturePath("regions", regions),
+        },
+        kind: "sequential",
+        space: "value",
+      }),
+      {
+        captures,
+        scopeStore: scopes,
+        environments,
+        environment: environments.createRoot(),
+        phase: createPhase(0),
+        position: 0,
+      },
+    );
+    const transformedNames = result.captures.get(names);
+    const transformedRegions = result.captures.get(regions);
+    if (transformedNames?.kind !== "sequence") throw new Error("missing names");
+    if (transformedRegions?.kind !== "sequence")
+      throw new Error("missing regions");
+    expect(
+      transformedNames.elements.map((value) =>
+        scopes.size(appliedScopes(value)),
+      ),
+    ).toEqual([0, 0, 0]);
+    expect(result.bindings.map(({ spelling }) => spelling)).toEqual([
+      "setFirst",
+      "setSecond",
+      "setThird",
+    ]);
+    expect(result.bindings.map(({ scopes: set }) => scopes.size(set))).toEqual([
+      1, 2, 3,
+    ]);
+    expect(
+      transformedRegions.elements.map((value) =>
+        scopes.size(appliedScopes(value)),
+      ),
+    ).toEqual([0, 1, 2]);
+  });
 });
