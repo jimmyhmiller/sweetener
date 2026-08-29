@@ -409,11 +409,15 @@ export function compileParsedMacros(
       definitionScopes: options.definitionScopes,
       rules: Object.freeze(rules),
     });
-    macros.push(macro);
     const operator =
       definition.kind === "operator"
         ? lowerOperator(definition, macro, options, diagnostics)
         : undefined;
+    // An operator whose configuration was rejected has its diagnostic already.
+    // Registering it anyway would leave a definition with no table entry, which
+    // later reads as a broken invariant rather than the error it is.
+    if (definition.kind === "operator" && operator === undefined) continue;
+    macros.push(macro);
     if (operator !== undefined) operators.push(operator);
     definitions.push(Object.freeze({ definition, macro, operator }));
   }
