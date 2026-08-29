@@ -328,6 +328,26 @@ class StructuralBindingConsumer implements BindingConsumer {
     const syntax = cursor.peek();
     if (syntax === undefined || context.stopSet.matches(cursor))
       return failed(cursor, start);
+    // A binder that has already been enforested — one spliced in from a macro
+    // whose replacement was parsed before it reached here — is taken as it
+    // stands, with its names read back out of what it wraps.
+    if (syntax.tag === "protected" && syntax.category === "binding") {
+      const inner = syntax.children[0];
+      const reparsed =
+        syntax.children.length === 1 && inner !== undefined
+          ? parsePattern(inner, Object.freeze([]))
+          : undefined;
+      cursor.advance();
+      return Object.freeze({
+        matched: true,
+        skeleton: Object.freeze({
+          syntax,
+          names: reparsed?.names ?? Object.freeze([]),
+          shape: reparsed?.shape ?? "identifier",
+        }),
+        cursor,
+      });
+    }
     const parsed = parsePattern(syntax, Object.freeze([]));
     if (parsed === undefined) return failed(cursor, start);
     cursor.advance();

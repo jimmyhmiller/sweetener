@@ -5,7 +5,10 @@ import { describe, expect, test } from "vitest";
 import { runConfiguredProjectCommand } from "../src/index.js";
 
 interface Expansion {
+  /** Whitespace collapsed, so an assertion need not track exact spacing. */
   readonly text: string;
+  /** Exactly what was printed, for assertions about layout. */
+  readonly raw: string;
   readonly messages: readonly string[];
 }
 
@@ -57,6 +60,7 @@ function expand(
   if (generated === undefined) throw new Error(`${entry} was not expanded`);
   return {
     text: generated.replaceAll(/\s+/gu, " ").trim(),
+    raw: generated,
     messages: result.diagnostics.map(({ messageText }) => String(messageText)),
   };
 }
@@ -164,7 +168,7 @@ describe("declarative surface", () => {
        }`,
     );
     expect(messages).toEqual([]);
-    expect(text).toContain("const kept = 1;; return kept;");
+    expect(text).toContain("const kept = 1; ; return kept;");
   });
 
   test("claims a macro extent that reaches past the expression", () => {
@@ -285,8 +289,8 @@ declare global {
     );
     expect(messages).toEqual([]);
     // An attribute sits before the tag closes, so it is not a child.
-    expect(text).toContain("data={ [1,1]}");
-    expect(text).toContain(">{ [2,2]}<");
+    expect(text).toContain("data={[1,1]}");
+    expect(text).toContain(">{[2,2]}<");
   });
 });
 
@@ -341,5 +345,123 @@ describe("binder position", () => {
     // of the same name is untouched.
     expect(text).toContain("const { value:held } = source");
     expect(text).toContain('const value = "call-site value"');
+  });
+});
+
+describe("macros calling macros", () => {
+  test("expands an item macro written in another item macro's template", () => {
+    const { text, messages } = expand(
+      `export syntax helper:item {
+         rule { helper $name:binding; }
+         bind $name in following as lexical value;
+         => { const $name = 7; }
+       }
+       export syntax pairOf:item {
+         rule { pairOf $first:binding and $second:binding; }
+         bind $first in following as lexical value;
+         bind $second in following as lexical value;
+         => {
+           helper $first;
+           helper $second;
+         }
+       }`,
+      `import { pairOf } from "./macros.sts" for syntax;
+       pairOf left and right;
+       export const total = left + right;`,
+    );
+    expect(messages).toEqual([]);
+    // The inner expansions come back already enforested, binder included.
+    expect(text).toContain("const left = 7");
+    expect(text).toContain("const right = 7");
+  });
+
+  test("expands a statement macro written in another statement macro's template", () => {
+    const { text, messages } = expand(
+      `export syntax note:stmt {
+         rule { note $value:expr; } => { globalThis.console.log($value); }
+       }
+       export syntax notes:stmt {
+         rule { notes $a:expr and $b:expr; } => {
+           note $a;
+           note $b;
+         }
+       }`,
+      `import { notes } from "./macros.sts" for syntax;
+       export function run(): void {
+         notes 1 and 2;
+       }`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain("globalThis.console.log( 1)");
+    expect(text).toContain("globalThis.console.log( 2)");
+  });
+});
+
+describe("template repetitions", () => {
+  test("let an operation over a capture drive the repetition around it", () => {
+    const { text, messages } = expand(
+      `export syntax record:item {
+         rule { record $name:binding { $($field:ident: $fieldType:type;)+ } }
+         bind $name in following as recursive type;
+         bind $name in following as recursive value;
+         => {
+           #core(interface $name {
+             $($field: $fieldType;)+
+           })
+           #core(const $name = {
+             fieldCount: #count($field),
+             fields: [$(#text($field)),+],
+           })
+         }
+       }`,
+      `import { record } from "./macros.sts" for syntax;
+       record Point {
+         x: number;
+         y: number;
+       }
+       export const meta = Point;`,
+    );
+    expect(messages).toEqual([]);
+    // `#text($field)` is the only thing in the repetition, so it has to be
+    // what drives it; `#count` reads the whole sequence and drives nothing.
+    expect(text).toContain('fields: ["x","y"]');
+    expect(text).toContain("fieldCount: 2");
+  });
+});
+
+describe("where an expansion lands", () => {
+  test("puts a replacement where its invocation stood", () => {
+    const { raw, messages } = expand(
+      `export syntax two:item {
+         rule { two; } => {
+           #core(const first = 1)
+           #core(const second = 2)
+         }
+       }`,
+      `import { two } from "./macros.sts" for syntax;
+       two;
+       export const total = 0;`,
+    );
+    expect(messages).toEqual([]);
+    // Neither the erased `#core` marker nor the invocation may swallow the
+    // line break, or the two declarations run together and stop parsing.
+    expect(raw).toMatch(/const first = 1\s*\n\s*const second = 2/u);
+  });
+
+  test("keeps a replacement on the line its invocation was on", () => {
+    const { text, messages } = expand(
+      `export syntax boxed:expr {
+         rule { boxed($value:expr) } => {
+           [$value]
+         }
+       }`,
+      `import { boxed } from "./macros.sts" for syntax;
+       export function run(): number[] {
+         return boxed(1);
+       }`,
+    );
+    expect(messages).toEqual([]);
+    // A line break here would end the return statement.
+    expect(text).toContain("return [1]");
   });
 });

@@ -108,7 +108,7 @@ class Instantiator {
     const syntax = createSyntaxSequence(
       pieces[0] === undefined
         ? pieces
-        : [this.#trimLeadingTrivia(pieces[0]), ...pieces.slice(1)],
+        : [this.#clearLeadingTrivia(pieces[0]), ...pieces.slice(1)],
     );
     return Object.freeze({
       syntax,
@@ -304,6 +304,36 @@ class Instantiator {
           ? [this.#trimLeadingTrivia(syntax[0]), ...syntax.slice(1)]
           : syntax;
       }
+    }
+  }
+
+  /**
+   * Drops the whitespace before a replacement entirely, rather than reducing it
+   * to a space, so the invocation's own leading trivia can take its place.
+   */
+  #clearLeadingTrivia(syntax: Syntax): Syntax {
+    switch (syntax.tag) {
+      case "token":
+        return createToken({ ...syntax, leadingTrivia: [] });
+      case "group":
+        return createGroup({
+          ...syntax,
+          open: this.#clearLeadingTrivia(syntax.open) as TokenSyntax,
+        });
+      case "protected": {
+        const head = syntax.children[0];
+        return head === undefined
+          ? syntax
+          : createProtectedSyntax({
+              ...syntax,
+              children: [
+                this.#clearLeadingTrivia(head),
+                ...syntax.children.slice(1),
+              ],
+            });
+      }
+      default:
+        return syntax;
     }
   }
 

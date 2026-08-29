@@ -20,6 +20,7 @@ import {
   type SyntaxCategory,
   type SyntaxSequence,
   type TokenSyntax,
+  type Trivia,
 } from "@sweetener/syntax";
 import {
   resolveCompiledMacro,
@@ -380,6 +381,43 @@ export function expandMacroSyntax(
     );
   };
 
+  /**
+   * Moves trivia onto the front of a sequence whose own first token carries
+   * none, so erasing a marker keeps the layout that stood before it.
+   */
+  const withLeadingTrivia = (
+    syntax: SyntaxSequence,
+    trivia: readonly Trivia[],
+  ): SyntaxSequence => {
+    const first = syntax[0];
+    if (trivia.length === 0 || first === undefined) return syntax;
+    const prepend = (node: Syntax): Syntax => {
+      switch (node.tag) {
+        case "token":
+          return node.leadingTrivia.length > 0
+            ? node
+            : createToken({ ...node, leadingTrivia: [...trivia] });
+        case "group":
+          return createGroup({
+            ...node,
+            open: prepend(node.open) as TokenSyntax,
+          });
+        case "protected": {
+          const head = node.children[0];
+          return head === undefined
+            ? node
+            : createProtectedSyntax({
+                ...node,
+                children: [prepend(head), ...node.children.slice(1)],
+              });
+        }
+        default:
+          return node;
+      }
+    };
+    return createSyntaxSequence([prepend(first), ...syntax.slice(1)]);
+  };
+
   const contextsForContainer = (
     node: Extract<Syntax, { readonly tag: "protected" }>,
     inherited: ReadonlySet<MacroContext>,
@@ -458,23 +496,29 @@ export function expandMacroSyntax(
           index += coreBody === compactCoreBody ? 2 : 3;
           continue;
         }
-        const origins = [...new Set(nested.syntax.map(({ origin }) => origin))];
+        // Erasing the `#core` marker must not erase the space in front of it,
+        // or the item it wraps runs into whatever preceded it.
+        const spaced = withLeadingTrivia(
+          nested.syntax,
+          node.tag === "token" ? node.leadingTrivia : [],
+        );
+        const origins = [...new Set(spaced.map(({ origin }) => origin))];
         const categorized =
           category === "item"
-            ? enforestSequence(nested.syntax, category, lexicalModule, contexts)
+            ? enforestSequence(spaced, category, lexicalModule, contexts)
             : undefined;
         const completed = createProtectedSyntax({
           id: options.allocateSyntaxId(),
-          span: spanEnvelope(nested.syntax.map(({ span }) => span)),
+          span: spanEnvelope(spaced.map(({ span }) => span)),
           origin:
             origins.length === 1
               ? origins[0]!
               : options.origins.composed(origins),
-          scopes: nested.syntax[0]?.scopes ?? node.scopes,
+          scopes: spaced[0]?.scopes ?? node.scopes,
           category,
           children:
             categorized === undefined
-              ? nested.syntax
+              ? spaced
               : createSyntaxSequence([categorized]),
         });
         output.push(completed);
@@ -873,7 +917,18 @@ export function expandMacroSyntax(
           index += 1;
           continue;
         }
-        if (!eraseReplacement) output.push(...result.syntax.children);
+        // The invocation's own leading trivia positioned it on the page, and
+        // it is consumed along with the invocation. Handing it to the
+        // replacement keeps the expansion where the call stood.
+        if (!eraseReplacement) {
+          const head = input[resolvedHeadIndex] ?? node;
+          output.push(
+            ...withLeadingTrivia(
+              result.syntax.children,
+              head.tag === "token" ? head.leadingTrivia : [],
+            ),
+          );
+        }
         currentEnvironment = replacementEnvironment ?? result.environment;
         if (options.scopeStore.size(result.followingScopes) > 0) {
           input = createSyntaxSequence([

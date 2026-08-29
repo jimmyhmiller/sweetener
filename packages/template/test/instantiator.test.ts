@@ -264,9 +264,11 @@ describe("template instantiator", () => {
     expect(
       result.syntax[2]?.tag === "token" && result.syntax[2].leadingTrivia,
     ).toMatchObject([{ kind: "whitespace", raw: " " }]);
+    // A replacement carries no leading whitespace of its own; the invocation
+    // it stands in for supplies the spacing.
     expect(
       result.syntax[0]?.tag === "token" && result.syntax[0].leadingTrivia,
-    ).toMatchObject([{ kind: "whitespace", raw: " " }]);
+    ).toEqual([]);
     expect(
       result.syntax[1]?.tag === "token" && result.syntax[1].leadingTrivia,
     ).toMatchObject([{ kind: "whitespace", raw: " " }]);

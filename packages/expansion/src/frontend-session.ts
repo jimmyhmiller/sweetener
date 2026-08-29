@@ -827,30 +827,42 @@ export function createExpansionFrontendSession(
             enforestingModule = restore;
           }
         },
-        enforestItems: ({ syntax, contexts }) => {
-          let cursor = createSyntaxCursor(syntax);
-          const items: Syntax[] = [];
-          while (!cursor.atEnd) {
-            const before = cursor.index;
-            const attempted = item.consume(cursor, {
-              ...context("item", contexts),
+        enforestItems: ({ syntax, contexts, lexicalModule }) => {
+          const restore = enforestingModule;
+          enforestingModule = lexicalModule ?? restore;
+          try {
+            let cursor = createSyntaxCursor(syntax);
+            const items: Syntax[] = [];
+            while (!cursor.atEnd) {
+              const before = cursor.index;
+              const attempted = item.consume(cursor, {
+                ...context("item", contexts),
+                stopSet: StopSet.empty,
+              });
+              if (!attempted.matched || attempted.cursor.index <= before)
+                return undefined;
+              items.push(attempted.syntax);
+              cursor = attempted.cursor;
+            }
+            return createSyntaxSequence(items);
+          } finally {
+            enforestingModule = restore;
+          }
+        },
+        enforestExpression: ({ syntax, contexts, lexicalModule }) => {
+          const restore = enforestingModule;
+          enforestingModule = lexicalModule ?? restore;
+          try {
+            const attempted = expression.consume(createSyntaxCursor(syntax), {
+              ...context("expr", contexts),
               stopSet: StopSet.empty,
             });
-            if (!attempted.matched || attempted.cursor.index <= before)
-              return undefined;
-            items.push(attempted.syntax);
-            cursor = attempted.cursor;
+            return attempted.matched && attempted.cursor.atEnd
+              ? attempted.syntax
+              : undefined;
+          } finally {
+            enforestingModule = restore;
           }
-          return createSyntaxSequence(items);
-        },
-        enforestExpression: ({ syntax, contexts }) => {
-          const attempted = expression.consume(createSyntaxCursor(syntax), {
-            ...context("expr", contexts),
-            stopSet: StopSet.empty,
-          });
-          return attempted.matched && attempted.cursor.atEnd
-            ? attempted.syntax
-            : undefined;
         },
         phase: options.phase,
         environmentEpoch: expansionEnvironment.epoch,

@@ -9,7 +9,8 @@ export function total(values: readonly number[]): number {
         `${"values.reduce((left, right) => left + right, 0)"} = ${(globalThis.JSON.stringify(inspected_1))}`,
       ));
       return inspected_1;
-    })(values.reduce((left, right) => left + right, 0)); {
+    })(values.reduce((left, right) => left + right, 0));
+  {
       const actual =sum;
       const bound = 0;
       if (!(actual >= bound)) {
@@ -19,7 +20,8 @@ export function total(values: readonly number[]): number {
             `\n  ${"0"} = ${(globalThis.JSON.stringify(bound))}`,
         ));
       }
-    } {
+    }
+  {
       const actual_1 =(values.length);
       const expected = 3;
       if (!globalThis.Object.is(actual_1, expected)) {

@@ -425,7 +425,10 @@ class TemplateParser {
                     | "count",
                   path: resolved.path,
                 },
-                undefined,
+                // `#count` collapses a repetition to one number, so it reads a
+                // sequence without driving one. The rest select the element
+                // being repeated and so can drive the repetition around them.
+                operationName === "count" ? undefined : resolved.shape,
                 current as TokenSyntax,
               ),
             );
@@ -839,14 +842,18 @@ class TemplateParser {
         if (captureShapeDepth(current.shape) >= depth) captures.push(current);
       } else if (
         current.kind === "operation" &&
-        current.operation.kind === "metavar" &&
         current.driverShape !== undefined &&
         captureShapeDepth(current.driverShape) >= depth
       ) {
-        captures.push({
-          path: current.operation.path,
-          shape: current.driverShape,
-        });
+        const path =
+          current.operation.kind === "join"
+            ? current.operation.spec.path
+            : "path" in current.operation
+              ? current.operation.path
+              : undefined;
+        if (path !== undefined) {
+          captures.push({ path, shape: current.driverShape });
+        }
       } else if (current.kind === "sequence") {
         stack.push(...[...current.elements].reverse());
       } else if (current.kind === "group") {
