@@ -1,5 +1,5 @@
 import { performance } from "node:perf_hooks";
-import { cpus, release, totalmem } from "node:os";
+import { cpus, loadavg, release, totalmem } from "node:os";
 
 export interface BenchmarkScenario {
   readonly id: string;
@@ -45,6 +45,12 @@ export interface BenchmarkEnvironment {
   readonly cpu: string;
   readonly logicalCpus: number;
   readonly totalMemoryBytes: number;
+  /**
+   * One-minute load average when the samples were taken. Timings on a busy
+   * machine move far more between runs than most real regressions do, so a
+   * reader can tell whether a number deserves to be trusted.
+   */
+  readonly loadAverage: number;
   readonly node: string;
   readonly typescript: string;
   readonly gcExposed: boolean;
@@ -178,6 +184,7 @@ export function benchmarkEnvironment(
     cpu: processors[0]?.model ?? "unknown",
     logicalCpus: processors.length,
     totalMemoryBytes: totalmem(),
+    loadAverage: loadavg()[0] ?? 0,
     node: process.version,
     typescript: typescriptVersion,
     gcExposed: typeof globalThis.gc === "function",

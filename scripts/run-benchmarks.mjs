@@ -75,6 +75,14 @@ const scenarios = selectBenchmarkScenarios(
   await defineBenchmarkScenarios(repositoryRoot),
   options.scenarios,
 );
+const startingEnvironment = benchmarkEnvironment(ts.version);
+if (startingEnvironment.loadAverage > startingEnvironment.logicalCpus / 2)
+  process.stderr.write(
+    `Warning: load average is ${startingEnvironment.loadAverage.toFixed(2)} on ` +
+      `${String(startingEnvironment.logicalCpus)} logical CPUs. Timings taken now vary ` +
+      `far more between runs than most real regressions do, so treat both baselines ` +
+      `and comparisons from this run as provisional.\n`,
+  );
 const results = [];
 for (const scenario of scenarios) {
   const result = await runBenchmarkScenario(scenario, {
