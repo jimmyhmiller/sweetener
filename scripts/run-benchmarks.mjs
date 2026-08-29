@@ -19,8 +19,12 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 function parseArguments(arguments_) {
   const options = {
     scenarios: [],
-    warmups: 1,
-    samples: 7,
+    // Recording a baseline and checking against one must agree, or the
+    // comparison measures the sampling difference. Both go through these
+    // defaults rather than passing their own flags. Fifteen samples keeps the
+    // median steady across runs on an otherwise busy machine.
+    warmups: 2,
+    samples: 15,
     output: resolve(repositoryRoot, "artifacts/benchmarks/suite.json"),
     baseline: undefined,
     relative: 0.15,

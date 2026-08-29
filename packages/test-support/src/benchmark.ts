@@ -197,9 +197,16 @@ export function compareBenchmarkReports(options: {
   for (const candidate of options.candidate.results) {
     const previous = baseline.get(candidate.id);
     if (previous === undefined) continue;
+    // A percentile the sample count cannot resolve is just the slowest sample:
+    // at fifteen samples both p95 and p99 land on the maximum. Reporting each
+    // of them turns one slow run into three regressions, so a metric that
+    // repeats a coarser one is only counted once.
+    const reported = new Set<number>();
     for (const metric of ["p50Ms", "p95Ms", "p99Ms"] as const) {
       const before = previous.statistics[metric];
       const after = candidate.statistics[metric];
+      if (reported.has(after)) continue;
+      reported.add(after);
       const absolute = after - before;
       const relative =
         before === 0

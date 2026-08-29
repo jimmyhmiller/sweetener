@@ -131,3 +131,52 @@ describe("benchmark runner", () => {
     ).toEqual(["p50Ms", "p99Ms"]);
   });
 });
+
+test("counts a percentile that repeats a coarser one only once", () => {
+  // Fifteen samples put both p95 and p99 on the slowest run, so a single slow
+  // sample must not be reported as two separate regressions.
+  const statistics = (p50: number, tail: number) => ({
+    samples: 15,
+    minMs: p50,
+    maxMs: tail,
+    meanMs: p50,
+    p50Ms: p50,
+    p95Ms: tail,
+    p99Ms: tail,
+  });
+  const report = (p50: number, tail: number) => ({
+    schemaVersion: 1 as const,
+    generatedAt: "2026-08-29T00:00:00.000Z",
+    commit: "abcdef0",
+    dirty: false,
+    command: "benchmark",
+    environment: {
+      platform: "darwin" as const,
+      release: "25.5.0",
+      architecture: "arm64",
+      cpu: "Apple M2 Max",
+      logicalCpus: 12,
+      totalMemoryBytes: 1,
+      node: "v26.5.0",
+      typescript: "6.0.3",
+      gcExposed: true,
+    },
+    results: [
+      {
+        id: "scenario",
+        description: "one scenario",
+        warmups: 2,
+        statistics: statistics(p50, tail),
+        rawSamples: [],
+      },
+    ],
+  });
+  const regressions = compareBenchmarkReports({
+    baseline: report(10, 10),
+    candidate: report(10, 40),
+    allowedRelativeChange: 0.15,
+    allowedAbsoluteChangeMs: 2,
+  });
+  expect(regressions).toHaveLength(1);
+  expect(regressions[0]?.metric).toBe("p95Ms");
+});

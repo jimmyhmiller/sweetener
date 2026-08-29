@@ -1,0 +1,2598 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-29T22:39:09.294Z",
+  "commit": "08626e4",
+  "dirty": true,
+  "command": "/opt/homebrew/Cellar/node/26.5.0/bin/node /Users/jimmyhmiller/Documents/Code/projects/sweetener/scripts/run-benchmarks.mjs --output benchmarks/baselines/node26.json",
+  "environment": {
+    "platform": "darwin",
+    "release": "25.5.0",
+    "architecture": "arm64",
+    "cpu": "Apple M2 Max",
+    "logicalCpus": 12,
+    "totalMemoryBytes": 68719476736,
+    "node": "v26.5.0",
+    "typescript": "6.0.3",
+    "gcExposed": true
+  },
+  "results": [
+    {
+      "id": "cache/content-addressed-invalidation",
+      "description": "Hash, commit, hit, and invalidate ten thousand expansion entries",
+      "warmups": 2,
+      "statistics": {
+        "samples": 15,
+        "minMs": 27.543999999999983,
+        "maxMs": 31.805834000000004,
+        "meanMs": 29.612977933333323,
+        "p50Ms": 30.107874999999922,
+        "p95Ms": 31.805834000000004,
+        "p99Ms": 31.805834000000004
+      },
+      "rawSamples": [
+        {
+          "durationMs": 28.253332999999998,
+          "cpuUserMicros": 45434,
+          "cpuSystemMicros": 747,
+          "heapBeforeBytes": 76036912,
+          "heapAfterBytes": 75820224,
+          "retainedHeapDeltaBytes": -216688,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 27.65229199999999,
+          "cpuUserMicros": 43986,
+          "cpuSystemMicros": 820,
+          "heapBeforeBytes": 75812904,
+          "heapAfterBytes": 75817056,
+          "retainedHeapDeltaBytes": 4152,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 27.543999999999983,
+          "cpuUserMicros": 43065,
+          "cpuSystemMicros": 344,
+          "heapBeforeBytes": 75806208,
+          "heapAfterBytes": 75816080,
+          "retainedHeapDeltaBytes": 9872,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 28.279999999999973,
+          "cpuUserMicros": 50247,
+          "cpuSystemMicros": 386,
+          "heapBeforeBytes": 75794904,
+          "heapAfterBytes": 75815208,
+          "retainedHeapDeltaBytes": 20304,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 30.682667000000038,
+          "cpuUserMicros": 50361,
+          "cpuSystemMicros": 593,
+          "heapBeforeBytes": 75794616,
+          "heapAfterBytes": 75831584,
+          "retainedHeapDeltaBytes": 36968,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 30.107874999999922,
+          "cpuUserMicros": 48976,
+          "cpuSystemMicros": 589,
+          "heapBeforeBytes": 75803160,
+          "heapAfterBytes": 75828152,
+          "retainedHeapDeltaBytes": 24992,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 28.597875000000045,
+          "cpuUserMicros": 50873,
+          "cpuSystemMicros": 428,
+          "heapBeforeBytes": 75803144,
+          "heapAfterBytes": 75827152,
+          "retainedHeapDeltaBytes": 24008,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 30.64562500000011,
+          "cpuUserMicros": 50559,
+          "cpuSystemMicros": 357,
+          "heapBeforeBytes": 75806608,
+          "heapAfterBytes": 75841144,
+          "retainedHeapDeltaBytes": 34536,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 31.805834000000004,
+          "cpuUserMicros": 50915,
+          "cpuSystemMicros": 395,
+          "heapBeforeBytes": 75806080,
+          "heapAfterBytes": 75830536,
+          "retainedHeapDeltaBytes": 24456,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 30.293207999999822,
+          "cpuUserMicros": 52247,
+          "cpuSystemMicros": 451,
+          "heapBeforeBytes": 75808464,
+          "heapAfterBytes": 75823544,
+          "retainedHeapDeltaBytes": 15080,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 28.69049999999993,
+          "cpuUserMicros": 48232,
+          "cpuSystemMicros": 480,
+          "heapBeforeBytes": 75807376,
+          "heapAfterBytes": 75840056,
+          "retainedHeapDeltaBytes": 32680,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 30.69958399999996,
+          "cpuUserMicros": 49381,
+          "cpuSystemMicros": 757,
+          "heapBeforeBytes": 75808912,
+          "heapAfterBytes": 75834392,
+          "retainedHeapDeltaBytes": 25480,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 28.468000000000075,
+          "cpuUserMicros": 50135,
+          "cpuSystemMicros": 284,
+          "heapBeforeBytes": 75807824,
+          "heapAfterBytes": 75829856,
+          "retainedHeapDeltaBytes": 22032,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 31.245084000000134,
+          "cpuUserMicros": 50186,
+          "cpuSystemMicros": 503,
+          "heapBeforeBytes": 75809360,
+          "heapAfterBytes": 75836776,
+          "retainedHeapDeltaBytes": 27416,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        },
+        {
+          "durationMs": 31.228791999999885,
+          "cpuUserMicros": 50525,
+          "cpuSystemMicros": 426,
+          "heapBeforeBytes": 75808368,
+          "heapAfterBytes": 75830320,
+          "retainedHeapDeltaBytes": 21952,
+          "counters": {
+            "entries": 10000,
+            "hits": 10000,
+            "invalidated": 100
+          }
+        }
+      ]
+    },
+    {
+      "id": "expansion/threading-end-to-end",
+      "description": "Compile a declarative threading macro and expand one hundred invocations",
+      "warmups": 2,
+      "statistics": {
+        "samples": 15,
+        "minMs": 9.197458000000097,
+        "maxMs": 12.135291999999936,
+        "meanMs": 11.135252666666672,
+        "p50Ms": 11.078666999999996,
+        "p95Ms": 12.135291999999936,
+        "p99Ms": 12.135291999999936
+      },
+      "rawSamples": [
+        {
+          "durationMs": 10.90316699999994,
+          "cpuUserMicros": 26955,
+          "cpuSystemMicros": 156,
+          "heapBeforeBytes": 76513296,
+          "heapAfterBytes": 76534008,
+          "retainedHeapDeltaBytes": 20712,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 12.135291999999936,
+          "cpuUserMicros": 27521,
+          "cpuSystemMicros": 528,
+          "heapBeforeBytes": 76516032,
+          "heapAfterBytes": 76529400,
+          "retainedHeapDeltaBytes": 13368,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 11.403125000000045,
+          "cpuUserMicros": 28333,
+          "cpuSystemMicros": 160,
+          "heapBeforeBytes": 76515104,
+          "heapAfterBytes": 76558128,
+          "retainedHeapDeltaBytes": 43024,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 11.451041000000032,
+          "cpuUserMicros": 28799,
+          "cpuSystemMicros": 175,
+          "heapBeforeBytes": 76563688,
+          "heapAfterBytes": 76583560,
+          "retainedHeapDeltaBytes": 19872,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 10.792625000000044,
+          "cpuUserMicros": 30171,
+          "cpuSystemMicros": 209,
+          "heapBeforeBytes": 76565616,
+          "heapAfterBytes": 76615712,
+          "retainedHeapDeltaBytes": 50096,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 11.539582999999993,
+          "cpuUserMicros": 30600,
+          "cpuSystemMicros": 401,
+          "heapBeforeBytes": 76572272,
+          "heapAfterBytes": 76642216,
+          "retainedHeapDeltaBytes": 69944,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 11.078666999999996,
+          "cpuUserMicros": 26542,
+          "cpuSystemMicros": 79,
+          "heapBeforeBytes": 76627536,
+          "heapAfterBytes": 76670120,
+          "retainedHeapDeltaBytes": 42584,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 10.473917000000029,
+          "cpuUserMicros": 26400,
+          "cpuSystemMicros": 282,
+          "heapBeforeBytes": 76657088,
+          "heapAfterBytes": 76694040,
+          "retainedHeapDeltaBytes": 36952,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 11.073832999999922,
+          "cpuUserMicros": 28136,
+          "cpuSystemMicros": 315,
+          "heapBeforeBytes": 76664344,
+          "heapAfterBytes": 76677104,
+          "retainedHeapDeltaBytes": 12760,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 11.06899999999996,
+          "cpuUserMicros": 30449,
+          "cpuSystemMicros": 158,
+          "heapBeforeBytes": 76665224,
+          "heapAfterBytes": 76794152,
+          "retainedHeapDeltaBytes": 128928,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 11.842875000000276,
+          "cpuUserMicros": 29133,
+          "cpuSystemMicros": 439,
+          "heapBeforeBytes": 76758712,
+          "heapAfterBytes": 76798536,
+          "retainedHeapDeltaBytes": 39824,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 12.009665999999925,
+          "cpuUserMicros": 28024,
+          "cpuSystemMicros": 394,
+          "heapBeforeBytes": 76758736,
+          "heapAfterBytes": 76777176,
+          "retainedHeapDeltaBytes": 18440,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 10.712375000000065,
+          "cpuUserMicros": 25957,
+          "cpuSystemMicros": 146,
+          "heapBeforeBytes": 76764600,
+          "heapAfterBytes": 77354352,
+          "retainedHeapDeltaBytes": 589752,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 9.197458000000097,
+          "cpuUserMicros": 23105,
+          "cpuSystemMicros": 199,
+          "heapBeforeBytes": 77358496,
+          "heapAfterBytes": 76782136,
+          "retainedHeapDeltaBytes": -576360,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        },
+        {
+          "durationMs": 11.346165999999812,
+          "cpuUserMicros": 26800,
+          "cpuSystemMicros": 226,
+          "heapBeforeBytes": 76770160,
+          "heapAfterBytes": 76782280,
+          "retainedHeapDeltaBytes": 12120,
+          "counters": {
+            "invocations": 100,
+            "outputTokens": 100,
+            "matcherSteps": 100,
+            "templateSteps": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "host/language-service-edit",
+      "description": "Expanded snapshot update and semantic language-service query",
+      "warmups": 2,
+      "statistics": {
+        "samples": 15,
+        "minMs": 3.62237499999992,
+        "maxMs": 5.809417000000394,
+        "meanMs": 4.4688000666667,
+        "p50Ms": 4.519667000000027,
+        "p95Ms": 5.809417000000394,
+        "p99Ms": 5.809417000000394
+      },
+      "rawSamples": [
+        {
+          "durationMs": 5.809417000000394,
+          "cpuUserMicros": 24956,
+          "cpuSystemMicros": 2102,
+          "heapBeforeBytes": 121934784,
+          "heapAfterBytes": 122080000,
+          "retainedHeapDeltaBytes": 145216,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 4.857958000000053,
+          "cpuUserMicros": 20825,
+          "cpuSystemMicros": 1790,
+          "heapBeforeBytes": 122080744,
+          "heapAfterBytes": 122086688,
+          "retainedHeapDeltaBytes": 5944,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 4.92816700000003,
+          "cpuUserMicros": 21789,
+          "cpuSystemMicros": 1898,
+          "heapBeforeBytes": 122086720,
+          "heapAfterBytes": 122400968,
+          "retainedHeapDeltaBytes": 314248,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 4.829332999999679,
+          "cpuUserMicros": 21554,
+          "cpuSystemMicros": 1855,
+          "heapBeforeBytes": 122193576,
+          "heapAfterBytes": 122217096,
+          "retainedHeapDeltaBytes": 23520,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 4.528708999999708,
+          "cpuUserMicros": 15714,
+          "cpuSystemMicros": 1608,
+          "heapBeforeBytes": 122215656,
+          "heapAfterBytes": 122237392,
+          "retainedHeapDeltaBytes": 21736,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 4.696582999999919,
+          "cpuUserMicros": 16945,
+          "cpuSystemMicros": 2047,
+          "heapBeforeBytes": 122274008,
+          "heapAfterBytes": 122792848,
+          "retainedHeapDeltaBytes": 518840,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 5.240792000000056,
+          "cpuUserMicros": 23615,
+          "cpuSystemMicros": 2058,
+          "heapBeforeBytes": 122290480,
+          "heapAfterBytes": 122680928,
+          "retainedHeapDeltaBytes": 390448,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 4.519667000000027,
+          "cpuUserMicros": 21075,
+          "cpuSystemMicros": 1661,
+          "heapBeforeBytes": 122783584,
+          "heapAfterBytes": 123473968,
+          "retainedHeapDeltaBytes": 690384,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 3.937249999999949,
+          "cpuUserMicros": 3808,
+          "cpuSystemMicros": 1505,
+          "heapBeforeBytes": 122833376,
+          "heapAfterBytes": 123366352,
+          "retainedHeapDeltaBytes": 532976,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 4.28020800000013,
+          "cpuUserMicros": 5040,
+          "cpuSystemMicros": 1687,
+          "heapBeforeBytes": 123387712,
+          "heapAfterBytes": 123211344,
+          "retainedHeapDeltaBytes": -176368,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 4.01804200000015,
+          "cpuUserMicros": 4067,
+          "cpuSystemMicros": 1534,
+          "heapBeforeBytes": 122888160,
+          "heapAfterBytes": 122888272,
+          "retainedHeapDeltaBytes": 112,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 4.3556250000001455,
+          "cpuUserMicros": 11557,
+          "cpuSystemMicros": 1659,
+          "heapBeforeBytes": 122903496,
+          "heapAfterBytes": 123434664,
+          "retainedHeapDeltaBytes": 531168,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 3.62237499999992,
+          "cpuUserMicros": 2252,
+          "cpuSystemMicros": 1377,
+          "heapBeforeBytes": 122937728,
+          "heapAfterBytes": 122945536,
+          "retainedHeapDeltaBytes": 7808,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 3.680499999999938,
+          "cpuUserMicros": 5450,
+          "cpuSystemMicros": 1437,
+          "heapBeforeBytes": 122942648,
+          "heapAfterBytes": 122943648,
+          "retainedHeapDeltaBytes": 1000,
+          "counters": {
+            "updates": 1
+          }
+        },
+        {
+          "durationMs": 3.727375000000393,
+          "cpuUserMicros": 6038,
+          "cpuSystemMicros": 1507,
+          "heapBeforeBytes": 122951552,
+          "heapAfterBytes": 122957848,
+          "retainedHeapDeltaBytes": 6296,
+          "counters": {
+            "updates": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "hygiene/fresh-scopes",
+      "description": "Allocate fresh lexical scopes",
+      "warmups": 2,
+      "statistics": {
+        "samples": 15,
+        "minMs": 11.248333000000002,
+        "maxMs": 14.477833999999802,
+        "meanMs": 12.58967766666674,
+        "p50Ms": 12.3784169999999,
+        "p95Ms": 14.477833999999802,
+        "p99Ms": 14.477833999999802
+      },
+      "rawSamples": [
+        {
+          "durationMs": 14.477833999999802,
+          "cpuUserMicros": 33468,
+          "cpuSystemMicros": 281,
+          "heapBeforeBytes": 122970552,
+          "heapAfterBytes": 122971272,
+          "retainedHeapDeltaBytes": 720,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 11.248333000000002,
+          "cpuUserMicros": 31647,
+          "cpuSystemMicros": 373,
+          "heapBeforeBytes": 122966944,
+          "heapAfterBytes": 122978624,
+          "retainedHeapDeltaBytes": 11680,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 13.48620800000026,
+          "cpuUserMicros": 33602,
+          "cpuSystemMicros": 453,
+          "heapBeforeBytes": 122967200,
+          "heapAfterBytes": 122971872,
+          "retainedHeapDeltaBytes": 4672,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 12.18670800000018,
+          "cpuUserMicros": 32785,
+          "cpuSystemMicros": 110,
+          "heapBeforeBytes": 122967464,
+          "heapAfterBytes": 122979176,
+          "retainedHeapDeltaBytes": 11712,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 11.776708000000326,
+          "cpuUserMicros": 31154,
+          "cpuSystemMicros": 157,
+          "heapBeforeBytes": 122967752,
+          "heapAfterBytes": 122972376,
+          "retainedHeapDeltaBytes": 4624,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 12.85104100000035,
+          "cpuUserMicros": 33447,
+          "cpuSystemMicros": 88,
+          "heapBeforeBytes": 122967968,
+          "heapAfterBytes": 122979608,
+          "retainedHeapDeltaBytes": 11640,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 12.619208999999955,
+          "cpuUserMicros": 32153,
+          "cpuSystemMicros": 326,
+          "heapBeforeBytes": 122968184,
+          "heapAfterBytes": 122973224,
+          "retainedHeapDeltaBytes": 5040,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 11.931624999999713,
+          "cpuUserMicros": 32530,
+          "cpuSystemMicros": 248,
+          "heapBeforeBytes": 122968816,
+          "heapAfterBytes": 122980648,
+          "retainedHeapDeltaBytes": 11832,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 11.329208000000108,
+          "cpuUserMicros": 30699,
+          "cpuSystemMicros": 162,
+          "heapBeforeBytes": 122969224,
+          "heapAfterBytes": 122974616,
+          "retainedHeapDeltaBytes": 5392,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 12.790207999999893,
+          "cpuUserMicros": 33233,
+          "cpuSystemMicros": 99,
+          "heapBeforeBytes": 122970208,
+          "heapAfterBytes": 122981848,
+          "retainedHeapDeltaBytes": 11640,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 12.369707999999719,
+          "cpuUserMicros": 31618,
+          "cpuSystemMicros": 181,
+          "heapBeforeBytes": 122970424,
+          "heapAfterBytes": 122975048,
+          "retainedHeapDeltaBytes": 4624,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 13.566458000000239,
+          "cpuUserMicros": 34140,
+          "cpuSystemMicros": 168,
+          "heapBeforeBytes": 122970640,
+          "heapAfterBytes": 122982280,
+          "retainedHeapDeltaBytes": 11640,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 12.3784169999999,
+          "cpuUserMicros": 31524,
+          "cpuSystemMicros": 215,
+          "heapBeforeBytes": 122970856,
+          "heapAfterBytes": 122975480,
+          "retainedHeapDeltaBytes": 4624,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 13.866167000000132,
+          "cpuUserMicros": 35565,
+          "cpuSystemMicros": 451,
+          "heapBeforeBytes": 122971072,
+          "heapAfterBytes": 122982712,
+          "retainedHeapDeltaBytes": 11640,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        },
+        {
+          "durationMs": 11.967333000000508,
+          "cpuUserMicros": 31303,
+          "cpuSystemMicros": 89,
+          "heapBeforeBytes": 122971288,
+          "heapAfterBytes": 122975912,
+          "retainedHeapDeltaBytes": 4624,
+          "counters": {
+            "operations": 100000,
+            "internedSets": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "hygiene/persistent-add-chain",
+      "description": "Build one persistent sorted scope set by repeated add",
+      "warmups": 2,
+      "statistics": {
+        "samples": 15,
+        "minMs": 56.07637499999964,
+        "maxMs": 62.930083999999624,
+        "meanMs": 60.68088886666653,
+        "p50Ms": 61.69358300000022,
+        "p95Ms": 62.930083999999624,
+        "p99Ms": 62.930083999999624
+      },
+      "rawSamples": [
+        {
+          "durationMs": 56.07637499999964,
+          "cpuUserMicros": 89123,
+          "cpuSystemMicros": 3756,
+          "heapBeforeBytes": 122995032,
+          "heapAfterBytes": 122994824,
+          "retainedHeapDeltaBytes": -208,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 62.37695799999983,
+          "cpuUserMicros": 93509,
+          "cpuSystemMicros": 2183,
+          "heapBeforeBytes": 122988440,
+          "heapAfterBytes": 122994792,
+          "retainedHeapDeltaBytes": 6352,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 62.743124999999964,
+          "cpuUserMicros": 94848,
+          "cpuSystemMicros": 1626,
+          "heapBeforeBytes": 122987080,
+          "heapAfterBytes": 122991992,
+          "retainedHeapDeltaBytes": 4912,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 62.705041999999594,
+          "cpuUserMicros": 94342,
+          "cpuSystemMicros": 2570,
+          "heapBeforeBytes": 122987296,
+          "heapAfterBytes": 122994464,
+          "retainedHeapDeltaBytes": 7168,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 62.35095799999999,
+          "cpuUserMicros": 93688,
+          "cpuSystemMicros": 1470,
+          "heapBeforeBytes": 122987512,
+          "heapAfterBytes": 122987688,
+          "retainedHeapDeltaBytes": 176,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 56.248208999999406,
+          "cpuUserMicros": 87215,
+          "cpuSystemMicros": 1328,
+          "heapBeforeBytes": 122987728,
+          "heapAfterBytes": 122992640,
+          "retainedHeapDeltaBytes": 4912,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 60.22187500000018,
+          "cpuUserMicros": 90597,
+          "cpuSystemMicros": 1286,
+          "heapBeforeBytes": 122987944,
+          "heapAfterBytes": 122999496,
+          "retainedHeapDeltaBytes": 11552,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 61.69358300000022,
+          "cpuUserMicros": 94477,
+          "cpuSystemMicros": 1474,
+          "heapBeforeBytes": 122988320,
+          "heapAfterBytes": 122990928,
+          "retainedHeapDeltaBytes": 2608,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 57.707790999999816,
+          "cpuUserMicros": 90058,
+          "cpuSystemMicros": 1441,
+          "heapBeforeBytes": 122988600,
+          "heapAfterBytes": 123001264,
+          "retainedHeapDeltaBytes": 12664,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 61.65437500000007,
+          "cpuUserMicros": 92585,
+          "cpuSystemMicros": 1531,
+          "heapBeforeBytes": 122988816,
+          "heapAfterBytes": 122993616,
+          "retainedHeapDeltaBytes": 4800,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 58.59037499999977,
+          "cpuUserMicros": 90132,
+          "cpuSystemMicros": 1242,
+          "heapBeforeBytes": 122989032,
+          "heapAfterBytes": 122991576,
+          "retainedHeapDeltaBytes": 2544,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 62.157915999999204,
+          "cpuUserMicros": 92431,
+          "cpuSystemMicros": 2925,
+          "heapBeforeBytes": 122989248,
+          "heapAfterBytes": 122994160,
+          "retainedHeapDeltaBytes": 4912,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 61.947958000000654,
+          "cpuUserMicros": 90457,
+          "cpuSystemMicros": 3959,
+          "heapBeforeBytes": 122989464,
+          "heapAfterBytes": 122996232,
+          "retainedHeapDeltaBytes": 6768,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 62.930083999999624,
+          "cpuUserMicros": 96470,
+          "cpuSystemMicros": 1519,
+          "heapBeforeBytes": 122989680,
+          "heapAfterBytes": 122994480,
+          "retainedHeapDeltaBytes": 4800,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        },
+        {
+          "durationMs": 60.80870899999991,
+          "cpuUserMicros": 92625,
+          "cpuSystemMicros": 1450,
+          "heapBeforeBytes": 122989896,
+          "heapAfterBytes": 122992440,
+          "retainedHeapDeltaBytes": 2544,
+          "counters": {
+            "operations": 5000,
+            "internedSets": 5001
+          }
+        }
+      ]
+    },
+    {
+      "id": "hygiene/singleton-interning",
+      "description": "Create each singleton twice and reuse its interned ID",
+      "warmups": 2,
+      "statistics": {
+        "samples": 15,
+        "minMs": 16.66887499999939,
+        "maxMs": 22.635333000000173,
+        "meanMs": 19.371930599999967,
+        "p50Ms": 19.364000000000487,
+        "p95Ms": 22.635333000000173,
+        "p99Ms": 22.635333000000173
+      },
+      "rawSamples": [
+        {
+          "durationMs": 16.66887499999939,
+          "cpuUserMicros": 39346,
+          "cpuSystemMicros": 246,
+          "heapBeforeBytes": 123011176,
+          "heapAfterBytes": 123006072,
+          "retainedHeapDeltaBytes": -5104,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 18.617874999999913,
+          "cpuUserMicros": 40728,
+          "cpuSystemMicros": 285,
+          "heapBeforeBytes": 122996648,
+          "heapAfterBytes": 123022104,
+          "retainedHeapDeltaBytes": 25456,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 22.635333000000173,
+          "cpuUserMicros": 43981,
+          "cpuSystemMicros": 354,
+          "heapBeforeBytes": 122997048,
+          "heapAfterBytes": 123012800,
+          "retainedHeapDeltaBytes": 15752,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 19.641375000000153,
+          "cpuUserMicros": 43910,
+          "cpuSystemMicros": 296,
+          "heapBeforeBytes": 122997264,
+          "heapAfterBytes": 123006784,
+          "retainedHeapDeltaBytes": 9520,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 19.364000000000487,
+          "cpuUserMicros": 40863,
+          "cpuSystemMicros": 363,
+          "heapBeforeBytes": 122997480,
+          "heapAfterBytes": 123015328,
+          "retainedHeapDeltaBytes": 17848,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 19.172083999999813,
+          "cpuUserMicros": 43362,
+          "cpuSystemMicros": 326,
+          "heapBeforeBytes": 123000976,
+          "heapAfterBytes": 123006032,
+          "retainedHeapDeltaBytes": 5056,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 19.527500000000146,
+          "cpuUserMicros": 42145,
+          "cpuSystemMicros": 180,
+          "heapBeforeBytes": 122997912,
+          "heapAfterBytes": 123018104,
+          "retainedHeapDeltaBytes": 20192,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 20.434457999999722,
+          "cpuUserMicros": 44506,
+          "cpuSystemMicros": 114,
+          "heapBeforeBytes": 123001408,
+          "heapAfterBytes": 123002784,
+          "retainedHeapDeltaBytes": 1376,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 20.860875000000306,
+          "cpuUserMicros": 44578,
+          "cpuSystemMicros": 211,
+          "heapBeforeBytes": 122998344,
+          "heapAfterBytes": 123023648,
+          "retainedHeapDeltaBytes": 25304,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 20.961832999999388,
+          "cpuUserMicros": 42620,
+          "cpuSystemMicros": 325,
+          "heapBeforeBytes": 122998560,
+          "heapAfterBytes": 123014312,
+          "retainedHeapDeltaBytes": 15752,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 17.10279199999968,
+          "cpuUserMicros": 42066,
+          "cpuSystemMicros": 266,
+          "heapBeforeBytes": 122998776,
+          "heapAfterBytes": 123009456,
+          "retainedHeapDeltaBytes": 10680,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 20.033000000000357,
+          "cpuUserMicros": 41622,
+          "cpuSystemMicros": 496,
+          "heapBeforeBytes": 122998992,
+          "heapAfterBytes": 123016840,
+          "retainedHeapDeltaBytes": 17848,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 17.58833400000003,
+          "cpuUserMicros": 40977,
+          "cpuSystemMicros": 82,
+          "heapBeforeBytes": 123002488,
+          "heapAfterBytes": 123003864,
+          "retainedHeapDeltaBytes": 1376,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 18.856332999999722,
+          "cpuUserMicros": 41445,
+          "cpuSystemMicros": 149,
+          "heapBeforeBytes": 122999424,
+          "heapAfterBytes": 123019616,
+          "retainedHeapDeltaBytes": 20192,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        },
+        {
+          "durationMs": 19.114292000000205,
+          "cpuUserMicros": 42619,
+          "cpuSystemMicros": 320,
+          "heapBeforeBytes": 123002920,
+          "heapAfterBytes": 123008184,
+          "retainedHeapDeltaBytes": 5264,
+          "counters": {
+            "operations": 40000,
+            "internedSets": 20001
+          }
+        }
+      ]
+    },
+    {
+      "id": "mapping/bidirectional-origin-queries",
+      "description": "Build and query ten thousand origin-map regions in both directions",
+      "warmups": 2,
+      "statistics": {
+        "samples": 15,
+        "minMs": 23.994290999999976,
+        "maxMs": 32.216833999999835,
+        "meanMs": 28.924897133333253,
+        "p50Ms": 29.421832999999424,
+        "p95Ms": 32.216833999999835,
+        "p99Ms": 32.216833999999835
+      },
+      "rawSamples": [
+        {
+          "durationMs": 23.994290999999976,
+          "cpuUserMicros": 56139,
+          "cpuSystemMicros": 600,
+          "heapBeforeBytes": 123086968,
+          "heapAfterBytes": 123092344,
+          "retainedHeapDeltaBytes": 5376,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 29.98766599999999,
+          "cpuUserMicros": 59090,
+          "cpuSystemMicros": 563,
+          "heapBeforeBytes": 123073856,
+          "heapAfterBytes": 123114760,
+          "retainedHeapDeltaBytes": 40904,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 26.348165999999765,
+          "cpuUserMicros": 49442,
+          "cpuSystemMicros": 187,
+          "heapBeforeBytes": 123113032,
+          "heapAfterBytes": 123124864,
+          "retainedHeapDeltaBytes": 11832,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 28.513542000000598,
+          "cpuUserMicros": 55765,
+          "cpuSystemMicros": 482,
+          "heapBeforeBytes": 123096488,
+          "heapAfterBytes": 123116088,
+          "retainedHeapDeltaBytes": 19600,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 32.216833999999835,
+          "cpuUserMicros": 65571,
+          "cpuSystemMicros": 506,
+          "heapBeforeBytes": 123069560,
+          "heapAfterBytes": 123087480,
+          "retainedHeapDeltaBytes": 17920,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 30.711582999999337,
+          "cpuUserMicros": 58394,
+          "cpuSystemMicros": 711,
+          "heapBeforeBytes": 123071704,
+          "heapAfterBytes": 123109736,
+          "retainedHeapDeltaBytes": 38032,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 29.78349999999955,
+          "cpuUserMicros": 56277,
+          "cpuSystemMicros": 319,
+          "heapBeforeBytes": 123071320,
+          "heapAfterBytes": 123099368,
+          "retainedHeapDeltaBytes": 28048,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 28.346833000000515,
+          "cpuUserMicros": 54391,
+          "cpuSystemMicros": 738,
+          "heapBeforeBytes": 123075480,
+          "heapAfterBytes": 123088616,
+          "retainedHeapDeltaBytes": 13136,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 29.421832999999424,
+          "cpuUserMicros": 63056,
+          "cpuSystemMicros": 332,
+          "heapBeforeBytes": 123073856,
+          "heapAfterBytes": 123095312,
+          "retainedHeapDeltaBytes": 21456,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 26.534292000000278,
+          "cpuUserMicros": 50579,
+          "cpuSystemMicros": 219,
+          "heapBeforeBytes": 123077080,
+          "heapAfterBytes": 123135000,
+          "retainedHeapDeltaBytes": 57920,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 26.15454099999988,
+          "cpuUserMicros": 52564,
+          "cpuSystemMicros": 425,
+          "heapBeforeBytes": 123101032,
+          "heapAfterBytes": 123117664,
+          "retainedHeapDeltaBytes": 16632,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 28.634500000000116,
+          "cpuUserMicros": 55519,
+          "cpuSystemMicros": 391,
+          "heapBeforeBytes": 123075584,
+          "heapAfterBytes": 123093832,
+          "retainedHeapDeltaBytes": 18248,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 32.20387500000015,
+          "cpuUserMicros": 66895,
+          "cpuSystemMicros": 346,
+          "heapBeforeBytes": 123078072,
+          "heapAfterBytes": 123098920,
+          "retainedHeapDeltaBytes": 20848,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 30.758041999999477,
+          "cpuUserMicros": 57909,
+          "cpuSystemMicros": 658,
+          "heapBeforeBytes": 123076016,
+          "heapAfterBytes": 123109720,
+          "retainedHeapDeltaBytes": 33704,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        },
+        {
+          "durationMs": 30.263958999999886,
+          "cpuUserMicros": 65529,
+          "cpuSystemMicros": 497,
+          "heapBeforeBytes": 123093944,
+          "heapAfterBytes": 123100088,
+          "retainedHeapDeltaBytes": 6144,
+          "counters": {
+            "regions": 10000,
+            "queries": 20000
+          }
+        }
+      ]
+    },
+    {
+      "id": "matcher/dense-choice",
+      "description": "Backtrack across dense literal alternatives in the matcher VM",
+      "warmups": 2,
+      "statistics": {
+        "samples": 15,
+        "minMs": 55.04408400000102,
+        "maxMs": 72.35358300000007,
+        "meanMs": 64.39835266666657,
+        "p50Ms": 64.86149999999907,
+        "p95Ms": 72.35358300000007,
+        "p99Ms": 72.35358300000007
+      },
+      "rawSamples": [
+        {
+          "durationMs": 67.72587500000009,
+          "cpuUserMicros": 108585,
+          "cpuSystemMicros": 716,
+          "heapBeforeBytes": 123229912,
+          "heapAfterBytes": 123225224,
+          "retainedHeapDeltaBytes": -4688,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 72.35358300000007,
+          "cpuUserMicros": 112171,
+          "cpuSystemMicros": 1081,
+          "heapBeforeBytes": 123173376,
+          "heapAfterBytes": 123227424,
+          "retainedHeapDeltaBytes": 54048,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 60.77283399999942,
+          "cpuUserMicros": 98609,
+          "cpuSystemMicros": 346,
+          "heapBeforeBytes": 123178688,
+          "heapAfterBytes": 123229216,
+          "retainedHeapDeltaBytes": 50528,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 55.04408400000102,
+          "cpuUserMicros": 92742,
+          "cpuSystemMicros": 290,
+          "heapBeforeBytes": 123170648,
+          "heapAfterBytes": 123229936,
+          "retainedHeapDeltaBytes": 59288,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 64.82341599999927,
+          "cpuUserMicros": 102893,
+          "cpuSystemMicros": 977,
+          "heapBeforeBytes": 123177392,
+          "heapAfterBytes": 123233032,
+          "retainedHeapDeltaBytes": 55640,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 63.30724999999984,
+          "cpuUserMicros": 101810,
+          "cpuSystemMicros": 301,
+          "heapBeforeBytes": 123173320,
+          "heapAfterBytes": 123229480,
+          "retainedHeapDeltaBytes": 56160,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 62.50945800000045,
+          "cpuUserMicros": 100560,
+          "cpuSystemMicros": 461,
+          "heapBeforeBytes": 123179160,
+          "heapAfterBytes": 123230680,
+          "retainedHeapDeltaBytes": 51520,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 60.816624999999476,
+          "cpuUserMicros": 99099,
+          "cpuSystemMicros": 679,
+          "heapBeforeBytes": 123175096,
+          "heapAfterBytes": 123232184,
+          "retainedHeapDeltaBytes": 57088,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 65.69974999999977,
+          "cpuUserMicros": 103992,
+          "cpuSystemMicros": 736,
+          "heapBeforeBytes": 123179640,
+          "heapAfterBytes": 123230160,
+          "retainedHeapDeltaBytes": 50520,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 58.39283299999988,
+          "cpuUserMicros": 97185,
+          "cpuSystemMicros": 600,
+          "heapBeforeBytes": 123175528,
+          "heapAfterBytes": 123230464,
+          "retainedHeapDeltaBytes": 54936,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 69.58279100000073,
+          "cpuUserMicros": 108821,
+          "cpuSystemMicros": 457,
+          "heapBeforeBytes": 123180144,
+          "heapAfterBytes": 123231376,
+          "retainedHeapDeltaBytes": 51232,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 67.08804100000089,
+          "cpuUserMicros": 106695,
+          "cpuSystemMicros": 435,
+          "heapBeforeBytes": 123176032,
+          "heapAfterBytes": 123234624,
+          "retainedHeapDeltaBytes": 58592,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 67.79645799999889,
+          "cpuUserMicros": 105733,
+          "cpuSystemMicros": 382,
+          "heapBeforeBytes": 123180576,
+          "heapAfterBytes": 123230960,
+          "retainedHeapDeltaBytes": 50384,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 64.86149999999907,
+          "cpuUserMicros": 104863,
+          "cpuSystemMicros": 992,
+          "heapBeforeBytes": 123176464,
+          "heapAfterBytes": 123231608,
+          "retainedHeapDeltaBytes": 55144,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        },
+        {
+          "durationMs": 65.20079199999964,
+          "cpuUserMicros": 104253,
+          "cpuSystemMicros": 736,
+          "heapBeforeBytes": 123181320,
+          "heapAfterBytes": 123241656,
+          "retainedHeapDeltaBytes": 60336,
+          "counters": {
+            "matches": 1000,
+            "instructions": 128
+          }
+        }
+      ]
+    },
+    {
+      "id": "printer/generated-origin-map",
+      "description": "Print ten thousand generated tokens with copied origin regions",
+      "warmups": 2,
+      "statistics": {
+        "samples": 15,
+        "minMs": 8.119292000001224,
+        "maxMs": 12.30987500000083,
+        "meanMs": 10.405330400000093,
+        "p50Ms": 10.18291699999827,
+        "p95Ms": 12.30987500000083,
+        "p99Ms": 12.30987500000083
+      },
+      "rawSamples": [
+        {
+          "durationMs": 10.979165999999168,
+          "cpuUserMicros": 34196,
+          "cpuSystemMicros": 367,
+          "heapBeforeBytes": 123214448,
+          "heapAfterBytes": 123222856,
+          "retainedHeapDeltaBytes": 8408,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 9.593500000000859,
+          "cpuUserMicros": 30294,
+          "cpuSystemMicros": 295,
+          "heapBeforeBytes": 123215104,
+          "heapAfterBytes": 123215800,
+          "retainedHeapDeltaBytes": 696,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 11.06579099999908,
+          "cpuUserMicros": 33461,
+          "cpuSystemMicros": 157,
+          "heapBeforeBytes": 123204952,
+          "heapAfterBytes": 123208472,
+          "retainedHeapDeltaBytes": 3520,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 12.30987500000083,
+          "cpuUserMicros": 33412,
+          "cpuSystemMicros": 135,
+          "heapBeforeBytes": 123206872,
+          "heapAfterBytes": 123210384,
+          "retainedHeapDeltaBytes": 3512,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 8.539082999999664,
+          "cpuUserMicros": 29406,
+          "cpuSystemMicros": 60,
+          "heapBeforeBytes": 123231280,
+          "heapAfterBytes": 123219304,
+          "retainedHeapDeltaBytes": -11976,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 9.821500000000015,
+          "cpuUserMicros": 32931,
+          "cpuSystemMicros": 326,
+          "heapBeforeBytes": 123216528,
+          "heapAfterBytes": 123223232,
+          "retainedHeapDeltaBytes": 6704,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 12.159332999999606,
+          "cpuUserMicros": 34119,
+          "cpuSystemMicros": 197,
+          "heapBeforeBytes": 123207008,
+          "heapAfterBytes": 123216144,
+          "retainedHeapDeltaBytes": 9136,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 10.15216700000019,
+          "cpuUserMicros": 32429,
+          "cpuSystemMicros": 242,
+          "heapBeforeBytes": 123208496,
+          "heapAfterBytes": 123218048,
+          "retainedHeapDeltaBytes": 9552,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 11.133166000001438,
+          "cpuUserMicros": 34635,
+          "cpuSystemMicros": 484,
+          "heapBeforeBytes": 123210392,
+          "heapAfterBytes": 123219432,
+          "retainedHeapDeltaBytes": 9040,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 8.119292000001224,
+          "cpuUserMicros": 28091,
+          "cpuSystemMicros": 392,
+          "heapBeforeBytes": 123243208,
+          "heapAfterBytes": 123228544,
+          "retainedHeapDeltaBytes": -14664,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 11.270000000000437,
+          "cpuUserMicros": 33310,
+          "cpuSystemMicros": 294,
+          "heapBeforeBytes": 123220992,
+          "heapAfterBytes": 123229608,
+          "retainedHeapDeltaBytes": 8616,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 10.05383299999994,
+          "cpuUserMicros": 33159,
+          "cpuSystemMicros": 156,
+          "heapBeforeBytes": 123220944,
+          "heapAfterBytes": 123229016,
+          "retainedHeapDeltaBytes": 8072,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 11.177332999999635,
+          "cpuUserMicros": 33606,
+          "cpuSystemMicros": 65,
+          "heapBeforeBytes": 123221528,
+          "heapAfterBytes": 123229048,
+          "retainedHeapDeltaBytes": 7520,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 9.523000000001048,
+          "cpuUserMicros": 32178,
+          "cpuSystemMicros": 220,
+          "heapBeforeBytes": 123221464,
+          "heapAfterBytes": 123505072,
+          "retainedHeapDeltaBytes": 283608,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        },
+        {
+          "durationMs": 10.18291699999827,
+          "cpuUserMicros": 33352,
+          "cpuSystemMicros": 139,
+          "heapBeforeBytes": 123231744,
+          "heapAfterBytes": 123239392,
+          "retainedHeapDeltaBytes": 7648,
+          "counters": {
+            "tokens": 10000,
+            "regions": 19999,
+            "outputBytes": 19999
+          }
+        }
+      ]
+    },
+    {
+      "id": "printer/macro-free-typescript",
+      "description": "Lossless printing of pre-read workspace TypeScript",
+      "warmups": 2,
+      "statistics": {
+        "samples": 15,
+        "minMs": 11.600000000000364,
+        "maxMs": 13.91558299999997,
+        "meanMs": 12.764397200000046,
+        "p50Ms": 12.812334000000192,
+        "p95Ms": 13.91558299999997,
+        "p99Ms": 13.91558299999997
+      },
+      "rawSamples": [
+        {
+          "durationMs": 12.96283399999993,
+          "cpuUserMicros": 30322,
+          "cpuSystemMicros": 148,
+          "heapBeforeBytes": 123279960,
+          "heapAfterBytes": 123280280,
+          "retainedHeapDeltaBytes": 320,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 12.854833000001236,
+          "cpuUserMicros": 30539,
+          "cpuSystemMicros": 35,
+          "heapBeforeBytes": 123280712,
+          "heapAfterBytes": 123280712,
+          "retainedHeapDeltaBytes": 0,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 11.769500000000335,
+          "cpuUserMicros": 29334,
+          "cpuSystemMicros": 82,
+          "heapBeforeBytes": 123280920,
+          "heapAfterBytes": 123280920,
+          "retainedHeapDeltaBytes": 0,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 13.177999999999884,
+          "cpuUserMicros": 30697,
+          "cpuSystemMicros": 177,
+          "heapBeforeBytes": 123281128,
+          "heapAfterBytes": 123282664,
+          "retainedHeapDeltaBytes": 1536,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 11.600000000000364,
+          "cpuUserMicros": 29293,
+          "cpuSystemMicros": 129,
+          "heapBeforeBytes": 123282872,
+          "heapAfterBytes": 123282872,
+          "retainedHeapDeltaBytes": 0,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 12.812334000000192,
+          "cpuUserMicros": 30716,
+          "cpuSystemMicros": 64,
+          "heapBeforeBytes": 123283080,
+          "heapAfterBytes": 123286672,
+          "retainedHeapDeltaBytes": 3592,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 12.58520800000042,
+          "cpuUserMicros": 30636,
+          "cpuSystemMicros": 71,
+          "heapBeforeBytes": 123286880,
+          "heapAfterBytes": 123294200,
+          "retainedHeapDeltaBytes": 7320,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 13.056124999999156,
+          "cpuUserMicros": 30756,
+          "cpuSystemMicros": 75,
+          "heapBeforeBytes": 123294408,
+          "heapAfterBytes": 123294408,
+          "retainedHeapDeltaBytes": 0,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 12.597458000000188,
+          "cpuUserMicros": 30116,
+          "cpuSystemMicros": 52,
+          "heapBeforeBytes": 123294616,
+          "heapAfterBytes": 123294616,
+          "retainedHeapDeltaBytes": 0,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 12.798915999999736,
+          "cpuUserMicros": 30402,
+          "cpuSystemMicros": 88,
+          "heapBeforeBytes": 123294824,
+          "heapAfterBytes": 123294824,
+          "retainedHeapDeltaBytes": 0,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 12.138041999998677,
+          "cpuUserMicros": 29725,
+          "cpuSystemMicros": 161,
+          "heapBeforeBytes": 123295032,
+          "heapAfterBytes": 123295032,
+          "retainedHeapDeltaBytes": 0,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 13.057582999999795,
+          "cpuUserMicros": 31053,
+          "cpuSystemMicros": 75,
+          "heapBeforeBytes": 123295240,
+          "heapAfterBytes": 123295240,
+          "retainedHeapDeltaBytes": 0,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 13.91558299999997,
+          "cpuUserMicros": 32237,
+          "cpuSystemMicros": 370,
+          "heapBeforeBytes": 123295448,
+          "heapAfterBytes": 123295448,
+          "retainedHeapDeltaBytes": 0,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 12.227582999999868,
+          "cpuUserMicros": 30074,
+          "cpuSystemMicros": 208,
+          "heapBeforeBytes": 123295656,
+          "heapAfterBytes": 123295656,
+          "retainedHeapDeltaBytes": 0,
+          "counters": {
+            "bytes": 935361
+          }
+        },
+        {
+          "durationMs": 13.911959000000934,
+          "cpuUserMicros": 34079,
+          "cpuSystemMicros": 8574,
+          "heapBeforeBytes": 123295864,
+          "heapAfterBytes": 123295864,
+          "retainedHeapDeltaBytes": 0,
+          "counters": {
+            "bytes": 935361
+          }
+        }
+      ]
+    },
+    {
+      "id": "reader/macro-free-typescript",
+      "description": "Workspace production TypeScript sources",
+      "warmups": 2,
+      "statistics": {
+        "samples": 15,
+        "minMs": 2329.1047919999983,
+        "maxMs": 2549.3130420000016,
+        "meanMs": 2413.6805083333334,
+        "p50Ms": 2390.957957999999,
+        "p95Ms": 2549.3130420000016,
+        "p99Ms": 2549.3130420000016
+      },
+      "rawSamples": [
+        {
+          "durationMs": 2413.3613750000004,
+          "cpuUserMicros": 2716063,
+          "cpuSystemMicros": 28645,
+          "heapBeforeBytes": 122513648,
+          "heapAfterBytes": 121328056,
+          "retainedHeapDeltaBytes": -1185592,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2360.626833999999,
+          "cpuUserMicros": 2544170,
+          "cpuSystemMicros": 18207,
+          "heapBeforeBytes": 121227736,
+          "heapAfterBytes": 121316624,
+          "retainedHeapDeltaBytes": 88888,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2382.4659580000007,
+          "cpuUserMicros": 2678651,
+          "cpuSystemMicros": 38183,
+          "heapBeforeBytes": 121204504,
+          "heapAfterBytes": 121312728,
+          "retainedHeapDeltaBytes": 108224,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2390.957957999999,
+          "cpuUserMicros": 2582891,
+          "cpuSystemMicros": 30178,
+          "heapBeforeBytes": 121212216,
+          "heapAfterBytes": 121330312,
+          "retainedHeapDeltaBytes": 118096,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2427.151999999998,
+          "cpuUserMicros": 2730746,
+          "cpuSystemMicros": 35466,
+          "heapBeforeBytes": 121208568,
+          "heapAfterBytes": 121220816,
+          "retainedHeapDeltaBytes": 12248,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2356.656833000001,
+          "cpuUserMicros": 2567239,
+          "cpuSystemMicros": 17187,
+          "heapBeforeBytes": 121119032,
+          "heapAfterBytes": 121220776,
+          "retainedHeapDeltaBytes": 101744,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2452.762875000004,
+          "cpuUserMicros": 2792626,
+          "cpuSystemMicros": 26483,
+          "heapBeforeBytes": 121115936,
+          "heapAfterBytes": 121219016,
+          "retainedHeapDeltaBytes": 103080,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2356.3674170000013,
+          "cpuUserMicros": 2548110,
+          "cpuSystemMicros": 26427,
+          "heapBeforeBytes": 121118472,
+          "heapAfterBytes": 121218960,
+          "retainedHeapDeltaBytes": 100488,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2433.0835420000003,
+          "cpuUserMicros": 2751713,
+          "cpuSystemMicros": 30978,
+          "heapBeforeBytes": 121112880,
+          "heapAfterBytes": 121219448,
+          "retainedHeapDeltaBytes": 106568,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2549.3130420000016,
+          "cpuUserMicros": 2750634,
+          "cpuSystemMicros": 29015,
+          "heapBeforeBytes": 121118904,
+          "heapAfterBytes": 121220864,
+          "retainedHeapDeltaBytes": 101960,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2507.4389999999985,
+          "cpuUserMicros": 2862004,
+          "cpuSystemMicros": 27990,
+          "heapBeforeBytes": 121113312,
+          "heapAfterBytes": 121215920,
+          "retainedHeapDeltaBytes": 102608,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2495.7050830000007,
+          "cpuUserMicros": 2711041,
+          "cpuSystemMicros": 27701,
+          "heapBeforeBytes": 121114136,
+          "heapAfterBytes": 121222576,
+          "retainedHeapDeltaBytes": 108440,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2329.1047919999983,
+          "cpuUserMicros": 2652931,
+          "cpuSystemMicros": 20736,
+          "heapBeforeBytes": 121112656,
+          "heapAfterBytes": 121219224,
+          "retainedHeapDeltaBytes": 106568,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2365.2220830000006,
+          "cpuUserMicros": 2566762,
+          "cpuSystemMicros": 16905,
+          "heapBeforeBytes": 121118680,
+          "heapAfterBytes": 121220800,
+          "retainedHeapDeltaBytes": 102120,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        },
+        {
+          "durationMs": 2384.988833000003,
+          "cpuUserMicros": 2692302,
+          "cpuSystemMicros": 21231,
+          "heapBeforeBytes": 121113088,
+          "heapAfterBytes": 121225128,
+          "retainedHeapDeltaBytes": 112040,
+          "counters": {
+            "bytes": 7482888,
+            "tokens": 1313904
+          }
+        }
+      ]
+    },
+    {
+      "id": "reader/playground-syntax",
+      "description": "Imported Sweet.js playground sources",
+      "warmups": 2,
+      "statistics": {
+        "samples": 15,
+        "minMs": 169.4575410000034,
+        "maxMs": 207.86679100000038,
+        "meanMs": 188.36307766666724,
+        "p50Ms": 190.67270799999824,
+        "p95Ms": 207.86679100000038,
+        "p99Ms": 207.86679100000038
+      },
+      "rawSamples": [
+        {
+          "durationMs": 182.232124999995,
+          "cpuUserMicros": 250526,
+          "cpuSystemMicros": 2816,
+          "heapBeforeBytes": 121278800,
+          "heapAfterBytes": 121271112,
+          "retainedHeapDeltaBytes": -7688,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 177.76866700000392,
+          "cpuUserMicros": 257784,
+          "cpuSystemMicros": 3013,
+          "heapBeforeBytes": 121154864,
+          "heapAfterBytes": 121274560,
+          "retainedHeapDeltaBytes": 119696,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 199.17208299999766,
+          "cpuUserMicros": 272536,
+          "cpuSystemMicros": 2248,
+          "heapBeforeBytes": 121162744,
+          "heapAfterBytes": 121268816,
+          "retainedHeapDeltaBytes": 106072,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 196.185166999996,
+          "cpuUserMicros": 281465,
+          "cpuSystemMicros": 2190,
+          "heapBeforeBytes": 121126808,
+          "heapAfterBytes": 121278936,
+          "retainedHeapDeltaBytes": 152128,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 197.30920799999876,
+          "cpuUserMicros": 271451,
+          "cpuSystemMicros": 1408,
+          "heapBeforeBytes": 121168360,
+          "heapAfterBytes": 121275808,
+          "retainedHeapDeltaBytes": 107448,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 187.08008400000108,
+          "cpuUserMicros": 267967,
+          "cpuSystemMicros": 2447,
+          "heapBeforeBytes": 121133800,
+          "heapAfterBytes": 121285960,
+          "retainedHeapDeltaBytes": 152160,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 177.51641600000585,
+          "cpuUserMicros": 241803,
+          "cpuSystemMicros": 2901,
+          "heapBeforeBytes": 121173968,
+          "heapAfterBytes": 121429832,
+          "retainedHeapDeltaBytes": 255864,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 169.4575410000034,
+          "cpuUserMicros": 225269,
+          "cpuSystemMicros": 3440,
+          "heapBeforeBytes": 121347256,
+          "heapAfterBytes": 121293256,
+          "retainedHeapDeltaBytes": -54000,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 199.32137499999953,
+          "cpuUserMicros": 266537,
+          "cpuSystemMicros": 2910,
+          "heapBeforeBytes": 121179728,
+          "heapAfterBytes": 121285712,
+          "retainedHeapDeltaBytes": 105984,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 207.86679100000038,
+          "cpuUserMicros": 289313,
+          "cpuSystemMicros": 3316,
+          "heapBeforeBytes": 121141200,
+          "heapAfterBytes": 121291432,
+          "retainedHeapDeltaBytes": 150232,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 170.27366600000096,
+          "cpuUserMicros": 235929,
+          "cpuSystemMicros": 927,
+          "heapBeforeBytes": 121179440,
+          "heapAfterBytes": 121286720,
+          "retainedHeapDeltaBytes": 107280,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 191.21266699999978,
+          "cpuUserMicros": 272590,
+          "cpuSystemMicros": 2486,
+          "heapBeforeBytes": 121142208,
+          "heapAfterBytes": 121297048,
+          "retainedHeapDeltaBytes": 154840,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 198.893167000002,
+          "cpuUserMicros": 267843,
+          "cpuSystemMicros": 1303,
+          "heapBeforeBytes": 121185056,
+          "heapAfterBytes": 121291040,
+          "retainedHeapDeltaBytes": 105984,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 190.67270799999824,
+          "cpuUserMicros": 269938,
+          "cpuSystemMicros": 1986,
+          "heapBeforeBytes": 121146528,
+          "heapAfterBytes": 121298776,
+          "retainedHeapDeltaBytes": 152248,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        },
+        {
+          "durationMs": 180.48450000000594,
+          "cpuUserMicros": 246624,
+          "cpuSystemMicros": 1330,
+          "heapBeforeBytes": 121186784,
+          "heapAfterBytes": 121294064,
+          "retainedHeapDeltaBytes": 107280,
+          "counters": {
+            "bytes": 380940,
+            "tokens": 93960
+          }
+        }
+      ]
+    },
+    {
+      "id": "reader/tsx-lexical-modes",
+      "description": "Nested JSX tags, text, attributes, and expressions",
+      "warmups": 2,
+      "statistics": {
+        "samples": 15,
+        "minMs": 58.06283299999632,
+        "maxMs": 70.62762500000099,
+        "meanMs": 64.21998059999993,
+        "p50Ms": 65.5189160000009,
+        "p95Ms": 70.62762500000099,
+        "p99Ms": 70.62762500000099
+      },
+      "rawSamples": [
+        {
+          "durationMs": 67.79266700000153,
+          "cpuUserMicros": 102155,
+          "cpuSystemMicros": 747,
+          "heapBeforeBytes": 121356048,
+          "heapAfterBytes": 121338864,
+          "retainedHeapDeltaBytes": -17184,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 61.74770799999533,
+          "cpuUserMicros": 110043,
+          "cpuSystemMicros": 1078,
+          "heapBeforeBytes": 121237088,
+          "heapAfterBytes": 121356840,
+          "retainedHeapDeltaBytes": 119752,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 68.24020900000323,
+          "cpuUserMicros": 100809,
+          "cpuSystemMicros": 657,
+          "heapBeforeBytes": 121237696,
+          "heapAfterBytes": 121339712,
+          "retainedHeapDeltaBytes": 102016,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 62.34075000000303,
+          "cpuUserMicros": 113869,
+          "cpuSystemMicros": 944,
+          "heapBeforeBytes": 121234184,
+          "heapAfterBytes": 121363024,
+          "retainedHeapDeltaBytes": 128840,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 70.62762500000099,
+          "cpuUserMicros": 99703,
+          "cpuSystemMicros": 537,
+          "heapBeforeBytes": 121246208,
+          "heapAfterBytes": 121359904,
+          "retainedHeapDeltaBytes": 113696,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 58.63041700000031,
+          "cpuUserMicros": 104574,
+          "cpuSystemMicros": 397,
+          "heapBeforeBytes": 121255496,
+          "heapAfterBytes": 121376544,
+          "retainedHeapDeltaBytes": 121048,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 66.78233299999556,
+          "cpuUserMicros": 95569,
+          "cpuSystemMicros": 487,
+          "heapBeforeBytes": 121244280,
+          "heapAfterBytes": 121343456,
+          "retainedHeapDeltaBytes": 99176,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 60.43862499999523,
+          "cpuUserMicros": 106282,
+          "cpuSystemMicros": 745,
+          "heapBeforeBytes": 121241400,
+          "heapAfterBytes": 121361696,
+          "retainedHeapDeltaBytes": 120296,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 65.5189160000009,
+          "cpuUserMicros": 93365,
+          "cpuSystemMicros": 1089,
+          "heapBeforeBytes": 121244880,
+          "heapAfterBytes": 121350104,
+          "retainedHeapDeltaBytes": 105224,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 58.06283299999632,
+          "cpuUserMicros": 104349,
+          "cpuSystemMicros": 420,
+          "heapBeforeBytes": 121245720,
+          "heapAfterBytes": 121367104,
+          "retainedHeapDeltaBytes": 121384,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 66.22570900000574,
+          "cpuUserMicros": 94487,
+          "cpuSystemMicros": 977,
+          "heapBeforeBytes": 121249200,
+          "heapAfterBytes": 121351552,
+          "retainedHeapDeltaBytes": 102352,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 58.58358399999997,
+          "cpuUserMicros": 104787,
+          "cpuSystemMicros": 405,
+          "heapBeforeBytes": 121246152,
+          "heapAfterBytes": 121369848,
+          "retainedHeapDeltaBytes": 123696,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 65.67358399999648,
+          "cpuUserMicros": 94197,
+          "cpuSystemMicros": 343,
+          "heapBeforeBytes": 121252104,
+          "heapAfterBytes": 121355328,
+          "retainedHeapDeltaBytes": 103224,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 63.72441600000457,
+          "cpuUserMicros": 111618,
+          "cpuSystemMicros": 882,
+          "heapBeforeBytes": 121246584,
+          "heapAfterBytes": 121368896,
+          "retainedHeapDeltaBytes": 122312,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        },
+        {
+          "durationMs": 68.91033299999981,
+          "cpuUserMicros": 99054,
+          "cpuSystemMicros": 1349,
+          "heapBeforeBytes": 121250064,
+          "heapAfterBytes": 121351848,
+          "retainedHeapDeltaBytes": 101784,
+          "counters": {
+            "bytes": 84500,
+            "tokens": 29500
+          }
+        }
+      ]
+    }
+  ]
+}
