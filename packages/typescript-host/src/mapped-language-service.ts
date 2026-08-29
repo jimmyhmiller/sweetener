@@ -251,9 +251,30 @@ export class MappedLanguageService {
         position.mapping.virtualFileName,
         position.offset,
       ) ?? [];
-    return Object.freeze(
-      references.map((reference) => this.#mapReference(reference)),
-    );
+    // A macro can copy one written occurrence into several generated ones. The
+    // editor lists what the author wrote, so the copies collapse back into the
+    // single span they came from, and that span is a definition or a write if
+    // any copy of it is.
+    const bySpan = new Map<string, MappedReference>();
+    for (const reference of references) {
+      const mapped = this.#mapReference(reference);
+      const key =
+        mapped.source === undefined
+          ? `generated:${canonical(mapped.generatedFileName)}:${String(mapped.generatedTextSpan.start)}`
+          : `source:${String(mapped.source.sourceId)}:${String(mapped.source.start)}:${String(mapped.source.end)}`;
+      const previous = bySpan.get(key);
+      bySpan.set(
+        key,
+        previous === undefined
+          ? mapped
+          : Object.freeze({
+              ...previous,
+              isDefinition: previous.isDefinition || mapped.isDefinition,
+              isWriteAccess: previous.isWriteAccess || mapped.isWriteAccess,
+            }),
+      );
+    }
+    return Object.freeze([...bySpan.values()]);
   }
 
   completions(

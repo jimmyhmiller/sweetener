@@ -1352,6 +1352,7 @@ export class DefaultProjectExpansionProvider
           sourceId: file.sourceId,
           sourceText: file.sourceText,
           generated,
+          origins,
           generatedNames: Object.freeze(generatedNames),
           sourceMap: createExpansionSourceMap({
             file: file.kind.virtualFileName,

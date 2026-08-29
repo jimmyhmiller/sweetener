@@ -9,6 +9,13 @@ export interface VirtualLanguageServiceFile {
 }
 
 interface FileState {
+  /**
+   * The name as the caller spelled it. The map is keyed by a canonical form
+   * that folds case on a case-insensitive filesystem, so reporting a key back
+   * to TypeScript would hand every consumer a path that no longer matches the
+   * one it asked about.
+   */
+  readonly fileName: string;
   readonly generated: PrintedExpandedFile;
   readonly version: number;
   readonly snapshot: ts.IScriptSnapshot;
@@ -57,7 +64,8 @@ export class VirtualLanguageServiceProject {
     this.#rebuildDirectories();
     this.#host = {
       getCompilationSettings: () => compilerOptions,
-      getScriptFileNames: () => [...this.#files.keys()].sort(),
+      getScriptFileNames: () =>
+        [...this.#files.values()].map(({ fileName }) => fileName).sort(),
       getScriptVersion: (fileName) =>
         String(
           this.#files.get(this.#canonicalize(fileName))?.version ??
@@ -128,6 +136,7 @@ export class VirtualLanguageServiceProject {
     this.#files.set(
       path,
       Object.freeze({
+        fileName: normalized(file.fileName),
         generated: file.generated,
         version:
           previous === undefined
@@ -174,6 +183,7 @@ export class VirtualLanguageServiceProject {
     this.#files.set(
       path,
       Object.freeze({
+        fileName: normalized(file.fileName),
         generated: file.generated,
         version: 0,
         snapshot: ts.ScriptSnapshot.fromString(file.generated.text),

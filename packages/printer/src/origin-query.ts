@@ -212,8 +212,15 @@ export function createOriginQueryIndex(options: {
         )
           matches.push(candidate);
       }
+      // Several regions can derive from one source offset: the text itself, and
+      // the layout printed around it — separators, trivia, grouping parens —
+      // which carry the same origin. A caller asking where its source went
+      // wants the text, so the regions that hold it are ordered first.
+      const substantive = ({ region }: SourceIndexedRegion): number =>
+        region.kind === "source" || region.kind === "copied" ? 0 : 1;
       matches.sort(
         (left, right) =>
+          substantive(left) - substantive(right) ||
           left.region.generatedStart - right.region.generatedStart,
       );
       return Object.freeze(

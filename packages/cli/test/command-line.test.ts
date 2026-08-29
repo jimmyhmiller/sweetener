@@ -1,3 +1,4 @@
+import { OriginStore } from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import type { OriginId, SourceId } from "@sweetener/shared";
 import { parseCliInvocation, runCli } from "../src/index.js";
@@ -65,6 +66,7 @@ describe("sweet-ts command line", () => {
     };
     const inspectionProvider = {
       inspectSource: () => ({
+        origins: new OriginStore(),
         sourceId: 20 as SourceId,
         sourceText: "value",
         generated: {
@@ -108,6 +110,7 @@ describe("sweet-ts command line", () => {
     const stdout: string[] = [];
     const inspectionProvider = {
       inspectSource: () => ({
+        origins: new OriginStore(),
         sourceId: 1 as never,
         sourceText: "form",
         generated: {

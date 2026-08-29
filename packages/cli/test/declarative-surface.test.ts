@@ -780,3 +780,136 @@ describe("type positions", () => {
     expect(text).toContain("return boxed + 1");
   });
 });
+
+describe("syntax-class refinements", () => {
+  test("selects on the kind of token a capture matched", () => {
+    const { text, messages } = expand(
+      `export syntax class Quoted {
+         fields { value: token; }
+         rule { $value:token }
+           refine $value token-kind (string-literal);
+       }
+
+       export syntax classify:expr {
+         rule { classify($value:Quoted) } => { ["text", $value.value] }
+         rule { classify($value:token) } => { ["other", $value] }
+       }`,
+      `import { classify } from "./macros.sts" for syntax;
+export const a = classify("hello");
+export const b = classify(1);
+`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain(`export const a = ["text","hello"];`);
+    expect(text).toContain(`export const b = ["other",1];`);
+  });
+
+  test("selects on how a token is spelled", () => {
+    const { text, messages } = expand(
+      `export syntax class Always {
+         fields { word: token; }
+         rule { $word:token }
+           refine $word spelling equals "always";
+       }
+
+       export syntax class Accessor {
+         fields { word: token; }
+         rule { $word:token }
+           refine $word spelling in (get, set);
+       }
+
+       export syntax class Lower {
+         fields { word: token; }
+         rule { $word:token }
+           refine $word spelling starts-with-lowercase;
+       }
+
+       export syntax pick:expr {
+         rule { pick($word:Always) } => { ["keyword", #text($word.word)] }
+         rule { pick($word:Accessor) } => { ["accessor", #text($word.word)] }
+         rule { pick($word:Lower) } => { ["lower", #text($word.word)] }
+         rule { pick($word:token) } => { ["other", #text($word)] }
+       }`,
+      `import { pick } from "./macros.sts" for syntax;
+export const a = pick(always);
+export const b = pick(get);
+export const c = pick(set);
+export const d = pick(other);
+export const e = pick(Other);
+`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain(`export const a = ["keyword", "always"];`);
+    expect(text).toContain(`export const b = ["accessor", "get"];`);
+    expect(text).toContain(`export const c = ["accessor", "set"];`);
+    expect(text).toContain(`export const d = ["lower", "other"];`);
+    expect(text).toContain(`export const e = ["other", "Other"];`);
+  });
+
+  test("selects on which delimiter surrounds a capture", () => {
+    const { text, messages } = expand(
+      `export syntax class Braced {
+         fields { body: tt; }
+         rule { $body:tt }
+           refine $body delimiter brace;
+       }
+
+       export syntax shape:expr {
+         rule { shape($body:Braced) } => { ["braced", #text($body.body)] }
+         rule { shape($body:tt) } => { ["other", #text($body)] }
+       }`,
+      `import { shape } from "./macros.sts" for syntax;
+export const a = shape({ x: 1 });
+export const b = shape([2]);
+`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain(`export const a = ["braced", "{ x: 1 }"];`);
+    expect(text).toContain(`export const b = ["other", "[2]"];`);
+  });
+
+  test("selects on how many times a repetition matched", () => {
+    const { text, messages } = expand(
+      `export syntax class Pair {
+         fields { values: expr*; }
+         rule { $($values:expr),* }
+           refine $values length equal 2;
+       }
+
+       export syntax count:expr {
+         rule { count($values:Pair) } => { ["pair", $($values.values),*] }
+         rule { count($($values:expr),*) } => { ["other", $($values),*] }
+       }`,
+      `import { count } from "./macros.sts" for syntax;
+export const a = count(1, 2);
+export const b = count(1, 2, 3);
+`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain(`export const a = ["pair",1, 2];`);
+    expect(text).toContain(`export const b = ["other",1, 2, 3];`);
+  });
+
+  test("rejects a predicate the matcher cannot decide", () => {
+    // `followed-by` is evaluated against context the matcher never fills in, so
+    // a rule written with it would silently match everything. Refusing it makes
+    // that a mistake the author is told about instead.
+    const { messages } = expand(
+      `export syntax class Trailing {
+         fields { value: expr; }
+         rule { $value:expr }
+           refine $value followed-by ";";
+       }
+
+       export syntax never:expr {
+         rule { never($value:Trailing) } => { $value.value }
+       }`,
+      `import { never } from "./macros.sts" for syntax;
+export const a = never(1);
+`,
+    );
+    expect(messages).toContain(
+      "Invalid refinement target or predicate for $value.",
+    );
+  });
+});

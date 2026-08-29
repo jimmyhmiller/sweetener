@@ -13,6 +13,7 @@ export type SynthesisReason =
   | "grouping-parentheses"
   | "generated-binding"
   | "printer-separator"
+  | "printer-trivia"
   | "source-map-anchor";
 
 export interface SourceOrigin {

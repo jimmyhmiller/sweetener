@@ -173,11 +173,24 @@ export function printExpandedFile<Trace>(
         "synthesized",
       );
     }
-    const start = offset + leading.length;
+    // Trivia gets a region of its own so the token's region is exactly the
+    // token. A region carries the token's whole source span, and a position
+    // inside it is projected by its offset from the region start, so folding
+    // the surrounding layout in would shift every offset within the token.
+    const trivia = () =>
+      options.origins.synthesized(token.origin, "printer-trivia");
     emit(
-      `${leading}${text}${token.trailingTrivia.map(({ raw }) => raw).join("")}`,
-      token.origin,
-      kind,
+      leading,
+      leading.length === 0 ? token.origin : trivia(),
+      "synthesized",
+    );
+    const start = offset;
+    emit(text, token.origin, kind);
+    const trailing = token.trailingTrivia.map(({ raw }) => raw).join("");
+    emit(
+      trailing,
+      trailing.length === 0 ? token.origin : trivia(),
+      "synthesized",
     );
     tokenSpans.push(
       Object.freeze({ syntax: token.id, start, end: start + text.length }),

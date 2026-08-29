@@ -4,6 +4,7 @@ import type {
   PrintedExpandedFile,
 } from "@sweetener/printer";
 import type { SourceId } from "@sweetener/shared";
+import type { OriginStore } from "@sweetener/syntax";
 import type { RawSourceMap } from "@sweetener/typescript-host";
 
 export interface SourcePositionQuery {
@@ -18,6 +19,11 @@ export interface SourceExpansionInspection {
   readonly generated: PrintedExpandedFile;
   readonly sourceMap?: RawSourceMap | undefined;
   readonly index: OriginQueryIndex;
+  /**
+   * Origins behind the expansion. A language service maps an editor's position
+   * through these, so an inspection that withholds them cannot drive one.
+   */
+  readonly origins: OriginStore;
   readonly trace: unknown;
   readonly generatedNames?: Readonly<Record<string, string>> | undefined;
 }
