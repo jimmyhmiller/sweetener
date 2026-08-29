@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "engines": {
-    "node": ">=24 <25",
+    "node": ">=24",
     "pnpm": "11.18.0"
   },
   "scripts": {
@@ -30,7 +30,7 @@
     "benchmark:hygiene": "pnpm build && node --expose-gc scripts/benchmark-hygiene.mjs",
     "benchmark:fragments": "node scripts/benchmark-fragment-validation.mjs",
     "benchmark": "pnpm build && node --expose-gc scripts/run-benchmarks.mjs",
-    "benchmark:check": "pnpm build && node --expose-gc scripts/run-benchmarks.mjs --baseline benchmarks/baselines/node24.json",
+    "benchmark:check": "pnpm build && node --expose-gc scripts/run-benchmarks.mjs --baseline auto",
     "compatibility:probe": "pnpm build && node scripts/compatibility-probe.mjs",
     "check:release-spec": "node scripts/release-spec-check.mjs",
     "samples:setup": "pnpm --dir samples/external/project-graph --ignore-workspace install --lockfile=false && pnpm --dir samples/external/macro-editor --ignore-workspace install --lockfile=false && pnpm --dir samples/external/default-project --ignore-workspace install --lockfile=false && pnpm --dir samples/external/javascript-project --ignore-workspace install --lockfile=false",
