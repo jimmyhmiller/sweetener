@@ -9,6 +9,7 @@ function generated(text: string, trace: unknown = []): PrintedExpandedFile {
     text,
     originMap: { schemaVersion: 1, entries: [] },
     trace,
+    tokenSpans: [],
     serializedTrace: `${JSON.stringify(trace)}\n`,
   };
 }

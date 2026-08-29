@@ -28,6 +28,7 @@ describe("expand and explain tooling", () => {
     const file: PrintedExpandedFile = {
       text: "generated(value)",
       originMap: { schemaVersion: 1, entries: [] },
+      tokenSpans: [],
       trace: [],
       serializedTrace: "[]\n",
     };

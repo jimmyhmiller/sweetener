@@ -173,6 +173,37 @@ function tokenSpelling(cursor: SyntaxCursor): string | undefined {
   return syntax?.tag === "token" ? syntax.raw : undefined;
 }
 
+/**
+ * The reader always emits `>` as its own token so nested type arguments close
+ * without rescanning. Operators spelled with a leading `>` therefore arrive as
+ * adjacent single-character tokens and have to be rejoined here.
+ */
+const greaterThanContinuations = new Set([">", "="]);
+const maximumGreaterThanWidth = 4;
+
+function joinGreaterThan(
+  cursor: SyntaxCursor,
+  fixity: PrattFixity,
+): PrattOperator | undefined {
+  let spelling = "";
+  let previousEnd: number | undefined;
+  let widest: PrattOperator | undefined;
+  for (let width = 1; width <= maximumGreaterThanWidth; width += 1) {
+    const syntax = cursor.peek(width - 1);
+    if (syntax?.tag !== "token") break;
+    if (width > 1) {
+      if (!greaterThanContinuations.has(syntax.raw)) break;
+      if (syntax.leadingTrivia.length > 0 || previousEnd !== syntax.span.start)
+        break;
+    }
+    spelling += syntax.raw;
+    previousEnd = syntax.span.end;
+    const core = coreByKey.get(`${fixity}|${spelling}`);
+    if (core !== undefined) widest = { ...core, width, macro: undefined };
+  }
+  return widest;
+}
+
 function resolveOperator(
   cursor: SyntaxCursor,
   fixity: PrattFixity,
@@ -203,12 +234,13 @@ function resolveOperator(
     }
     const core = coreByKey.get(`${fixity}|${macro.spelling}`);
     if (core !== undefined && macro.shadowsCore !== true) {
-      return { ...core, width: 1, macro: undefined };
+      return { ...core, width: macro.width, macro: undefined };
     }
     return { ...macro, macro };
   }
   const spelling = tokenSpelling(cursor);
   if (spelling === undefined) return undefined;
+  if (spelling === ">") return joinGreaterThan(cursor, fixity);
   const core = coreByKey.get(`${fixity}|${spelling}`);
   return core === undefined
     ? undefined

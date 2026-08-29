@@ -141,6 +141,40 @@ export class TemplateCaptureError extends Error {
   }
 }
 
+/**
+ * Resolves a path without failing when it is not there. An optional pattern
+ * that matched nothing records no capture at all, and asking whether it is
+ * present is exactly what `#if(present ...)` is for, so that question must have
+ * an answer rather than an error.
+ */
+function tryResolvePath(
+  captures: CaptureRecord,
+  path: CapturePath,
+  indices: readonly number[],
+): CaptureValue | undefined {
+  const initial = captures.get(path.root);
+  if (initial === undefined) return undefined;
+  let value: CaptureValue = initial;
+  let fieldIndex = 0;
+  let dimension = 0;
+  while (true) {
+    if (value.kind === "sequence") {
+      if (dimension >= indices.length) return value;
+      const selected = value.elements[indices[dimension]!];
+      if (selected === undefined) return undefined;
+      value = selected;
+      dimension += 1;
+      continue;
+    }
+    const field = path.fields[fieldIndex];
+    if (field === undefined) return value;
+    const selected = value.fields.get(field.capture);
+    if (selected === undefined) return undefined;
+    value = selected;
+    fieldIndex += 1;
+  }
+}
+
 function resolvePath(
   captures: CaptureRecord,
   path: CapturePath,
@@ -444,9 +478,9 @@ class Evaluator {
       });
     }
     if (operation.kind === "metavar") {
-      if (indices.length === 0) {
-        throw new TemplateCaptureError("#metavar used outside repetition");
-      }
+      // Outside a repetition there are no indices to distinguish elements, and
+      // none are needed: the name is already unique within the definition the
+      // template generates.
       const value = resolvePath(this.#captures, operation.path, indices);
       if (value.kind !== "leaf") {
         throw new TemplateCaptureError(
@@ -587,8 +621,13 @@ class Evaluator {
     predicate: ConditionalPredicate,
     indices: readonly number[],
   ): boolean {
-    const value = resolvePath(this.#captures, predicate.path, indices);
-    if (predicate.kind === "present") return isPresent(value);
+    if (predicate.kind === "present") {
+      const optional = tryResolvePath(this.#captures, predicate.path, indices);
+      return optional !== undefined && isPresent(optional);
+    }
+    // Resolved for its checks: an alternative conditional still names a
+    // capture that has to exist, even though the tag comes from the match.
+    resolvePath(this.#captures, predicate.path, indices);
     return (
       this.#alternatives.get(finalCaptureId(predicate.path)) ===
       predicate.alternative

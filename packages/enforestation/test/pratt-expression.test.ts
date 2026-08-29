@@ -96,6 +96,35 @@ describe("Pratt expression consumer", () => {
     expect(result.cursor.atEnd).toBe(true);
     expect(output(source)).toBe(source);
   });
+  test("rejoins operators the reader splits after a leading angle bracket", () => {
+    // `>` is scanned on its own so nested type arguments close, which leaves
+    // every `>`-led operator arriving as separate adjacent tokens.
+    for (const source of [
+      "a >= b",
+      "a >> b",
+      "a >>> b",
+      "a >>= b",
+      "a >>>= b",
+    ]) {
+      const { result } = parse(source);
+      expect(result.matched, source).toBe(true);
+      if (!result.matched) continue;
+      // Before the operator was rejoined the consumer stopped at the first
+      // `>` and left the rest of the expression unconsumed.
+      expect(result.cursor.atEnd, source).toBe(true);
+      expect(output(source), source).toBe(source);
+    }
+  });
+
+  test("stops at a greater-than that closes type arguments", () => {
+    const source = "new Map<string, Set<number>>()";
+    const { result } = parse(source);
+    expect(result.matched).toBe(true);
+    if (!result.matched) throw new Error("expected a generic construction");
+    expect(result.cursor.atEnd).toBe(true);
+    expect(output(source)).toBe(source);
+  });
+
   test("publishes one deterministic entry per core fixity and spelling", () => {
     const keys = coreExpressionOperators.map(
       ({ fixity, spelling }) => `${fixity}|${spelling}`,

@@ -9,6 +9,7 @@ import {
   createProtectedSyntax,
   createToken,
   OriginStore,
+  type TokenSyntax,
 } from "@sweetener/syntax";
 import { describe, expect, test } from "vitest";
 import {
@@ -61,21 +62,24 @@ describe("expanded TypeScript printing", () => {
       trace: { rule: 2, macro: "pair" },
       groupProtectedExpression: ({ id }) => id === protectedExpression.id,
     });
-    expect(result.text).toBe("(ab)");
+    // The two identifiers would lex as one word, so a separator is printed
+    // between them and mapped as its own synthesized region.
+    expect(result.text).toBe("(a b)");
     expect(result.originMap.entries).toMatchObject([
       { generatedStart: 0, generatedEnd: 1, kind: "grouping" },
       { generatedStart: 1, generatedEnd: 2, kind: "source" },
-      { generatedStart: 2, generatedEnd: 3, kind: "copied" },
-      { generatedStart: 3, generatedEnd: 4, kind: "grouping" },
+      { generatedStart: 2, generatedEnd: 3, kind: "synthesized" },
+      { generatedStart: 3, generatedEnd: 4, kind: "copied" },
+      { generatedStart: 4, generatedEnd: 5, kind: "grouping" },
     ]);
   });
 
-  test("uses the host precedence decision for each protected expression", () => {
+  test("never parenthesizes a protected expression of one token", () => {
     const origins = new OriginStore();
-    const origin = origins.source(sourceId, { start: 0, end: 1 });
+    const origin = origins.source(sourceId, { start: 0, end: 5 });
     const token = createToken({
       id: syntaxIds.allocate(),
-      span: { start: 0, end: 1 },
+      span: { start: 0, end: 5 },
       origin,
       scopes,
       kind: "identifier",
@@ -91,6 +95,113 @@ describe("expanded TypeScript printing", () => {
       category: "expr",
       children: [token],
     });
+    // `{ (value) }` is not an object literal member, so a lone token must print
+    // bare however the host would answer for a compound expression.
+    expect(
+      printExpandedFile({
+        syntax: [expression],
+        origins,
+        trace: [],
+        groupProtectedExpression: () => true,
+      }).text,
+    ).toBe("value");
+  });
+
+  test("separates only tokens that would otherwise lex as one", () => {
+    const origins = new OriginStore();
+    const origin = origins.source(sourceId, { start: 0, end: 1 });
+    const token = (raw: string, kind: "identifier" | "punctuation") =>
+      createToken({
+        id: syntaxIds.allocate(),
+        span: { start: 0, end: raw.length },
+        origin,
+        scopes,
+        kind,
+        raw,
+        value: kind === "identifier" ? raw : undefined,
+        leadingTrivia: [],
+      });
+    const print = (...syntax: readonly TokenSyntax[]) =>
+      printExpandedFile({ syntax, origins, trace: [] }).text;
+
+    expect(
+      print(token("typeof", "identifier"), token("value", "identifier")),
+    ).toBe("typeof value");
+    // Punctuation that came from source was already adjacent and round-trips,
+    // including the `>` the reader splits for nested type arguments.
+    expect(print(token(">", "punctuation"), token(">", "punctuation"))).toBe(
+      ">>",
+    );
+    expect(print(token("value", "identifier"), token(".", "punctuation"))).toBe(
+      "value.",
+    );
+  });
+
+  test("reports where each token's own text landed", () => {
+    const origins = new OriginStore();
+    const origin = origins.source(sourceId, { start: 0, end: 5 });
+    const first = createToken({
+      id: syntaxIds.allocate(),
+      span: { start: 0, end: 5 },
+      origin,
+      scopes,
+      kind: "identifier",
+      raw: "value",
+      value: "value",
+      leadingTrivia: [],
+    });
+    const second = createToken({
+      id: syntaxIds.allocate(),
+      span: { start: 6, end: 11 },
+      origin,
+      scopes,
+      kind: "identifier",
+      raw: "other",
+      value: "other",
+      leadingTrivia: [
+        {
+          kind: "whitespace",
+          raw: " ",
+          span: { start: 5, end: 6 },
+          hasLineBreak: false,
+        },
+      ],
+    });
+    const result = printExpandedFile({
+      syntax: [first, second],
+      origins,
+      trace: [],
+    });
+    expect(result.text).toBe("value other");
+    // Trivia belongs to the token but not to the span a parser would report.
+    expect(result.tokenSpans).toEqual([
+      { syntax: first.id, start: 0, end: 5 },
+      { syntax: second.id, start: 6, end: 11 },
+    ]);
+  });
+
+  test("uses the host precedence decision for each protected expression", () => {
+    const origins = new OriginStore();
+    const origin = origins.source(sourceId, { start: 0, end: 3 });
+    const token = (raw: string, start: number) =>
+      createToken({
+        id: syntaxIds.allocate(),
+        span: { start, end: start + raw.length },
+        origin,
+        scopes,
+        kind: "identifier",
+        raw,
+        value: raw,
+        leadingTrivia: [],
+      });
+    const expression = createProtectedSyntax({
+      id: syntaxIds.allocate(),
+      span: { start: 0, end: 3 },
+      origin,
+      scopes,
+      category: "expr",
+      children: [token("a", 0), token("b", 2)],
+    });
     expect(
       printExpandedFile({
         syntax: [expression],
@@ -98,7 +209,7 @@ describe("expanded TypeScript printing", () => {
         trace: [],
         groupProtectedExpression: () => false,
       }).text,
-    ).toBe("value");
+    ).toBe("a b");
   });
 
   test("serializes traces with stable key order and rejects unsafe values", () => {

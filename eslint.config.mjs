@@ -13,6 +13,7 @@ export default tseslint.config(
       "examples/*/dist/**",
       "examples/*/.sweetener/**",
       "examples/tanstack-start/src/routeTree.gen.ts",
+      "fixtures/acceptance/real-world/*/expected.*",
       "fixtures/legacy/**",
       "packages/*/dist/**",
       "playground/dist/**",

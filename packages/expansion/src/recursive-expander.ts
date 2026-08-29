@@ -107,12 +107,16 @@ export interface ExpandMacroSyntaxOptions extends Omit<
     | ((request: {
         readonly syntax: SyntaxSequence;
         readonly contexts: ReadonlySet<MacroContext>;
+        /** Module whose macros are in scope for the syntax being enforested. */
+        readonly lexicalModule?: CompileParsedMacrosResult | undefined;
       }) => SyntaxSequence | undefined)
     | undefined;
   readonly enforestItems?:
     | ((request: {
         readonly syntax: SyntaxSequence;
         readonly contexts: ReadonlySet<MacroContext>;
+        /** Module whose macros are in scope for the syntax being enforested. */
+        readonly lexicalModule?: CompileParsedMacrosResult | undefined;
       }) => SyntaxSequence | undefined)
     | undefined;
   /** Enforest one expression without throwing when the sequence is a fragment. */
@@ -120,6 +124,8 @@ export interface ExpandMacroSyntaxOptions extends Omit<
     | ((request: {
         readonly syntax: SyntaxSequence;
         readonly contexts: ReadonlySet<MacroContext>;
+        /** Module whose macros are in scope for the syntax being enforested. */
+        readonly lexicalModule?: CompileParsedMacrosResult | undefined;
       }) => ProtectedSyntax | undefined)
     | undefined;
 }
@@ -207,15 +213,57 @@ export function expandMacroSyntax(
     }
   };
 
+  /**
+   * A replacement that produces no statements or items at all is a macro that
+   * expanded to nothing, which is an ordinary outcome. It still has to become
+   * one node, so it becomes an empty one anchored on the invocation it
+   * replaced.
+   */
+  const emptyReplacement = (
+    category: SyntaxCategory,
+    anchor: Syntax | undefined,
+  ): ProtectedSyntax | undefined => {
+    if (anchor === undefined) return undefined;
+    const span = { start: anchor.span.start, end: anchor.span.start };
+    // A parse unit has to wrap something, and the one statement that carries no
+    // meaning is the empty statement.
+    const semicolon = createToken({
+      id: options.allocateSyntaxId(),
+      span,
+      origin: anchor.origin,
+      scopes: anchor.scopes,
+      kind: "punctuation",
+      raw: ";",
+      leadingTrivia: [],
+    });
+    return createProtectedSyntax({
+      id: options.allocateSyntaxId(),
+      span,
+      origin: anchor.origin,
+      scopes: anchor.scopes,
+      category,
+      children: [semicolon],
+    });
+  };
+
   const enforestSequence = (
     syntax: SyntaxSequence,
     category: SyntaxCategory,
     lexicalModule: CompileParsedMacrosResult,
     contexts: ReadonlySet<MacroContext>,
+    anchor?: Syntax | undefined,
   ): ProtectedSyntax => {
     if (category === "stmt") {
-      const statements = options.enforestStatements?.({ syntax, contexts });
+      const statements = options.enforestStatements?.({
+        syntax,
+        contexts,
+        lexicalModule,
+      });
       if (statements !== undefined) {
+        if (statements.length === 0) {
+          const empty = emptyReplacement(category, anchor);
+          if (empty !== undefined) return empty;
+        }
         if (statements.length === 1) return statements[0] as ProtectedSyntax;
         const origins = [...new Set(statements.map(({ origin }) => origin))];
         return createProtectedSyntax({
@@ -232,8 +280,16 @@ export function expandMacroSyntax(
       }
     }
     if (category === "item") {
-      const items = options.enforestItems?.({ syntax, contexts });
+      const items = options.enforestItems?.({
+        syntax,
+        contexts,
+        lexicalModule,
+      });
       if (items !== undefined) {
+        if (items.length === 0) {
+          const empty = emptyReplacement(category, anchor);
+          if (empty !== undefined) return empty;
+        }
         if (items.length === 1) return items[0] as ProtectedSyntax;
         const origins = [...new Set(items.map(({ origin }) => origin))];
         return createProtectedSyntax({
@@ -270,6 +326,58 @@ export function expandMacroSyntax(
       });
     }
     return options.enforest({ syntax, category, lexicalModule, contexts });
+  };
+
+  /**
+   * Whether a brace group in expression position opens a function body rather
+   * than an object literal. A macro template commonly wraps statements in an
+   * arrow or function expression, and the statements inside are statements
+   * however the enclosing replacement is categorized.
+   */
+  const functionBodyFollows = (preceding: readonly Syntax[]): boolean => {
+    const lastToken = (node: Syntax | undefined): TokenSyntax | undefined => {
+      let current = node;
+      while (current !== undefined && current.tag !== "token") {
+        current = current.children.at(-1);
+      }
+      return current;
+    };
+    const previous = preceding.at(-1);
+    if (lastToken(previous)?.raw === "=>") return true;
+    // `function (...) {`, including a name and a generator star.
+    if (previous?.tag !== "group" || previous.delimiter !== "parenthesis")
+      return false;
+    for (let index = preceding.length - 2; index >= 0; index -= 1) {
+      const candidate = preceding[index]!;
+      if (candidate.tag !== "token") return false;
+      if (candidate.raw === "function") return true;
+      if (candidate.kind !== "identifier" && candidate.raw !== "*")
+        return false;
+    }
+    return false;
+  };
+
+  /**
+   * Whether a parenthesis group holds a control-flow condition. The header of
+   * `if`, `while`, `switch`, or `with` is an expression, so a macro written
+   * there has to be looked up in the expression space rather than walked as
+   * part of the statement around it.
+   */
+  /** Whether the next node stands where a declaration names what it binds. */
+  const binderFollows = (preceding: readonly Syntax[]): boolean => {
+    const previous = preceding.at(-1);
+    return (
+      previous?.tag === "token" &&
+      ["const", "let", "var", "using"].includes(previous.raw)
+    );
+  };
+
+  const conditionFollows = (preceding: readonly Syntax[]): boolean => {
+    const previous = preceding.at(-1);
+    return (
+      previous?.tag === "token" &&
+      ["if", "while", "switch", "with"].includes(previous.raw)
+    );
   };
 
   const contextsForContainer = (
@@ -380,7 +488,9 @@ export function expandMacroSyntax(
         spelling: string,
         position: number,
         positionSourceId?: SourceId | undefined,
+        lookupCategory: SyntaxCategory = category,
       ) => {
+        const category = lookupCategory;
         const recursiveMacro = lexicalModule.get(spelling, category);
         if (
           recursiveBinding !== undefined &&
@@ -423,11 +533,53 @@ export function expandMacroSyntax(
               .find((macro) => macro !== undefined);
       };
       let resolvedHeadIndex = index;
+      // A macro found in a nested category — a declaration's binder, a JSX
+      // child — is invoked as that category, not as the one being walked.
+      let resolvedCategory: SyntaxCategory = category;
       let resolvedSpelling = node.tag === "token" ? node.raw : "";
       let resolvedMacro =
         node.tag === "token"
           ? resolveSpelling(node.raw, node.span.start, sourceOf(node))
           : undefined;
+      // The binder of a declaration is its own category, so a macro standing
+      // there is looked up among binding macros rather than the statements or
+      // items around it.
+      if (
+        resolvedMacro === undefined &&
+        node.tag === "token" &&
+        (category === "item" || category === "stmt") &&
+        binderFollows(output)
+      ) {
+        resolvedMacro = resolveSpelling(
+          node.raw,
+          node.span.start,
+          sourceOf(node),
+          "binding",
+        );
+        if (resolvedMacro !== undefined) resolvedCategory = "binding";
+      }
+      // A JSX child macro is written as a braced head, `{each (...)}`, because
+      // that is the only place a name can go between elements. The name inside
+      // the braces is what the invocation is looked up under.
+      if (
+        resolvedMacro === undefined &&
+        category === "jsxChild" &&
+        node.tag === "group" &&
+        node.delimiter === "brace"
+      ) {
+        const head = node.children[0];
+        if (head?.tag === "token" && head.kind === "identifier") {
+          const candidate = resolveSpelling(
+            head.raw,
+            head.span.start,
+            sourceOf(head),
+          );
+          if (candidate !== undefined) {
+            resolvedMacro = candidate;
+            resolvedSpelling = head.raw;
+          }
+        }
+      }
       if (
         resolvedMacro === undefined &&
         node.tag === "group" &&
@@ -599,7 +751,7 @@ export function expandMacroSyntax(
           ...options,
           macro,
           cursor,
-          category,
+          category: resolvedCategory,
           contexts,
           coreInterception:
             options.coreInterceptionForMacro?.({
@@ -613,20 +765,28 @@ export function expandMacroSyntax(
           environment: currentEnvironment,
           parentInvocation,
           expandReplacement: (request) => {
-            const marker = request.syntax[0];
-            const body = request.syntax[1];
-            if (
-              options.generatedDefinitions !== undefined &&
-              options.expansionStore !== undefined &&
-              activeExpansionEnvironment !== undefined &&
-              request.syntax.length === 2 &&
-              marker?.tag === "token" &&
-              marker.raw === "#syntax" &&
-              body?.tag === "group" &&
-              body.delimiter === "brace"
-            ) {
+            // A replacement may declare macros and ordinary syntax together,
+            // so every `#syntax { ... }` in it is processed and removed and
+            // whatever surrounds them carries on as the replacement.
+            const remaining: Syntax[] = [];
+            let declaredMacros = false;
+            for (let cursor = 0; cursor < request.syntax.length; cursor += 1) {
+              const marker = request.syntax[cursor]!;
+              const body = request.syntax[cursor + 1];
+              if (
+                options.generatedDefinitions === undefined ||
+                options.expansionStore === undefined ||
+                activeExpansionEnvironment === undefined ||
+                marker.tag !== "token" ||
+                marker.raw !== "#syntax" ||
+                body?.tag !== "group" ||
+                body.delimiter !== "brace"
+              ) {
+                remaining.push(marker);
+                continue;
+              }
               const generated = processGeneratedDefinitions({
-                syntax: createSyntaxSequence(request.syntax),
+                syntax: createSyntaxSequence([marker, body]),
                 sourceId: options.generatedDefinitions.sourceId,
                 phase: options.phase,
                 definitionScopes: marker.scopes,
@@ -643,6 +803,11 @@ export function expandMacroSyntax(
                 activeExpansionEnvironment = generated.environment;
                 activeModules.push(generated.compiled);
               }
+              declaredMacros = true;
+              cursor += 1;
+            }
+            if (declaredMacros && remaining.length === 0) {
+              const marker = request.syntax[0]!;
               eraseReplacement = true;
               return createProtectedSyntax({
                 id: options.allocateSyntaxId(),
@@ -652,6 +817,9 @@ export function expandMacroSyntax(
                 category: request.category,
                 children: createSyntaxSequence(request.syntax),
               });
+            }
+            if (declaredMacros) {
+              request = { ...request, syntax: createSyntaxSequence(remaining) };
             }
             // Give a statement replacement its interior categories before it
             // is walked, so that a macro spliced into an expression position
@@ -664,6 +832,7 @@ export function expandMacroSyntax(
                 ? options.enforestStatements?.({
                     syntax: request.syntax,
                     contexts,
+                    lexicalModule: macroModule,
                   })
                 : undefined;
             const nested = visit(
@@ -689,6 +858,7 @@ export function expandMacroSyntax(
               request.category,
               macroModule,
               contexts,
+              node,
             );
           },
         });
@@ -722,28 +892,58 @@ export function expandMacroSyntax(
           (node.delimiter === "jsx-element" ||
             node.delimiter === "jsx-fragment")
         ) {
-          const jsxChildren: Syntax[] = [];
-          for (const child of node.children) {
+          // An element's children begin after its opening tag closes and end
+          // at its closing tag. Everything before that is the tag itself,
+          // whose attribute braces hold expressions.
+          const childStart = node.children.findIndex(
+            (child) => child.tag === "token" && child.raw === ">",
+          );
+          const childEnd = node.children.findIndex(
+            (child) => child.tag === "token" && child.raw === "</",
+          );
+          const head = childStart < 0 ? node.children.length : childStart + 1;
+          const tail = childEnd < 0 ? node.children.length : childEnd;
+          const expandChild = (child: Syntax): readonly Syntax[] => {
             if (
-              child.tag === "group" &&
-              (child.delimiter === "brace" ||
-                child.delimiter === "jsx-element" ||
-                child.delimiter === "jsx-fragment")
-            ) {
-              const nested = visit(
-                createSyntaxSequence([child]),
-                currentEnvironment,
-                "expr",
-                parentInvocation,
-                lexicalModule,
-                contexts,
-                false,
-                recursiveBinding,
-              );
-              currentEnvironment = nested.environment;
-              jsxChildren.push(...nested.syntax);
-            } else jsxChildren.push(child);
+              child.tag !== "group" ||
+              (child.delimiter !== "brace" &&
+                child.delimiter !== "jsx-element" &&
+                child.delimiter !== "jsx-fragment")
+            )
+              return [child];
+            const nested = visit(
+              createSyntaxSequence([child]),
+              currentEnvironment,
+              "expr",
+              parentInvocation,
+              lexicalModule,
+              contexts,
+              false,
+              recursiveBinding,
+            );
+            currentEnvironment = nested.environment;
+            return nested.syntax;
+          };
+          const jsxChildren: Syntax[] = [
+            ...node.children.slice(0, head).flatMap(expandChild),
+          ];
+          if (head < tail) {
+            // The children are walked as one sequence so a macro invocation
+            // can span several of them, the way a block form does.
+            const nested = visit(
+              createSyntaxSequence(node.children.slice(head, tail)),
+              currentEnvironment,
+              "jsxChild",
+              parentInvocation,
+              lexicalModule,
+              contexts,
+              false,
+              recursiveBinding,
+            );
+            currentEnvironment = nested.environment;
+            jsxChildren.push(...nested.syntax);
           }
+          jsxChildren.push(...node.children.slice(tail));
           output.push(
             createGroup({
               ...node,
@@ -876,6 +1076,7 @@ export function expandMacroSyntax(
             const enforested = options.enforestExpression?.({
               syntax: createSyntaxSequence(syntax),
               contexts,
+              lexicalModule,
             });
             const nested = visit(
               enforested === undefined
@@ -938,20 +1139,40 @@ export function expandMacroSyntax(
         // walked as part of the enclosing statement. A body that is already
         // enforested, or that does not parse as a statement list, is left for
         // the ordinary descent below.
+        // Statements inside a function body are statements however the
+        // expression around it is categorized, so a statement macro written in
+        // a template's arrow or function body resolves in the statement space.
+        const bodyCategory: SyntaxCategory =
+          // A group sitting among JSX children holds an expression: a braced
+          // container, or a nested element.
+          node.tag === "group" && category === "jsxChild"
+            ? "expr"
+            : node.tag === "group" &&
+                node.delimiter === "brace" &&
+                category === "expr" &&
+                functionBodyFollows(output)
+              ? "stmt"
+              : node.tag === "group" &&
+                  node.delimiter === "parenthesis" &&
+                  category !== "expr" &&
+                  conditionFollows(output)
+                ? "expr"
+                : category;
         const statementBody =
           node.tag === "group" &&
           node.delimiter === "brace" &&
-          category === "stmt" &&
+          bodyCategory === "stmt" &&
           node.children.some((child) => child.tag === "token")
             ? options.enforestStatements?.({
                 syntax: node.children,
                 contexts,
+                lexicalModule,
               })
             : undefined;
         const nested = visit(
           createSyntaxSequence(statementBody ?? node.children),
           currentEnvironment,
-          node.tag === "protected" ? node.category : category,
+          node.tag === "protected" ? node.category : bodyCategory,
           parentInvocation,
           lexicalModule,
           node.tag === "protected"

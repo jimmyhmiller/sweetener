@@ -13,6 +13,7 @@ import {
   createConsumerFailure,
   type ConsumerAttempt,
   type ConsumerContext,
+  type MacroExtentResolver,
   type SyntaxConsumer,
 } from "./consumer.js";
 import { consumeBalancedTypeArguments } from "./type-class-element.js";
@@ -22,6 +23,14 @@ export const primaryExpressionPrecedence: Precedence = createPrecedence(1_000);
 export interface PrimaryExpressionConsumerOptions {
   readonly allocateSyntaxId: () => SyntaxId;
   readonly origins: OriginStore;
+  /**
+   * Offers a macro invocation whose extent reaches past the expression the
+   * ordinary parse would take — `match (x) { ... }` claims the trailing block,
+   * where a call expression would stop at the parentheses and leave the block
+   * behind as a separate statement. Consulted only to extend a parse, never to
+   * replace one that already covers the same syntax.
+   */
+  readonly resolveMacro?: MacroExtentResolver | undefined;
 }
 
 const literalKinds = new Set<TokenSyntax["kind"]>([
@@ -38,6 +47,7 @@ const literalKeywords = new Set([
   "this",
   "super",
   "null",
+  "undefined",
   "true",
   "false",
   "async",
@@ -278,6 +288,13 @@ class PrimaryExpressionConsumer implements SyntaxConsumer {
         cursor,
       });
     }
+    // Asked before the parse moves, so the fork still sits at the head; the
+    // answer is only used if it reaches past what the parse takes.
+    const macroAttempt = this.options.resolveMacro?.(
+      "expr",
+      cursor.fork(),
+      context,
+    );
     const functionWidth = functionExpressionWidth(cursor);
     const classWidth = classExpressionWidth(cursor);
     const arrowWidth = genericArrowWidth(cursor, context);
@@ -297,6 +314,8 @@ class PrimaryExpressionConsumer implements SyntaxConsumer {
       );
     }
     cursor.advance(functionWidth ?? classWidth ?? arrowWidth ?? 1);
+    // Postfix parsing runs first so the macro extent is compared against the
+    // whole expression, not just its head.
     let optionalChain = false;
     while (!cursor.atEnd && !context.stopSet.matches(cursor)) {
       const before = cursor.index;
@@ -305,6 +324,20 @@ class PrimaryExpressionConsumer implements SyntaxConsumer {
       if (failed !== undefined) return failed;
       if (cursor.index === before) break;
       if (beginsOptional) optionalChain = true;
+    }
+    if (
+      macroAttempt?.matched === true &&
+      macroAttempt.cursor.index > cursor.index
+    ) {
+      if (macroAttempt.syntax.category !== "expr") {
+        throw new TypeError("Macro expr resolver returned a non-expression");
+      }
+      cursor.advance(macroAttempt.cursor.index - cursor.index);
+      return Object.freeze({
+        matched: true,
+        syntax: macroAttempt.syntax,
+        cursor,
+      });
     }
     const consumed = cursor
       .fork()

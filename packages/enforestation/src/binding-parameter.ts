@@ -28,6 +28,7 @@ import {
   createConsumerFailure,
   type ConsumerAttempt,
   type ConsumerContext,
+  type MacroExtentResolver,
   type SyntaxConsumer,
 } from "./consumer.js";
 
@@ -431,6 +432,30 @@ function parseParameter(
     typeSyntax: createSyntaxSequence(typeSyntax),
     initializerSyntax: createSyntaxSequence(initializerSyntax),
   });
+}
+
+/**
+ * Adapts the shared macro extent resolver to binder position. A macro's
+ * invocation is preserved as one binding extent and expanded later, so the
+ * names it introduces are the ones its expansion parses out, not any this
+ * skeleton could report now.
+ */
+export function bindingMacroResolver(
+  resolve: MacroExtentResolver,
+): BindingMacroResolver {
+  return (cursor, context) => {
+    const attempted = resolve("binding", cursor, context);
+    if (attempted === undefined || !attempted.matched) return undefined;
+    return Object.freeze({
+      matched: true,
+      skeleton: Object.freeze({
+        syntax: attempted.syntax,
+        names: Object.freeze([]),
+        shape: "identifier" as BindingShape,
+      }),
+      cursor: attempted.cursor,
+    });
+  };
 }
 
 export function createBindingConsumer(

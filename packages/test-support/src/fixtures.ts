@@ -25,6 +25,7 @@ export interface FixtureManifest {
 export type FixtureArtifactName =
   | "macros.sts"
   | "expected.ts"
+  | "expected.tsx"
   | "expected.bindings.json"
   | "expected.trace.json"
   | "expected.diagnostics.json"
@@ -56,6 +57,7 @@ export class FixtureManifestError extends Error {
 const artifactNames: readonly FixtureArtifactName[] = [
   "macros.sts",
   "expected.ts",
+  "expected.tsx",
   "expected.bindings.json",
   "expected.trace.json",
   "expected.diagnostics.json",
@@ -158,9 +160,11 @@ export function validateFixtureManifest(
 
   if (
     typeof value["entry"] !== "string" ||
-    !/^[^/\\]+\.sts$/.test(value["entry"])
+    !/^[^/\\]+\.stsx?$/.test(value["entry"])
   ) {
-    problems.push("entry must name an .sts file in the case directory");
+    problems.push(
+      "entry must name an .sts or .stsx file in the case directory",
+    );
   }
 
   if (validateRecord(value["expect"], "expect", problems)) {
@@ -238,7 +242,12 @@ export async function loadFixture(
   const requiredArtifacts: Array<
     readonly [keyof FixtureExpectations, FixtureArtifactName]
   > = [
-    ["expansion", "expected.ts"],
+    // A `.stsx` entry expands to TSX, and its recorded expansion is named for
+    // what it holds so ordinary tooling parses it correctly.
+    [
+      "expansion",
+      manifest.entry.endsWith("x") ? "expected.tsx" : "expected.ts",
+    ],
     ["bindings", "expected.bindings.json"],
     ["trace", "expected.trace.json"],
     ["diagnostics", "expected.diagnostics.json"],

@@ -16,10 +16,12 @@
     "@sweetener/expansion": "workspace:*",
     "@sweetener/hygiene": "workspace:*",
     "@sweetener/macro-language": "workspace:*",
+    "@sweetener/pattern": "workspace:*",
     "@sweetener/printer": "workspace:*",
     "@sweetener/reader": "workspace:*",
     "@sweetener/shared": "workspace:*",
     "@sweetener/syntax": "workspace:*",
+    "@sweetener/template": "workspace:*",
     "@sweetener/typescript-host": "workspace:*",
     "typescript": "npm:@typescript/typescript6@6.0.2"
   }

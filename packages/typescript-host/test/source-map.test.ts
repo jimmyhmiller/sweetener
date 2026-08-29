@@ -43,6 +43,7 @@ describe("source-map composition", () => {
         ],
       },
       trace: [],
+      tokenSpans: [],
       serializedTrace: "[]\n",
     };
     const sourceText = new Map<SourceId, string>([
@@ -94,6 +95,7 @@ describe("source-map composition", () => {
             },
           ],
         },
+        tokenSpans: [],
         trace: [],
         serializedTrace: "[]\n",
       },
@@ -118,6 +120,7 @@ describe("source-map composition", () => {
         generated: {
           text: "x",
           originMap: { schemaVersion: 1, entries: [] },
+          tokenSpans: [],
           trace: [],
           serializedTrace: "[]\n",
         },

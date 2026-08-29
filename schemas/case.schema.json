@@ -14,34 +14,65 @@
     "limits"
   ],
   "properties": {
-    "$schema": { "type": "string" },
+    "$schema": {
+      "type": "string"
+    },
     "id": {
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9-]*(/[a-z0-9][a-z0-9-]*)+$"
     },
-    "languageVersion": { "type": "string", "minLength": 1 },
-    "typescriptVersion": { "type": "string", "minLength": 1 },
-    "compilerOptions": { "type": "object" },
+    "languageVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "typescriptVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "compilerOptions": {
+      "type": "object"
+    },
     "capabilities": {
       "type": "array",
-      "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9-]+$" },
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9-]+$"
+      },
       "uniqueItems": true
     },
-    "entry": { "type": "string", "pattern": "^[^/\\]+\\.sts$" },
+    "entry": {
+      "type": "string",
+      "pattern": "^[^/\\\\]+\\.stsx?$",
+      "description": "Macro-enabled entry file in the case directory, either .sts or .stsx."
+    },
     "expect": {
       "type": "object",
       "required": ["expansion", "bindings", "trace", "types", "runtime"],
       "properties": {
-        "expansion": { "type": "boolean" },
-        "bindings": { "type": "boolean" },
-        "trace": { "type": "boolean" },
-        "diagnostics": { "type": "boolean" },
-        "types": { "type": "boolean" },
-        "runtime": { "type": "boolean" }
+        "expansion": {
+          "type": "boolean"
+        },
+        "bindings": {
+          "type": "boolean"
+        },
+        "trace": {
+          "type": "boolean"
+        },
+        "diagnostics": {
+          "type": "boolean"
+        },
+        "types": {
+          "type": "boolean"
+        },
+        "runtime": {
+          "type": "boolean"
+        }
       },
       "additionalProperties": false
     },
-    "limits": { "type": "object" }
+    "limits": {
+      "type": "object"
+    }
   },
   "additionalProperties": false
 }

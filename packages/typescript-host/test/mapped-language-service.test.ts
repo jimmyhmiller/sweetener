@@ -27,6 +27,7 @@ function mappedFile(text: string, sourceId: SourceId) {
         },
       ],
     },
+    tokenSpans: [],
     trace: [],
     serializedTrace: "[]\n",
   };
@@ -104,6 +105,7 @@ describe("mapped language-service reads", () => {
     const dependency: PrintedExpandedFile = {
       text: "export function generated() {}",
       originMap: { schemaVersion: 1, entries: [] },
+      tokenSpans: [],
       trace: [],
       serializedTrace: "[]\n",
     };
@@ -230,6 +232,7 @@ describe("mapped language-service reads", () => {
           },
         ],
       },
+      tokenSpans: [],
       trace: [],
       serializedTrace: "[]\n",
     };
@@ -272,6 +275,7 @@ describe("mapped language-service reads", () => {
           },
         ],
       },
+      tokenSpans: [],
       trace: [],
       serializedTrace: "[]\n",
     };

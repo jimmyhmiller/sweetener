@@ -101,3 +101,63 @@ describe("macro invocation scope model", () => {
     expect(store.has(afterInner, inner.introduction)).toBe(false);
   });
 });
+
+describe("template privacy", () => {
+  it("marks introduced syntax private and captured syntax public", () => {
+    const store = new ScopeStore();
+    const definition = store.singleton(store.freshScope("module", "macro"));
+    const callSite = store.singleton(store.freshScope("lexical", "caller"));
+    const invocation = createInvocationScopes(store);
+
+    const introduced = introducedTemplateScopes(store, definition, invocation);
+    const captured = capturedInvocationScopes(store, callSite, invocation);
+
+    expect(store.hasUnmatchedIntroduction(introduced)).toBe(true);
+    expect(store.hasUnmatchedIntroduction(captured)).toBe(false);
+    expect(store.hasUnmatchedIntroduction(callSite)).toBe(false);
+  });
+
+  it("treats a deliberately published identifier as public", () => {
+    const store = new ScopeStore();
+    const callSite = store.singleton(store.freshScope("lexical", "caller"));
+    const invocation = createInvocationScopes(store);
+    // `#capture` adds the introduction scope back onto call-site scopes so the
+    // identifier binds at the call site on purpose.
+    const published = store.add(
+      capturedInvocationScopes(store, callSite, invocation),
+      invocation.introduction,
+    );
+    expect(store.hasUnmatchedIntroduction(published)).toBe(false);
+  });
+
+  it("keeps outer template syntax private inside a nested expansion", () => {
+    const store = new ScopeStore();
+    const definition = store.singleton(store.freshScope("module", "macro"));
+    const outer = createInvocationScopes(store);
+    const inner = createInvocationScopes(store);
+    const fromOuterTemplate = introducedTemplateScopes(
+      store,
+      definition,
+      outer,
+    );
+    // The outer template's syntax is the inner macro's call site.
+    const seenByInner = capturedInvocationScopes(
+      store,
+      fromOuterTemplate,
+      inner,
+    );
+    expect(store.hasUnmatchedIntroduction(seenByInner)).toBe(true);
+  });
+
+  it("rejects a pairing that is not an introduction and use-site pair", () => {
+    const store = new ScopeStore();
+    const invocation = createInvocationScopes(store);
+    const lexical = store.freshScope("lexical", "caller");
+    expect(() =>
+      store.pairInvocationScopes(lexical, invocation.useSite),
+    ).toThrow(TypeError);
+    expect(() =>
+      store.pairInvocationScopes(invocation.introduction, lexical),
+    ).toThrow(TypeError);
+  });
+});

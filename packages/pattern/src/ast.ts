@@ -72,6 +72,12 @@ export interface RepeatPattern extends PatternBase {
 
 export interface OptionalPattern extends PatternBase {
   readonly kind: "optional";
+  /**
+   * An optional is a repetition bounded at one. It carries a repetition of its
+   * own so a body that matches nothing still records an empty sequence for the
+   * captures inside it.
+   */
+  readonly repetition: RepetitionId;
   readonly body: PatternNode;
   readonly depth: number;
   readonly cardinalityGroup: CardinalityGroupId;
@@ -256,6 +262,7 @@ export function createRepeatPattern(options: {
 
 export function createOptionalPattern(options: {
   readonly origin: OriginId;
+  readonly repetition: RepetitionId;
   readonly body: PatternNode;
   readonly depth: number;
   readonly cardinalityGroup: CardinalityGroupId;

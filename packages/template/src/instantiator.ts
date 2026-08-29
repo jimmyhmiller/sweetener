@@ -100,7 +100,16 @@ class Instantiator {
   }
 
   instantiate(output: readonly EvaluatedTemplate[]): InstantiateTemplateResult {
-    const syntax = createSyntaxSequence(this.#pieces(output));
+    const pieces = this.#pieces(output);
+    // The whitespace before a template's first token is the macro definition's
+    // own indentation, not part of the program. Carried to the call site it can
+    // change what the code means — a line break after `return` ends the
+    // statement — so the invocation's own spacing stands instead.
+    const syntax = createSyntaxSequence(
+      pieces[0] === undefined
+        ? pieces
+        : [this.#trimLeadingTrivia(pieces[0]), ...pieces.slice(1)],
+    );
     return Object.freeze({
       syntax,
       freshBindings: Object.freeze([...this.#freshBindings]),

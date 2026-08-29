@@ -1,5 +1,6 @@
 export const packageName = "@sweetener/enforestation" as const;
 export * from "./consumer.js";
+export * from "./jsx-child.js";
 export * from "./stop-set.js";
 export * from "./primary-expression.js";
 export * from "./pratt-expression.js";

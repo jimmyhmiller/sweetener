@@ -35,6 +35,7 @@ export class ScopeStore {
   readonly #sets = new Map<ScopeSetId, readonly ScopeId[]>();
   readonly #setByKey = new Map<string, ScopeSetId>();
   readonly #keyBySet = new Map<ScopeSetId, string>();
+  readonly #invocationPartners = new Map<ScopeId, ScopeId>();
   readonly #empty = 0 as ScopeSetId;
   #internHits = 0;
 
@@ -117,6 +118,33 @@ export class ScopeStore {
     return scopeSetSubset(this.#requireSet(left), this.#requireSet(right));
   }
 
+  /**
+   * Records the two scopes one macro invocation works with. Template syntax
+   * carries the introduction scope; syntax that reached the expansion from the
+   * call site carries the use-site scope instead.
+   */
+  pairInvocationScopes(introduction: ScopeId, useSite: ScopeId): void {
+    if (this.#requireScope(introduction).kind !== "introduction")
+      throw new TypeError("Invocation pairing needs an introduction scope");
+    if (this.#requireScope(useSite).kind !== "use-site")
+      throw new TypeError("Invocation pairing needs a use-site scope");
+    this.#invocationPartners.set(introduction, useSite);
+  }
+
+  /**
+   * Whether the set belongs to some template without also belonging to that
+   * invocation's call site. Syntax a macro wrote itself answers true; captured
+   * syntax, and identifiers a binding contract or `#capture` deliberately
+   * publishes to the call site, answer false.
+   */
+  hasUnmatchedIntroduction(set: ScopeSetId): boolean {
+    const scopes = this.#requireSet(set);
+    return scopes.some((scope) => {
+      const partner = this.#invocationPartners.get(scope);
+      return partner !== undefined && !this.#contains(scopes, partner);
+    });
+  }
+
   has(set: ScopeSetId, scope: ScopeId): boolean {
     this.#requireScope(scope);
     return this.#contains(this.#requireSet(set), scope);
@@ -178,10 +206,12 @@ export class ScopeStore {
     return false;
   }
 
-  #requireScope(scope: ScopeId): void {
-    if (!this.#scopes.has(scope)) {
+  #requireScope(scope: ScopeId): Scope {
+    const value = this.#scopes.get(scope);
+    if (value === undefined) {
       throw new RangeError(`Unknown scope ${String(scope)}`);
     }
+    return value;
   }
 
   #requireSet(set: ScopeSetId): readonly ScopeId[] {

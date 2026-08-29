@@ -46,6 +46,7 @@ describe("origin query index", () => {
         ],
       },
       trace: [],
+      tokenSpans: [],
       serializedTrace: "[]\n",
     };
     const index = createOriginQueryIndex({
@@ -118,6 +119,7 @@ describe("origin query index", () => {
           ],
         },
         trace: [],
+        tokenSpans: [],
         serializedTrace: "[]\n",
       },
       origins,
@@ -159,6 +161,7 @@ describe("origin query index", () => {
         ],
       },
       trace: [],
+      tokenSpans: [],
       serializedTrace: "[]\n",
     };
     const index = createOriginQueryIndex({ file, origins });
@@ -178,7 +181,12 @@ describe("origin query index", () => {
   test("rejects unordered, out-of-bounds, and unknown origin regions", () => {
     const origins = new OriginStore();
     const known = origins.source(1004 as SourceId, { start: 0, end: 1 });
-    const base = { text: "x", trace: [], serializedTrace: "[]\n" };
+    const base = {
+      text: "x",
+      tokenSpans: [],
+      trace: [],
+      serializedTrace: "[]\n",
+    };
     expect(() =>
       createOriginQueryIndex({
         file: {

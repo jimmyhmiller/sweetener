@@ -5,8 +5,10 @@ import { runInNewContext } from "node:vm";
 import type { PrintedExpandedFile } from "@sweetener/printer";
 import { describe, expect, test } from "vitest";
 import * as ts from "typescript";
+import type { Diagnostic } from "@sweetener/shared";
 import {
   createDefaultProjectExpansionProvider,
+  formatDiagnosticMessage,
   loadSweetProject,
   runConfiguredProjectCommand,
   type ProjectExpansionProvider,
@@ -38,6 +40,7 @@ function provider(input: string, text: string): ProjectExpansionProvider {
   const generated: PrintedExpandedFile = Object.freeze({
     text,
     originMap: Object.freeze({ schemaVersion: 1, entries: Object.freeze([]) }),
+    tokenSpans: Object.freeze([]),
     trace: Object.freeze([]),
     serializedTrace: "[]\n",
   });
@@ -321,7 +324,10 @@ describe("project commands", () => {
       ).toEqual(
         expected.map(({ code, messageArguments }) => ({
           code,
-          messageText: `${code}: ${messageArguments.join(" ")}`,
+          messageText: formatDiagnosticMessage(
+            code as Diagnostic["code"],
+            messageArguments,
+          ),
         })),
       );
     }

@@ -35,6 +35,7 @@ function project(options: {
         generated: {
           text: options.source,
           originMap: { schemaVersion: 1, entries: [] },
+          tokenSpans: [],
           trace: [],
           serializedTrace: "[]\n",
         },

@@ -16,23 +16,23 @@ import {
   type ConsumerAttempt,
   type ConsumerContext,
   type SyntaxConsumer,
+  type MacroExtentResolver,
 } from "./consumer.js";
 import {
   createPrattExpressionConsumer,
   type PrattExpressionConsumerOptions,
 } from "./pratt-expression.js";
 import { StopSet } from "./stop-set.js";
-import { createBindingConsumer } from "./binding-parameter.js";
+import {
+  bindingMacroResolver,
+  createBindingConsumer,
+} from "./binding-parameter.js";
 import {
   createClassElementConsumer,
   createTypeConsumer,
 } from "./type-class-element.js";
 
-export type StatementItemMacroResolver = (
-  category: "stmt" | "item",
-  cursor: SyntaxCursor,
-  context: ConsumerContext,
-) => ConsumerAttempt | undefined;
+export type StatementItemMacroResolver = MacroExtentResolver;
 
 export interface StatementItemConsumerOptions extends PrattExpressionConsumerOptions {
   readonly resolveMacro?: StatementItemMacroResolver | undefined;
@@ -834,7 +834,12 @@ class ItemConsumer implements SyntaxConsumer {
       origins: options.origins,
       allocateSyntaxId: options.allocateSyntaxId,
     };
-    this.#binding = createBindingConsumer(shared);
+    this.#binding = createBindingConsumer({
+      ...shared,
+      ...(options.resolveMacro === undefined
+        ? {}
+        : { resolveMacro: bindingMacroResolver(options.resolveMacro) }),
+    });
     this.#type = createTypeConsumer(shared);
     this.#classElement = createClassElementConsumer({
       ...shared,

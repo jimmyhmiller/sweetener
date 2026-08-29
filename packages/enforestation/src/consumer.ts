@@ -263,3 +263,15 @@ export class ConsumerRegistry {
     });
   }
 }
+
+/**
+ * Claims a macro invocation during enforestation and returns its full extent.
+ * The extent can reach past what the category would otherwise consume — a
+ * trailing block after an expression, for instance — so the parse has to ask
+ * before committing.
+ */
+export type MacroExtentResolver = (
+  category: "expr" | "binding" | "stmt" | "item",
+  cursor: SyntaxCursor,
+  context: ConsumerContext,
+) => ConsumerAttempt | undefined;

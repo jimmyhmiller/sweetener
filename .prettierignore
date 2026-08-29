@@ -9,3 +9,5 @@ samples/external/*/dist-standalone/
 # Macro-enabled JavaScript is not parseable by ordinary JavaScript tooling.
 samples/external/javascript-project/src/macros.js
 samples/external/javascript-project/src/main.js
+# Recorded expander output, compared byte for byte by the fixture runner.
+fixtures/acceptance/real-world/*/expected.*

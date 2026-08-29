@@ -1,5 +1,7 @@
 import {
+  bindingMacroResolver,
   createBindingConsumer,
+  createJsxChildConsumer,
   createClassElementConsumer,
   createItemConsumer,
   createPrattExpressionConsumer,
@@ -211,10 +213,16 @@ export function createExpansionFrontendSession(
     CompileParsedMacrosResult,
     SyntaxClassConsumer
   >();
+  /**
+   * Module whose macros are in scope while a nested body is enforested. The
+   * syntax may have come from another module's template, where that module's
+   * macros are the ones in scope rather than the consuming file's.
+   */
+  let enforestingModule: CompileParsedMacrosResult | undefined;
   const resolve = (
     spelling: string,
     category: SyntaxCategory,
-    lexicalModule = options.module,
+    lexicalModule = enforestingModule ?? options.module,
     position = Number.POSITIVE_INFINITY,
     positionSourceId?: SourceId | undefined,
   ) => {
@@ -455,8 +463,14 @@ export function createExpansionFrontendSession(
     ...shared,
   });
   const consumerShared = { ...shared, resolveMacroOperator: operatorResolver };
-  const expression = createPrattExpressionConsumer(consumerShared);
-  const binding = createBindingConsumer(shared);
+  const expression = createPrattExpressionConsumer({
+    ...consumerShared,
+    resolveMacro: extentResolver,
+  });
+  const binding = createBindingConsumer({
+    ...shared,
+    resolveMacro: bindingMacroResolver(extentResolver),
+  });
   const statement = createStatementConsumer({
     ...consumerShared,
     resolveMacro: extentResolver,
@@ -466,6 +480,7 @@ export function createExpansionFrontendSession(
     resolveMacro: extentResolver,
   });
   const type = createTypeConsumer(shared);
+  const jsxChild = createJsxChildConsumer(shared);
   const classElement = createClassElementConsumer({
     ...shared,
     enforestStatementBlock: (block, blockContext) =>
@@ -504,6 +519,7 @@ export function createExpansionFrontendSession(
     register("item", item);
     register("type", type);
     register("classElement", classElement);
+    register("jsxChild", jsxChild);
     const consumeClass = createSyntaxClassConsumer(module.syntaxClasses, {
       builtins: {
         token: requiredClass(module, "token"),
@@ -526,7 +542,9 @@ export function createExpansionFrontendSession(
                   ? "type"
                   : classId === module.classId("classElement")
                     ? "classElement"
-                    : "item";
+                    : classId === module.classId("jsxChild")
+                      ? "jsxChild"
+                      : "item";
         const base = context(category);
         const start = cursor.index;
         const attempted = consumer.consume(cursor, {
@@ -576,7 +594,9 @@ export function createExpansionFrontendSession(
                 ? type
                 : category === "classElement"
                   ? classElement
-                  : undefined;
+                  : category === "jsxChild"
+                    ? jsxChild
+                    : undefined;
     if (consumer === undefined) return protect(syntax, category);
     const previousOperatorModule = activeOperatorModule;
     activeOperatorModule = lexicalModule;
@@ -785,21 +805,27 @@ export function createExpansionFrontendSession(
             )
           );
         },
-        enforestStatements: ({ syntax, contexts }) => {
-          let cursor = createSyntaxCursor(syntax);
-          const statements: Syntax[] = [];
-          while (!cursor.atEnd) {
-            const before = cursor.index;
-            const attempted = statement.consume(cursor, {
-              ...context("stmt", contexts),
-              stopSet: StopSet.empty,
-            });
-            if (!attempted.matched || attempted.cursor.index <= before)
-              return undefined;
-            statements.push(attempted.syntax);
-            cursor = attempted.cursor;
+        enforestStatements: ({ syntax, contexts, lexicalModule }) => {
+          const restore = enforestingModule;
+          enforestingModule = lexicalModule ?? restore;
+          try {
+            let cursor = createSyntaxCursor(syntax);
+            const statements: Syntax[] = [];
+            while (!cursor.atEnd) {
+              const before = cursor.index;
+              const attempted = statement.consume(cursor, {
+                ...context("stmt", contexts),
+                stopSet: StopSet.empty,
+              });
+              if (!attempted.matched || attempted.cursor.index <= before)
+                return undefined;
+              statements.push(attempted.syntax);
+              cursor = attempted.cursor;
+            }
+            return createSyntaxSequence(statements);
+          } finally {
+            enforestingModule = restore;
           }
-          return createSyntaxSequence(statements);
         },
         enforestItems: ({ syntax, contexts }) => {
           let cursor = createSyntaxCursor(syntax);

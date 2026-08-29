@@ -48,6 +48,7 @@ describe("capture-shape inference", () => {
     });
     const outer = createOptionalPattern({
       origin,
+      repetition,
       body: inner,
       depth: 2,
       cardinalityGroup: 9 as CardinalityGroupId,
@@ -118,6 +119,7 @@ describe("capture-shape inference", () => {
       repetition,
       body: createOptionalPattern({
         origin,
+        repetition,
         body: empty,
         depth: 1,
         cardinalityGroup: group,

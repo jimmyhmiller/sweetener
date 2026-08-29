@@ -388,6 +388,10 @@ export function compileParsedMacros(
         }),
       );
     }
+    // Every rule failed to compile, and its diagnostics are already reported.
+    // Registering the name anyway would offer callers a macro that cannot
+    // expand, so the definition contributes nothing instead.
+    if (rules.length === 0) continue;
     const macro = Object.freeze({
       binding: createBinding({
         id: options.allocateBindingId(),

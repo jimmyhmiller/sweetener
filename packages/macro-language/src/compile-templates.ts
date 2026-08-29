@@ -71,6 +71,14 @@ export function compileParsedTemplates(
         identifierClassIds,
       });
       diagnostics.push(...compiled.diagnostics);
+      // A rule whose template did not compile must not reach invocation-time
+      // matching, where evaluating it would fail with no source to blame.
+      if (
+        [...inference.diagnostics, ...compiled.diagnostics].some(
+          ({ severity }) => severity === "error",
+        )
+      )
+        continue;
       templates.push(
         Object.freeze({ rule: rule.id, template: compiled.template }),
       );

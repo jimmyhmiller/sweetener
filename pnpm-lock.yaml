@@ -377,6 +377,9 @@ importers:
       '@sweetener/macro-language':
         specifier: workspace:*
         version: link:../macro-language
+      '@sweetener/pattern':
+        specifier: workspace:*
+        version: link:../pattern
       '@sweetener/printer':
         specifier: workspace:*
         version: link:../printer
@@ -389,6 +392,9 @@ importers:
       '@sweetener/syntax':
         specifier: workspace:*
         version: link:../syntax
+      '@sweetener/template':
+        specifier: workspace:*
+        version: link:../template
       '@sweetener/typescript-host':
         specifier: workspace:*
         version: link:../typescript-host

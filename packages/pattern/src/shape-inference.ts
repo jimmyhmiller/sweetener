@@ -47,6 +47,8 @@ export interface ClassFieldRequirement {
   readonly name: string;
   readonly classId: SyntaxClassId;
   readonly repeated: boolean;
+  /** An optional field may be left unbound by a rule that does not match it. */
+  readonly optional?: boolean | undefined;
   readonly origin: OriginId;
 }
 
@@ -323,6 +325,7 @@ export function validateClassRuleFields(
   );
   for (const field of fields) {
     const binding = bindings.get(field.name);
+    if (binding === undefined && field.optional === true) continue;
     const leaf = binding === undefined ? undefined : leafAtBase(binding.shape);
     const repeated = binding?.shape.kind === "sequence";
     if (

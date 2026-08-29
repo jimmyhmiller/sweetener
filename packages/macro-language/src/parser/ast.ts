@@ -23,6 +23,7 @@ export interface DefinitionField extends MacroLanguageNode {
   readonly classId: SyntaxClassId;
   readonly className: string;
   readonly repeated: boolean;
+  readonly optional: boolean;
   readonly syntax: SyntaxSequence;
 }
 

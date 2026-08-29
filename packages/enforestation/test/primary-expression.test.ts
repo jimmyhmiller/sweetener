@@ -69,6 +69,9 @@ describe("primary and postfix expressions", () => {
     "this",
     "null",
     "true",
+    // TypeScript scans `undefined` as a keyword, so it needs listing among the
+    // value keywords or no macro can capture an expression that mentions it.
+    "undefined",
     "[first, second]",
     "{ first: 1, second }",
     "(first)",

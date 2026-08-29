@@ -460,6 +460,8 @@ class Parser {
       let end = index + 3;
       const repeated = token(nodes[end], "*");
       if (repeated) end += 1;
+      const optional = !repeated && token(nodes[end], "?");
+      if (optional) end += 1;
       if (token(nodes[end], ";")) end += 1;
       fields.push(
         frozen({
@@ -469,6 +471,7 @@ class Parser {
           classId: this.#classId(className.raw),
           className: className.raw,
           repeated,
+          optional,
           syntax: freezeSequence(nodes.slice(index, end)),
         }),
       );
@@ -573,6 +576,7 @@ class Parser {
           quantifier.raw === "?"
             ? createOptionalPattern({
                 origin: current.origin,
+                repetition: this.#repetitionIds.allocate(),
                 body,
                 depth: depth + 1,
                 cardinalityGroup,

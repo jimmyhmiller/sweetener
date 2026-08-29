@@ -218,18 +218,36 @@ export function compileMatcherProgram(
           });
           break;
         }
-        case "optional":
-          schedule(node.body, continuation, (body) => {
+        case "optional": {
+          const commit = emit({
+            op: "repeat-commit",
+            origin: node.origin,
+            repetition: node.repetition,
+            loop: undefined,
+            exit: continuation,
+          });
+          schedule(node.body, commit, (body) => {
+            const instruction = instructions[commit];
+            if (instruction?.op !== "repeat-commit")
+              throw new Error("Optional commit patch target changed");
+            instructions[commit] = { ...instruction, loop: body };
             assign(
               emit({
-                op: "split",
+                op: "repeat-enter",
                 origin: node.origin,
-                first: body,
-                second: continuation,
+                repetition: node.repetition,
+                cardinalityGroup: node.cardinalityGroup,
+                body,
+                separator: undefined,
+                exit: continuation,
+                minimum: 0,
+                maximum: 1,
+                captures: slotsIn(node.body),
               }),
             );
           });
           break;
+        }
         case "repeat": {
           const commit = emit({
             op: "repeat-commit",

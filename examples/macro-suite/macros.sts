@@ -44,7 +44,9 @@ export syntax readonlyList:type {
 }
 
 export syntax summon:item {
-  rule { summon } => { const summonedMeaning = 42; }
+  rule { summon $name:binding }
+  bind $name in following as lexical value;
+  => { const $name = 42; }
 }
 
 export operator (|>):expr {

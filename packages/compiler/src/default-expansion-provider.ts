@@ -10,15 +10,29 @@ import {
   unresolvedBindingLiteralCode,
   type CompileParsedMacrosResult,
 } from "@sweetener/expansion";
-import { createPhase, EnvironmentStore, ScopeStore } from "@sweetener/hygiene";
 import {
+  createPhase,
+  EnvironmentStore,
+  hygieneDiagnosticRegistry,
+  ScopeStore,
+} from "@sweetener/hygiene";
+import { patternDiagnosticRegistry } from "@sweetener/pattern";
+import { templateDiagnosticRegistry } from "@sweetener/template";
+import {
+  macroLanguageDiagnosticRegistry,
   parseCompileTimeSyntaxImports,
   parseMacroDefinitions,
   type ParseMacroDefinitionsResult,
 } from "@sweetener/macro-language";
-import { createOriginQueryIndex, printExpandedFile } from "@sweetener/printer";
+import {
+  createOriginQueryIndex,
+  printExpandedFile,
+  type NameRewrite,
+  type PrintedExpandedFile,
+} from "@sweetener/printer";
 import {
   findSweetenerDirective,
+  readerDiagnosticRegistry,
   readSyntax,
   type SourceDirective,
 } from "@sweetener/reader";
@@ -54,6 +68,7 @@ import {
   type MacroModuleSource,
   type VirtualTypeScriptFile,
 } from "@sweetener/typescript-host";
+import { planHygienicRenames } from "./hygienic-renaming.js";
 import * as ts from "typescript";
 import {
   loadStandaloneProject,
@@ -127,6 +142,39 @@ function inside(root: string, candidate: string): boolean {
   );
 }
 
+/**
+ * Every diagnostic carries a code and its arguments; the sentence a reader sees
+ * lives on the registry that owns the code, so the registries are gathered here
+ * to turn one into the other.
+ */
+const diagnosticDefinitions = new Map(
+  [
+    readerDiagnosticRegistry,
+    patternDiagnosticRegistry,
+    templateDiagnosticRegistry,
+    hygieneDiagnosticRegistry,
+    expansionDiagnosticRegistry,
+    macroLanguageDiagnosticRegistry,
+    moduleDiagnosticRegistry,
+  ].flatMap((registry) =>
+    registry.list().map((definition) => [definition.code, definition] as const),
+  ),
+);
+
+export function formatDiagnosticMessage(
+  code: Diagnostic["code"],
+  messageArguments: Diagnostic["messageArguments"],
+): string {
+  const definition = diagnosticDefinitions.get(code);
+  return definition === undefined
+    ? `${code}: ${messageArguments.join(" ")}`
+    : definition.format(messageArguments);
+}
+
+export function describeDiagnostic(diagnostic: Diagnostic): string {
+  return formatDiagnosticMessage(diagnostic.code, diagnostic.messageArguments);
+}
+
 function asTypeScriptDiagnostic(
   diagnostic: Diagnostic,
   files: ReadonlyMap<SourceId, ParsedFile>,
@@ -156,7 +204,7 @@ function asTypeScriptDiagnostic(
       0,
       diagnostic.primaryOrigin.end - diagnostic.primaryOrigin.start,
     ),
-    messageText: `${diagnostic.code}: ${diagnostic.messageArguments.join(" ")}`,
+    messageText: describeDiagnostic(diagnostic),
   });
 }
 
@@ -1220,6 +1268,9 @@ export class DefaultProjectExpansionProvider
         ...synthesized.flatMap(({ syntax }) => syntax),
         ...result.syntax,
       ]);
+      const rawSpelling = new Map(
+        tokensIn(printableSyntax).map((token) => [token.id, token.raw]),
+      );
       const rewrites = tokensIn(result.syntax).flatMap((token) => {
         const sources = new Set(
           origins
@@ -1241,18 +1292,46 @@ export class DefaultProjectExpansionProvider
               } as const,
             ];
       });
-      const generated = printExpandedFile({
+      const groupProtectedExpression = (
+        syntax: Extract<Syntax, { readonly tag: "protected" }>,
+      ) => generatedOrigin(origins, syntax.origin);
+      const printWith = (
+        names: readonly NameRewrite[],
+      ): PrintedExpandedFile<typeof result.traces> =>
+        printExpandedFile({
+          syntax: printableSyntax,
+          origins,
+          trace: result.traces,
+          names: {
+            names: new Map(),
+            rewrites: names,
+            nameFor: () => undefined,
+          },
+          groupProtectedExpression,
+        });
+      // Renaming needs to know which identifiers are binders, which is a
+      // question about the printed program's grammar. Print once to ask
+      // TypeScript, then print again with the hygienic names applied.
+      const aliased = printWith(rewrites);
+      const hygiene = planHygienicRenames({
         syntax: printableSyntax,
-        origins,
-        trace: result.traces,
-        names: {
-          names: new Map(),
-          rewrites,
-          nameFor: () => undefined,
-        },
-        groupProtectedExpression: (syntax) =>
-          generatedOrigin(origins, syntax.origin),
+        scopes,
+        phase,
+        text: aliased.text,
+        tokenSpans: aliased.tokenSpans,
+        fileName: file.kind.virtualFileName,
+        reservedNames: rewrites.map(({ printedName }) => printedName),
       });
+      const aliasedSyntax = new Set(rewrites.map(({ syntax }) => syntax));
+      const hygieneRewrites = (hygiene?.rewrites ?? []).filter(
+        (rewrite) =>
+          !aliasedSyntax.has(rewrite.syntax) &&
+          rewrite.replacement !== rawSpelling.get(rewrite.syntax),
+      );
+      const generated =
+        hygieneRewrites.length === 0
+          ? aliased
+          : printWith([...rewrites, ...hygieneRewrites]);
       const macroNames = new Map(
         modules.flatMap(({ macros }) =>
           macros.map(({ binding }) => [binding.id, binding.spelling] as const),
@@ -1260,12 +1339,20 @@ export class DefaultProjectExpansionProvider
       );
       const output = { fileName: file.kind.virtualFileName, generated };
       virtualFiles.push(output);
+      // `explain` reports the name each renamed template binding printed under.
+      const generatedNames = Object.fromEntries(
+        hygieneRewrites.map(({ syntax, printedName }) => [
+          rawSpelling.get(syntax) ?? printedName,
+          printedName,
+        ]),
+      );
       this.#inspections.set(
         resolve(file.fileName),
         Object.freeze({
           sourceId: file.sourceId,
           sourceText: file.sourceText,
           generated,
+          generatedNames: Object.freeze(generatedNames),
           sourceMap: createExpansionSourceMap({
             file: file.kind.virtualFileName,
             generated,

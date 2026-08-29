@@ -7,10 +7,10 @@ export interface InvocationScopes {
 }
 
 export function createInvocationScopes(store: ScopeStore): InvocationScopes {
-  return Object.freeze({
-    introduction: store.freshScope("introduction", "macro invocation"),
-    useSite: store.freshScope("use-site", "macro invocation"),
-  });
+  const introduction = store.freshScope("introduction", "macro invocation");
+  const useSite = store.freshScope("use-site", "macro invocation");
+  store.pairInvocationScopes(introduction, useSite);
+  return Object.freeze({ introduction, useSite });
 }
 
 export function prepareTransformerInput(

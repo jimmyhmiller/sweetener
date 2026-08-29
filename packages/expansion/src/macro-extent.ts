@@ -18,7 +18,7 @@ import type { InvokeMacroOptions } from "./invocation.js";
 export interface CreateMacroExtentResolverOptions {
   readonly resolve: (
     spelling: string,
-    category: "stmt" | "item",
+    category: "expr" | "binding" | "stmt" | "item",
     context: ConsumerContext,
   ) => CompiledMacroBinding | undefined;
   readonly consumeClass: (macro: CompiledMacroBinding) => SyntaxClassConsumer;
@@ -38,7 +38,7 @@ const itemDispatchPrefixes = new Set([
 
 function headSpelling(
   cursor: SyntaxCursor,
-  category: "stmt" | "item",
+  category: "expr" | "binding" | "stmt" | "item",
 ): string | undefined {
   let offset = 0;
   if (category === "item") {
@@ -54,7 +54,7 @@ function headSpelling(
 }
 
 function protectedExtent(
-  category: "stmt" | "item",
+  category: "expr" | "binding" | "stmt" | "item",
   start: SyntaxCursor,
   end: SyntaxCursor,
   options: CreateMacroExtentResolverOptions,
@@ -115,8 +115,11 @@ export function createMacroExtentResolver(
       if (matched.matched)
         return protectedExtent(category, cursor, matched.cursor, options);
     }
-    // Preserve a malformed macro invocation as one typed extent. The recursive
-    // expander will invoke the macro and produce its declared ranked diagnostic.
+    // An expression is claimed only by a rule that matched. A statement or item
+    // has nowhere else to go, so a malformed invocation is preserved as one
+    // typed extent and the recursive expander reports the ranked diagnostic;
+    // an expression can simply decline and let the ordinary parse continue.
+    if (category === "expr" || category === "binding") return undefined;
     return protectedExtent(category, cursor, fallbackExtent(cursor), options);
   };
 }

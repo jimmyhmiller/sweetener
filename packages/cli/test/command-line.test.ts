@@ -70,6 +70,7 @@ describe("sweet-ts command line", () => {
         generated: {
           text: "value",
           originMap: { schemaVersion: 1 as const, entries: [] },
+          tokenSpans: [],
           trace: [],
           serializedTrace: "[]\n",
         },
@@ -112,6 +113,7 @@ describe("sweet-ts command line", () => {
         generated: {
           text: "expanded",
           originMap: { schemaVersion: 1 as const, entries: [] },
+          tokenSpans: [],
           trace: [],
           serializedTrace: "[]\n",
         },

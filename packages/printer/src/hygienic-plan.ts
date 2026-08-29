@@ -26,6 +26,14 @@ export interface CreateHygienicNamePlanOptions {
   readonly unavailableNames?: readonly string[] | undefined;
   readonly occurrenceKind?:
     ((token: TokenSyntax) => NameOccurrenceKind) | undefined;
+  /**
+   * Restricts which identifier tokens count as occurrences. Property names,
+   * member accesses, and import specifiers share a spelling and scope set with
+   * the bindings around them but must keep their own text.
+   */
+  readonly includeToken?: ((token: TokenSyntax) => boolean) | undefined;
+  readonly propertySpelling?:
+    ((token: TokenSyntax) => string | undefined) | undefined;
 }
 
 function tokensInTraversalOrder(syntax: readonly Syntax[]): TokenSyntax[] {
@@ -62,6 +70,7 @@ export function createHygienicNamePlan(
   const occurrences = tokensInTraversalOrder(options.syntax).flatMap(
     (token) => {
       if (token.kind !== "identifier") return [];
+      if (options.includeToken?.(token) === false) return [];
       const resolution = resolveBinding(
         options.environments,
         options.environment,
@@ -79,11 +88,18 @@ export function createHygienicNamePlan(
         !bindingById.has(resolution.binding.id)
       )
         return [];
+      const kind = options.occurrenceKind?.(token) ?? ("identifier" as const);
       return [
         Object.freeze({
           syntax: token.id,
           binding: resolution.binding.id,
-          kind: options.occurrenceKind?.(token) ?? ("identifier" as const),
+          kind,
+          ...(kind === "identifier"
+            ? {}
+            : {
+                propertySpelling:
+                  options.propertySpelling?.(token) ?? token.raw,
+              }),
         }),
       ];
     },

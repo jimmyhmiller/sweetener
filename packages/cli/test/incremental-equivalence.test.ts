@@ -16,6 +16,7 @@ function project(
   const generated: PrintedExpandedFile = {
     text,
     originMap: { schemaVersion: 1, entries: [] },
+    tokenSpans: [],
     trace: [],
     serializedTrace: "[]\n",
   };

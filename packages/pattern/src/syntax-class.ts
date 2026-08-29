@@ -8,7 +8,7 @@ import type {
   SyntaxClassId,
 } from "@sweetener/shared";
 import type { Span, Syntax, SyntaxCursor } from "@sweetener/syntax";
-import { createSyntaxSequence } from "@sweetener/syntax";
+import { createSyntaxSequence, isIdentifierToken } from "@sweetener/syntax";
 import type { PatternNode } from "./ast.js";
 import {
   CaptureRecord,
@@ -51,6 +51,8 @@ export interface SyntaxClassFieldInput {
   readonly name: string;
   readonly classId: SyntaxClassId;
   readonly repeated: boolean;
+  /** An optional field may be left unbound by a rule that does not match it. */
+  readonly optional?: boolean | undefined;
   readonly origin: OriginId;
 }
 
@@ -561,7 +563,7 @@ function builtinMatch(
     (classId === builtins.token && syntax.tag === "token") ||
     (classId === builtins.ident &&
       syntax.tag === "token" &&
-      syntax.kind === "identifier");
+      isIdentifierToken(syntax));
   if (!matches) return undefined;
   cursor.advance();
   return Object.freeze({

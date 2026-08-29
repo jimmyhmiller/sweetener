@@ -64,6 +64,7 @@ describe("pattern AST", () => {
     });
     const optional = createOptionalPattern({
       origin,
+      repetition,
       body: literal,
       depth: 1,
       cardinalityGroup,

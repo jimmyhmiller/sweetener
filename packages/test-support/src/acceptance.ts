@@ -39,7 +39,13 @@ export interface AcceptanceIntent {
   readonly schemaVersion: 1;
   readonly fixtureId: string;
   readonly status: AcceptanceStatus;
-  readonly legacySources: readonly string[];
+  /**
+   * Files this fixture was ported from. A fixture imported from an earlier
+   * macro system names its sources so the port stays traceable; one written for
+   * this project descends from nothing and leaves it out rather than inventing
+   * an ancestor.
+   */
+  readonly legacySources?: readonly string[] | undefined;
   readonly summary: string;
   readonly capabilities: readonly AcceptanceCapability[];
   readonly syntaxNotes: readonly string[];
@@ -182,7 +188,9 @@ export function validateAcceptanceIntent(
   ) {
     problems.push("status must be proposed, approved, or deferred");
   }
-  validateStringArray(intent["legacySources"], "legacySources", 1, problems);
+  if (intent["legacySources"] !== undefined) {
+    validateStringArray(intent["legacySources"], "legacySources", 1, problems);
+  }
   if (typeof intent["summary"] !== "string" || intent["summary"].length === 0) {
     problems.push("summary must be a non-empty string");
   }

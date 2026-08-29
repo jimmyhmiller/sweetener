@@ -1,5 +1,6 @@
 export * from "./cursor.js";
 export * from "./hash.js";
+export * from "./identifier-tokens.js";
 export * from "./kinds.js";
 export * from "./origin.js";
 export * from "./span.js";

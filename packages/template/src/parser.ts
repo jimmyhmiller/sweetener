@@ -326,8 +326,7 @@ class TemplateParser {
             hint.value.length > 0 &&
             token(argumentsGroup.children[1], ",") &&
             resolved !== undefined &&
-            resolved.next === argumentsGroup.children.length &&
-            depth > 0;
+            resolved.next === argumentsGroup.children.length;
           if (!valid) {
             this.#diagnostic(
               invalidTemplateOperationCode,

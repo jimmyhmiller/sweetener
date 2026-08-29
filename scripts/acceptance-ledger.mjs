@@ -8,7 +8,10 @@ import {
 } from "../packages/test-support/dist/src/index.js";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
-const fixtureRoot = path.join(repositoryRoot, "fixtures/acceptance/playground");
+const fixtureRoots = [
+  path.join(repositoryRoot, "fixtures/acceptance/playground"),
+  path.join(repositoryRoot, "fixtures/acceptance/real-world"),
+];
 const ledgerPath = path.join(
   repositoryRoot,
   "docs/acceptance-capability-ledger.md",
@@ -19,7 +22,9 @@ function escapeCell(value) {
 }
 
 async function renderLedger() {
-  const fixtures = await discoverFixtures(fixtureRoot);
+  const fixtures = (
+    await Promise.all(fixtureRoots.map((root) => discoverFixtures(root)))
+  ).flat();
   const contracts = await Promise.all(
     fixtures.map(({ directory }) => loadAcceptanceIntent(directory)),
   );
@@ -50,8 +55,8 @@ async function renderLedger() {
     "# Acceptance Capability Ledger",
     "",
     "Generated from the validated `intent.json` files under",
-    "`fixtures/acceptance/playground`. Edit those contracts, then update this",
-    "ledger in the same change.",
+    "`fixtures/acceptance/playground` and `fixtures/acceptance/real-world`.",
+    "Edit those contracts, then update this ledger in the same change.",
     "",
     `Contracted families: ${String(contracts.length)}`,
     "",

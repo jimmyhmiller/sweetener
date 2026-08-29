@@ -18,7 +18,7 @@ export interface MacroCard {
   readonly result: string;
 }
 
-summon
+summon summonedMeaning
 
 const shout = (value: string): string => value.toUpperCase();
 const optionalSubtitle: string | undefined = undefined;

@@ -1,6 +1,12 @@
 import type { BindingId, SyntaxId } from "@sweetener/shared";
 
-export type NameOccurrenceKind = "identifier" | "shorthand-value";
+/**
+ * `shorthand-value` covers `{ x }`, where the property keeps its spelling and
+ * the value moves. `import-binding` covers `import { x }`, where the spelling
+ * names the module's export and only the local binding may move.
+ */
+export type NameOccurrenceKind =
+  "identifier" | "shorthand-value" | "import-binding";
 
 export interface BindingNameDeclaration {
   readonly binding: BindingId;
@@ -13,7 +19,10 @@ export interface BindingNameOccurrence {
   readonly syntax: SyntaxId;
   readonly binding: BindingId;
   readonly kind: NameOccurrenceKind;
-  /** Required for shorthand values; this is the stable property-key spelling. */
+  /**
+   * Required for shorthand values and import bindings; this is the spelling
+   * that must stay put — the property key, or the imported export's name.
+   */
   readonly propertySpelling?: string | undefined;
 }
 
@@ -143,10 +152,12 @@ export function assignPrintedNames(
       firstOccurrence.set(occurrence.binding, index);
     }
     if (
-      occurrence.kind === "shorthand-value" &&
+      occurrence.kind !== "identifier" &&
       occurrence.propertySpelling === undefined
     ) {
-      throw new TypeError("Shorthand occurrence requires a property spelling");
+      throw new TypeError(
+        `${occurrence.kind} occurrence requires a property spelling`,
+      );
     }
   });
   for (const declaration of declarations.values()) {
@@ -193,17 +204,18 @@ export function assignPrintedNames(
     names.set(declaration.binding, candidate);
   }
   const readonlyNames = immutableMap(names);
+  const separators = { "shorthand-value": ": ", "import-binding": " as " };
   const rewrites = options.occurrences.map((occurrence) => {
     const printedName = names.get(occurrence.binding)!;
     const expandsShorthand =
-      occurrence.kind === "shorthand-value" &&
+      occurrence.kind !== "identifier" &&
       occurrence.propertySpelling !== printedName;
     return Object.freeze({
       syntax: occurrence.syntax,
       binding: occurrence.binding,
       printedName,
       replacement: expandsShorthand
-        ? `${occurrence.propertySpelling!}: ${printedName}`
+        ? `${occurrence.propertySpelling!}${separators[occurrence.kind as keyof typeof separators]}${printedName}`
         : printedName,
       expandsShorthand,
     });
