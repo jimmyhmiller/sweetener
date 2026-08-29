@@ -120,6 +120,14 @@ export interface ExpandMacroSyntaxOptions extends Omit<
         readonly lexicalModule?: CompileParsedMacrosResult | undefined;
       }) => SyntaxSequence | undefined)
     | undefined;
+  /** Enforests a run of JSX children, for a macro that emits several. */
+  readonly enforestJsxChildren?:
+    | ((request: {
+        readonly syntax: SyntaxSequence;
+        readonly contexts: ReadonlySet<MacroContext>;
+        readonly lexicalModule?: CompileParsedMacrosResult | undefined;
+      }) => SyntaxSequence | undefined)
+    | undefined;
   /** Enforests a run of class members, for a macro that emits several. */
   readonly enforestClassElements?:
     | ((request: {
@@ -288,27 +296,35 @@ export function expandMacroSyntax(
         });
       }
     }
-    if (category === "classElement") {
-      const members = options.enforestClassElements?.({
-        syntax,
-        contexts,
-        lexicalModule,
+    // A member list and a run of JSX children are sequences like a statement
+    // or item list: a macro filling one may produce more than a single node.
+    const run = (
+      runCategory: "classElement" | "jsxChild",
+      members: SyntaxSequence | undefined,
+    ): ProtectedSyntax | undefined => {
+      if (members === undefined || members.length === 0) return undefined;
+      if (members.length === 1) return members[0] as ProtectedSyntax;
+      const origins = [...new Set(members.map(({ origin }) => origin))];
+      return createProtectedSyntax({
+        id: options.allocateSyntaxId(),
+        span: spanEnvelope(members.map(({ span }) => span)),
+        origin:
+          origins.length === 1
+            ? origins[0]!
+            : options.origins.composed(origins),
+        scopes: members[0]!.scopes,
+        category: runCategory,
+        children: members,
       });
-      if (members !== undefined && members.length > 0) {
-        if (members.length === 1) return members[0] as ProtectedSyntax;
-        const origins = [...new Set(members.map(({ origin }) => origin))];
-        return createProtectedSyntax({
-          id: options.allocateSyntaxId(),
-          span: spanEnvelope(members.map(({ span }) => span)),
-          origin:
-            origins.length === 1
-              ? origins[0]!
-              : options.origins.composed(origins),
-          scopes: members[0]!.scopes,
-          category: "classElement",
-          children: members,
-        });
-      }
+    };
+    if (category === "classElement" || category === "jsxChild") {
+      const members = (
+        category === "classElement"
+          ? options.enforestClassElements
+          : options.enforestJsxChildren
+      )?.({ syntax, contexts, lexicalModule });
+      const wrapped = run(category, members);
+      if (wrapped !== undefined) return wrapped;
     }
     if (category === "item") {
       const items = options.enforestItems?.({

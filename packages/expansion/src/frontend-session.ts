@@ -849,6 +849,28 @@ export function createExpansionFrontendSession(
             enforestingModule = restore;
           }
         },
+        enforestJsxChildren: ({ syntax, contexts, lexicalModule }) => {
+          const restore = enforestingModule;
+          enforestingModule = lexicalModule ?? restore;
+          try {
+            let cursor = createSyntaxCursor(syntax);
+            const children: Syntax[] = [];
+            while (!cursor.atEnd) {
+              const before = cursor.index;
+              const attempted = jsxChild.consume(cursor, {
+                ...context("jsxChild", contexts),
+                stopSet: StopSet.empty,
+              });
+              if (!attempted.matched || attempted.cursor.index <= before)
+                return undefined;
+              children.push(attempted.syntax);
+              cursor = attempted.cursor;
+            }
+            return createSyntaxSequence(children);
+          } finally {
+            enforestingModule = restore;
+          }
+        },
         enforestClassElements: ({ syntax, contexts, lexicalModule }) => {
           const restore = enforestingModule;
           enforestingModule = lexicalModule ?? restore;

@@ -490,6 +490,48 @@ describe("expansions of more than one node", () => {
     expect(text).toContain("readonly height: number;");
   });
 
+  test("expands a JSX child macro to several children", () => {
+    const runtime = `export function h(
+  tag: string,
+  props: Readonly<Record<string, unknown>> | null,
+  ...children: readonly unknown[]
+): unknown {
+  return { tag, props, children };
+}
+export const Fragment = "fragment";
+declare global {
+  namespace JSX {
+    type Element = unknown;
+    type ElementType = string;
+    interface IntrinsicElements {
+      readonly [tag: string]: unknown;
+    }
+  }
+}`;
+    const { text, messages } = expand(
+      `export syntax twice:jsxChild {
+         rule { {twice} $body:jsxChild {end} } => {
+           $body
+           $body
+         }
+       }`,
+      `import { twice } from "./macros.sts" for syntax;
+       import { Fragment, h } from "./jsx-runtime.js";
+       void h;
+       void Fragment;
+       export const doubled = (
+         <ul>
+           {twice}
+             <li>x</li>
+           {end}
+         </ul>
+       );`,
+      { runtime },
+    );
+    expect(messages).toEqual([]);
+    expect(text.match(/<li>x<\/li>/gu)).toHaveLength(2);
+  });
+
   test("expands a type macro over a repetition", () => {
     const { text, messages } = expand(
       `export syntax matrix:type {
