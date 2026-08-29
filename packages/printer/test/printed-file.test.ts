@@ -233,3 +233,67 @@ describe("expanded TypeScript printing", () => {
     expect(Object.isFrozen(envelope)).toBe(true);
   });
 });
+
+describe("trivia regions", () => {
+  test("keeps a token's own region exactly the token", () => {
+    const origins = new OriginStore();
+    // The source reads `let  value`, so `value` sits at 5..10 behind two
+    // spaces of leading trivia.
+    const valueOrigin = origins.source(sourceId, { start: 5, end: 10 });
+    const keyword = createToken({
+      id: syntaxIds.allocate(),
+      span: { start: 0, end: 3 },
+      origin: origins.source(sourceId, { start: 0, end: 3 }),
+      scopes,
+      kind: "keyword",
+      raw: "let",
+      value: "let",
+      leadingTrivia: [],
+    });
+    const value = createToken({
+      id: syntaxIds.allocate(),
+      span: { start: 5, end: 10 },
+      origin: valueOrigin,
+      scopes,
+      kind: "identifier",
+      raw: "value",
+      value: "value",
+      leadingTrivia: [
+        {
+          kind: "whitespace",
+          raw: "  ",
+          span: { start: 3, end: 5 },
+          hasLineBreak: false,
+        },
+      ],
+    });
+    const printed = printExpandedFile({
+      syntax: [keyword, value],
+      origins,
+      trace: [],
+    });
+    expect(printed.text).toBe("let  value");
+
+    const own = printed.originMap.entries.find(
+      (entry) => entry.origin === valueOrigin && entry.kind === "source",
+    );
+    // The region covers `value` alone. Were the two spaces folded in, every
+    // offset inside the token would project one or two characters late.
+    expect(own).toBeDefined();
+    expect(printed.text.slice(own?.generatedStart, own?.generatedEnd)).toBe(
+      "value",
+    );
+    expect((own?.generatedEnd ?? 0) - (own?.generatedStart ?? 0)).toBe(
+      "value".length,
+    );
+
+    // The trivia keeps a region of its own so the map still covers the file.
+    const trivia = printed.originMap.entries.find(
+      (entry) => entry.generatedEnd === own?.generatedStart,
+    );
+    expect(trivia?.kind).toBe("synthesized");
+    expect(
+      printed.text.slice(trivia?.generatedStart, trivia?.generatedEnd),
+    ).toBe("  ");
+  });
+});

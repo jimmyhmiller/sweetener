@@ -145,9 +145,20 @@ export async function defineBenchmarkScenarios(repositoryRoot) {
         }),
       );
       const printed = printExpandedFile({ syntax, origins, trace: [] });
-      if (printed.originMap.entries.length !== count)
+      // One region per token, plus one for each token's leading trivia, which
+      // is kept separate so a position inside a token projects back to the
+      // matching offset in its source span instead of being shifted by the
+      // width of the layout printed in front of it. The shape of those regions
+      // is asserted in the printer's own tests; this stays a constant-time
+      // check so the scenario measures printing rather than checking.
+      const regions = printed.originMap.entries.length;
+      if (regions !== count * 2 - 1)
         throw new Error("Generated printer lost origin regions");
-      return { tokens: count, outputBytes: Buffer.byteLength(printed.text) };
+      return {
+        tokens: count,
+        regions,
+        outputBytes: Buffer.byteLength(printed.text),
+      };
     },
   };
   const serviceFile = "/virtual/benchmark/main.ts";

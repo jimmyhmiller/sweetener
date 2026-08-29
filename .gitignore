@@ -20,3 +20,6 @@ examples/*/.output/
 examples/*/.svelte-kit/
 examples/*/.sweetener/
 examples/*/node_modules/.nitro/
+
+# Local git worktrees
+.worktrees/
