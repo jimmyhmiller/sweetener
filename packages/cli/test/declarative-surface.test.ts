@@ -654,6 +654,29 @@ describe("where a macro may be written", () => {
     expect(text).not.toContain("twice(");
   });
 
+  test("expands in a computed property name and an export default", () => {
+    const { text, messages } = expand(
+      macros,
+      `import { twice } from "./macros.sts" for syntax;
+       export const keyed = { [globalThis.String(twice(1))]: 2 };
+       export default twice(3);`,
+    );
+    expect(messages).toEqual([]);
+    // A property name is not an expression, but a computed one holds one.
+    expect(text).not.toContain("twice(");
+    expect(text).toContain("export default [3,3]");
+  });
+
+  test("leaves a plain property name alone", () => {
+    const { text, messages } = expand(
+      macros,
+      `import { twice } from "./macros.sts" for syntax;
+       export const named = { twice: 1 };`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain("{ twice: 1 }");
+  });
+
   test("expands after an equals sign, wherever it stands", () => {
     const { text, messages } = expand(
       macros,
@@ -722,6 +745,23 @@ describe("type positions", () => {
     expect(messages).toEqual([]);
     // A return type, a constraint, a union member, and the right-hand side of
     // a type alias are all types, however the syntax around them is walked.
+    expect(text).not.toContain("boxed<");
+  });
+
+  test("expands in the remaining type positions", () => {
+    const { text, messages } = expand(
+      macros,
+      `import { boxed } from "./macros.sts" for syntax;
+       export type Conditional<T> = T extends string
+         ? boxed<number>
+         : boxed<string>;
+       export type Tuple = readonly [boxed<number>, boxed<string>];
+       export type Fn = (value: boxed<number>) => boxed<string>;
+       export type Mapped = { readonly [K in "a" | "b"]: boxed<number> };`,
+    );
+    expect(messages).toEqual([]);
+    // A conditional branch, a tuple element, and a function type's return are
+    // all types, and a bracket or parenthesis in a type position holds types.
     expect(text).not.toContain("boxed<");
   });
 

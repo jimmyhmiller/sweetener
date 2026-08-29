@@ -419,9 +419,21 @@ export function expandMacroSyntax(
     const previous = preceding.at(-1);
     if (previous?.tag !== "token") return false;
     if (
-      [":", "as", "satisfies", "extends", "|", "&", "<", ","].includes(
-        previous.raw,
-      )
+      [
+        ":",
+        "as",
+        "satisfies",
+        "extends",
+        "|",
+        "&",
+        "<",
+        ",",
+        "?",
+        "[",
+        "(",
+        "=>",
+        "readonly",
+      ].includes(previous.raw)
     )
       return true;
     // The `=` of a type alias introduces a type, unlike every other `=`.
@@ -443,7 +455,10 @@ export function expandMacroSyntax(
    */
   const initializerFollows = (preceding: readonly Syntax[]): boolean => {
     const previous = preceding.at(-1);
-    return previous?.tag === "token" && previous.raw === "=";
+    return (
+      previous?.tag === "token" &&
+      (previous.raw === "=" || previous.raw === "default")
+    );
   };
 
   /** Whether the next node stands where a declaration names what it binds. */
@@ -1300,8 +1315,30 @@ export function expandMacroSyntax(
                     child.tag === "group" && child.delimiter === "parenthesis",
                 );
             if (colon >= 0 && !methodHead) {
+              // A property name is not an expression, but a computed one holds
+              // one inside its brackets.
+              const key = member.slice(0, colon + 1).map((child) => {
+                if (child.tag !== "group" || child.delimiter !== "bracket")
+                  return child;
+                const nested = visit(
+                  child.children,
+                  currentEnvironment,
+                  "expr",
+                  parentInvocation,
+                  lexicalModule,
+                  contexts,
+                  false,
+                  recursiveBinding,
+                );
+                currentEnvironment = nested.environment;
+                return createGroup({
+                  ...child,
+                  id: options.allocateSyntaxId(),
+                  children: nested.syntax,
+                });
+              });
               children.push(
-                ...member.slice(0, colon + 1),
+                ...key,
                 ...expandExpression(member.slice(colon + 1)),
               );
             } else {
@@ -1350,12 +1387,18 @@ export function expandMacroSyntax(
                   catchBinderFollows(output)
                 ? "binding"
                 : node.tag === "group" &&
-                    category !== "expr" &&
-                    ((node.delimiter === "parenthesis" &&
-                      conditionFollows(output)) ||
-                      initializerFollows(output))
-                  ? "expr"
-                  : category;
+                    category !== "type" &&
+                    (node.delimiter === "bracket" ||
+                      node.delimiter === "parenthesis") &&
+                    typePositionFollows(output)
+                  ? "type"
+                  : node.tag === "group" &&
+                      category !== "expr" &&
+                      ((node.delimiter === "parenthesis" &&
+                        conditionFollows(output)) ||
+                        initializerFollows(output))
+                    ? "expr"
+                    : category;
         const statementBody =
           node.tag === "group" &&
           node.delimiter === "brace" &&
