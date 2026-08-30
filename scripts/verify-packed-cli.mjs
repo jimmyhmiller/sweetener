@@ -192,24 +192,32 @@ try {
       for (const subpath of subpaths)
         importable.push(join(item.name, subpath).replaceAll("\\", "/"));
   }
+  // One process each, rather than one process for all of them. A package
+  // whose whole purpose is a global side effect — a loader hook that installs
+  // itself on import — would otherwise decide the fate of every package
+  // imported after it, and report their failures as their own.
   await writeFile(
-    join(directory, "import-check.mjs"),
-    `${importable
-      .map(
-        (name) =>
-          `try { await import(${JSON.stringify(name)}); } catch (error) { process.stdout.write(${JSON.stringify(name)} + ": " + (error?.message ?? String(error)) + "\\n"); }`,
-      )
-      .join("\n")}\n`,
+    join(directory, "import-one.mjs"),
+    `await import(process.argv[2]);\n`,
     "utf8",
   );
-  const failedImports = execFileSync(
-    process.execPath,
-    [join(directory, "import-check.mjs")],
-    { cwd: directory, encoding: "utf8", stdio: "pipe" },
-  ).trim();
-  if (failedImports.length > 0)
-    for (const line of failedImports.split("\n"))
-      problems.push(`a consumer cannot import ${line}`);
+  for (const specifier of importable) {
+    try {
+      execFileSync(
+        process.execPath,
+        [join(directory, "import-one.mjs"), specifier],
+        { cwd: directory, encoding: "utf8", stdio: "pipe" },
+      );
+    } catch (error) {
+      const detail =
+        error instanceof Error && "stderr" in error
+          ? (String(error.stderr ?? error.message)
+              .split("\n")
+              .find((line) => line.trim().length > 0) ?? error.message)
+          : String(error);
+      problems.push(`a consumer cannot import ${specifier}: ${detail.trim()}`);
+    }
+  }
 
   const cli = release.packages.find(({ name }) => name === "@sweetener/cli");
   if (cli === undefined) problems.push("no @sweetener/cli in the release");
