@@ -92,6 +92,10 @@ class MaterializedRegion implements OriginQueryResult {
     this.primary = primary;
     this.sources = sources;
     this.#compute = compute;
+    // Handed to callers like every other value here. The remembered stack
+    // lives in a private field, which freezing does not reach, so deferring
+    // it still works.
+    Object.freeze(this);
   }
 
   get expansionStack(): readonly ExpansionFrame[] {
