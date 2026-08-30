@@ -368,6 +368,10 @@ importers:
       typescript:
         specifier: npm:@typescript/typescript6@6.0.2
         version: '@typescript/typescript6@6.0.2'
+    devDependencies:
+      '@jridgewell/source-map':
+        specifier: 0.3.11
+        version: 0.3.11
 
   packages/compiler:
     dependencies:

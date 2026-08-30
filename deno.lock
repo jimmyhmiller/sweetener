@@ -41,6 +41,7 @@
       "packages/cli": {
         "packageJson": {
           "dependencies": [
+            "npm:@jridgewell/source-map@0.3.11",
             "npm:@typescript/typescript6@6.0.2"
           ]
         }

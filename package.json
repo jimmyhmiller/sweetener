@@ -34,6 +34,7 @@
     "compatibility:probe": "pnpm build && node scripts/compatibility-probe.mjs",
     "check:release-spec": "node scripts/release-spec-check.mjs",
     "samples:setup": "pnpm --dir samples/external/project-graph --ignore-workspace install --lockfile=false && pnpm --dir samples/external/macro-editor --ignore-workspace install --lockfile=false && pnpm --dir samples/external/default-project --ignore-workspace install --lockfile=false && pnpm --dir samples/external/javascript-project --ignore-workspace install --lockfile=false",
+    "scaffold:check": "pnpm build && node scripts/verify-scaffold.mjs",
     "samples:check": "pnpm build && pnpm samples:setup && node samples/external/project-graph/run.mjs && node samples/external/macro-editor/run.mjs && node samples/external/default-project/run.mjs && node samples/external/javascript-project/run.mjs",
     "playground": "pnpm --dir playground dev",
     "playground:build": "pnpm --dir playground build",
@@ -41,7 +42,7 @@
     "release:stage": "pnpm build && node scripts/stage-alpha-release.mjs",
     "release:check": "pnpm release:stage && node scripts/release-check.mjs && node scripts/verify-packed-cli.mjs",
     "release:verify": "pnpm release:stage && node scripts/verify-alpha-release.mjs",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm check:boundaries && pnpm check:declarative-boundary && pnpm acceptance:check && pnpm check:release-spec && pnpm samples:check && pnpm examples:build && pnpm release:check && pnpm status > /dev/null && pnpm status:check"
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm check:boundaries && pnpm check:declarative-boundary && pnpm acceptance:check && pnpm check:release-spec && pnpm scaffold:check && pnpm samples:check && pnpm examples:build && pnpm release:check && pnpm status > /dev/null && pnpm status:check"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

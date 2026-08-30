@@ -27,5 +27,8 @@
     "@sweetener/syntax": "workspace:*",
     "@sweetener/typescript-host": "workspace:*",
     "typescript": "npm:@typescript/typescript6@6.0.2"
+  },
+  "devDependencies": {
+    "@jridgewell/source-map": "0.3.11"
   }
 }
