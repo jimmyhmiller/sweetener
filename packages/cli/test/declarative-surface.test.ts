@@ -1095,3 +1095,69 @@ export function* run(): Generator<number, readonly number[], unknown> {
     expect(compact).toContain("yield*[1,2]");
   });
 });
+
+describe("#fresh", () => {
+  test("gives a different name to each occurrence in one expansion", () => {
+    // `#fresh` is the way a macro asks for a name that cannot collide, and it
+    // used to collide with itself: two of them emitted the same identifier,
+    // which TypeScript rejected as a redeclaration.
+    const { text, messages } = expand(
+      `export syntax pair:stmt {
+         rule { pair($a:expr, $b:expr); } => {
+           const #fresh("tmp") = $a;
+           const #fresh("tmp") = $b;
+         }
+       }`,
+      `import { pair } from "./macros.sts" for syntax;
+export function demo(): number {
+  pair(1, 2);
+  return 0;
+}
+`,
+    );
+    expect(messages).toEqual([]);
+    const names = [...text.matchAll(/const (tmp\w*) =/gu)].map(
+      ([, name]) => name,
+    );
+    expect(names).toHaveLength(2);
+    expect(new Set(names).size).toBe(2);
+  });
+
+  test("gives a different name to each turn of a repetition", () => {
+    const { text, messages } = expand(
+      `export syntax lets:stmt {
+         rule { lets($($value:expr),*); } => { $(const #fresh("tmp") = $value;)* }
+       }`,
+      `import { lets } from "./macros.sts" for syntax;
+export function demo(): number {
+  lets(1, 2, 3);
+  return 0;
+}
+`,
+    );
+    expect(messages).toEqual([]);
+    const names = [...text.matchAll(/const (tmp\w*) =/gu)].map(
+      ([, name]) => name,
+    );
+    expect(names).toHaveLength(3);
+    expect(new Set(names).size).toBe(3);
+  });
+
+  test("still avoids a name the call site already uses", () => {
+    const { text, messages } = expand(
+      `export syntax one:stmt {
+         rule { one($value:expr); } => { const #fresh("tmp") = $value; }
+       }`,
+      `import { one } from "./macros.sts" for syntax;
+export function demo(): number {
+  const tmp = 9;
+  one(1);
+  return tmp;
+}
+`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain("const tmp = 9;");
+    expect(text).toMatch(/const tmp_\d+ =/u);
+  });
+});

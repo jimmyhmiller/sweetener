@@ -182,12 +182,23 @@ class Instantiator {
           this.#options.invocationOrigin,
           "generated-binding",
         );
+        // A scope of its own, so two `#fresh` of the same hint in one
+        // expansion are two bindings. Sharing the invocation's scopes made
+        // them one, and a template asking for two temporaries emitted the same
+        // name twice — which TypeScript then rejected as a redeclaration.
+        const scopes = this.#options.scopeStore.add(
+          this.#introducedScopes(this.#options.definitionScopes),
+          this.#options.scopeStore.freshScope(
+            "lexical",
+            `fresh:${piece.hint}:${String(piece.ordinal)}`,
+          ),
+        );
         const token = this.#generatedToken(
           "identifier",
           piece.hint,
           piece.hint,
           origin,
-          this.#introducedScopes(this.#options.definitionScopes),
+          scopes,
           piece.prototype,
         );
         this.#freshBindings.push(
