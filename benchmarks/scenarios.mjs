@@ -26,6 +26,7 @@ import {
 import ts from "typescript";
 import { defineReaderBenchmarks } from "./reader.mjs";
 import { defineExpansionBenchmark } from "./expansion.mjs";
+import { defineProjectScaleBenchmark } from "./project-scale.mjs";
 import { defineScopeStoreBenchmarks } from "./scope-store.mjs";
 
 function countTokens(root) {
@@ -44,6 +45,7 @@ function countTokens(root) {
 
 export async function defineBenchmarkScenarios(repositoryRoot) {
   const expansionScenario = await defineExpansionBenchmark(repositoryRoot);
+  const projectScaleScenario = await defineProjectScaleBenchmark();
   const readerWorkloads = await defineReaderBenchmarks(repositoryRoot);
   const readerScenarios = readerWorkloads.map((workload) => ({
     id: `reader/${workload.id}`,
@@ -318,6 +320,7 @@ export async function defineBenchmarkScenarios(repositoryRoot) {
     cacheScenario,
     matcherScenario,
     expansionScenario,
+    projectScaleScenario,
     ...hygieneScenarios,
   ];
 }

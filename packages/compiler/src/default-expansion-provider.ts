@@ -1258,11 +1258,18 @@ export class DefaultProjectExpansionProvider
           }),
         ),
       ];
-      const unavailable = new Set(
-        tokensIn(runtime)
-          .filter(({ kind }) => kind === "identifier")
-          .map(({ raw }) => raw),
-      );
+      // Both of these serve the runtime imports a file needs because it
+      // invoked a macro defined elsewhere. A file that invoked none needs no
+      // imports, and walking all of its identifiers to name them would be
+      // answering a question nobody asked.
+      const unavailable =
+        invokedOwners.length === 0
+          ? new Set<string>()
+          : new Set(
+              tokensIn(runtime)
+                .filter(({ kind }) => kind === "identifier")
+                .map(({ raw }) => raw),
+            );
       const synthesized = invokedOwners.map((owner) => ({
         owner,
         ...definitionRuntimeImports({
@@ -1280,7 +1287,9 @@ export class DefaultProjectExpansionProvider
       const rawSpelling = new Map(
         tokensIn(printableSyntax).map((token) => [token.id, token.raw]),
       );
-      const rewrites = tokensIn(result.syntax).flatMap((token) => {
+      const rewrites = (
+        synthesized.length === 0 ? [] : tokensIn(result.syntax)
+      ).flatMap((token) => {
         const sources = new Set(
           origins
             .collectSourceOrigins(token.origin)

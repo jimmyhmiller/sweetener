@@ -23,6 +23,3 @@ examples/*/node_modules/.nitro/
 
 # Local git worktrees
 .worktrees/
-
-# Local performance scratch harness
-perf/
