@@ -57,6 +57,9 @@ importers:
       '@sweetener/cli':
         specifier: workspace:*
         version: link:../../packages/cli
+      '@sweetener/deno':
+        specifier: workspace:*
+        version: link:../../packages/deno
 
   examples/next:
     dependencies:
@@ -398,6 +401,15 @@ importers:
       '@sweetener/typescript-host':
         specifier: workspace:*
         version: link:../typescript-host
+      typescript:
+        specifier: npm:@typescript/typescript6@6.0.2
+        version: '@typescript/typescript6@6.0.2'
+
+  packages/deno:
+    dependencies:
+      '@sweetener/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       typescript:
         specifier: npm:@typescript/typescript6@6.0.2
         version: '@typescript/typescript6@6.0.2'

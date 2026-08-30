@@ -212,20 +212,20 @@ export function detectHost(options: {
   if (hasFile("deno.json", "deno.jsonc"))
     return {
       name: "Deno",
-      integration: "@sweetener/cli",
+      integration: "@sweetener/deno",
       wiring: [
-        `Deno runs the expanded TypeScript rather than loading a plugin, so`,
-        `expand ahead of time from a build script:`,
+        `Preload the loader hook, which expands sources as they are imported:`,
         ``,
-        `  import { emitStandalone } from "@sweetener/cli";`,
+        `  deno run --import @sweetener/deno/register app.ts`,
         ``,
-        `  const result = emitStandalone({`,
-        `    fileNames: ["src/macros.sts", "src/example.sts"],`,
-        `    outDir: ".sweetener",`,
-        `  });`,
+        `Then import a .sts file directly; there is no build step. Point`,
+        `SWEETENER_CONFIG at this project's sweetener.json if it is not beside`,
+        `the sources.`,
         ``,
-        `Then point deno check and deno run at .sweetener, and add a task for`,
-        `the build step so it runs before them.`,
+        `Deno builds the module graph for \`deno test\` and \`deno check\` before`,
+        `loader hooks apply, so those two reject a .sts import. For them,`,
+        `expand ahead of time with emitStandalone from @sweetener/cli and`,
+        `point them at the output.`,
       ],
     };
   if (has("bun") || hasFile("bunfig.toml"))

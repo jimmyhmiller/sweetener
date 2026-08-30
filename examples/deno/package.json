@@ -6,6 +6,7 @@
     "build": "deno task verify"
   },
   "dependencies": {
-    "@sweetener/cli": "workspace:*"
+    "@sweetener/cli": "workspace:*",
+    "@sweetener/deno": "workspace:*"
   }
 }

@@ -247,6 +247,9 @@ describe("runtimes without a bundler", () => {
     // none; writing one into it would be the wrong thing entirely.
     const output = runtime({ "deno.json": `{ "tasks": {} }\n` });
     expect(output).toContain("Detected Deno");
+    expect(output).toContain("@sweetener/deno/register");
+    // And the part of it that does not work, said rather than discovered.
+    expect(output).toContain("deno test");
     expect(output).toContain("emitStandalone");
     expect(output).not.toContain("package.json");
   });

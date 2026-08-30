@@ -1,10 +1,9 @@
 {
   "tasks": {
+    "start": "SWEETENER_CONFIG=../sweetener.json deno run --allow-read --allow-env --allow-net --import ./node_modules/@sweetener/deno/dist/src/register.js app.ts",
+    "verify": "SWEETENER_CONFIG=../sweetener.json deno run --allow-read --allow-env --import ./node_modules/@sweetener/deno/dist/src/register.js verify.ts",
     "expand": "deno run --allow-read=../.. --allow-write=.sweetener --allow-env build.ts",
-    "check": "deno task expand && deno check app.ts",
-    "start": "deno task expand && deno run --allow-net app.ts",
-    "dev": "deno run --allow-read=../.. --allow-write=.sweetener --allow-env --allow-net --allow-run dev.ts",
-    "verify": "deno task check && deno test --allow-read=. app.test.ts"
+    "dev": "deno run --allow-read --allow-env --allow-net --allow-run dev.ts"
   },
   "exclude": [".sweetener"]
 }

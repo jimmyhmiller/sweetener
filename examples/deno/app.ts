@@ -1,4 +1,4 @@
-import { showcase } from "./.sweetener/showcase.ts";
+import { showcase } from "../macro-suite/showcase.sts";
 
 export function page(): string {
   const cards = showcase.cards

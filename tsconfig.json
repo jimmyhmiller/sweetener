@@ -17,6 +17,7 @@
     { "path": "packages/cli" },
     { "path": "packages/babel" },
     { "path": "packages/jest" },
+    { "path": "packages/deno" },
     { "path": "packages/node" },
     { "path": "packages/parcel-transformer" },
     { "path": "packages/unplugin" },

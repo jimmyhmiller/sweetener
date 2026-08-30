@@ -35,6 +35,14 @@ export interface SweetenerSession {
   transform(
     request: SweetenerTransformRequest,
   ): Promise<SweetenerTransformResult>;
+  /**
+   * The same expansion, without a promise around it.
+   *
+   * Expanding a file is synchronous work — it reads from disk and runs the
+   * compiler — and some hosts can only accept a synchronous answer. Deno's
+   * module loader hooks are one: they cannot await.
+   */
+  transformSync(request: SweetenerTransformRequest): SweetenerTransformResult;
   invalidate(paths: readonly string[]): void;
   close(): Promise<void>;
 }
@@ -103,72 +111,81 @@ export function createSweetenerSession(
   const cache = new Map<string, CacheEntry>();
   let closed = false;
 
+  const transformSync = (
+    request: SweetenerTransformRequest,
+  ): SweetenerTransformResult => {
+    if (closed) throw new Error("Sweetener session is closed");
+    const filename = canonical(request.filename);
+    const onDisk = readFileSync(filename, "utf8");
+    if (onDisk !== request.code)
+      throw new Error(
+        `Sweetener source for ${filename} changed before expansion; invalidate and retry from disk`,
+      );
+    const configFile = canonical(
+      request.configFile ?? discoverConfig(filename),
+    );
+    const cacheKey = fingerprint([
+      filename,
+      request.code,
+      configFile,
+      request.mode ?? "development",
+    ]);
+    const existing = cache.get(cacheKey);
+    if (
+      existing !== undefined &&
+      existing.dependencyFingerprint ===
+        fingerprintDependencies(existing.dependencies)
+    )
+      return existing.result;
+    if (existing !== undefined) cache.delete(cacheKey);
+
+    const project = loadSweetProject(configFile);
+    const expanded = provider.expandProject(project);
+    const inspected = provider.inspectSource(filename);
+    const sourceStem = filename.replace(/\.s(?:ts|js)x?$/u, "");
+    const generated = expanded.files.find(
+      (file) =>
+        canonical(file.fileName).replace(/\.(?:ts|js)x?$/u, "") === sourceStem,
+    );
+    if (
+      inspected === undefined ||
+      inspected.sourceMap === undefined ||
+      generated === undefined
+    )
+      throw new Error(`${filename} is not opted into Sweetener expansion`);
+    const dependencies = Object.freeze(
+      [...new Set([configFile, ...provider.macroDependencies(project)])]
+        .map(canonical)
+        .sort(),
+    );
+    const result: SweetenerTransformResult = Object.freeze({
+      code: generated.generated.text,
+      originMap: generated.generated.originMap,
+      map: inspected.sourceMap,
+      diagnostics: Object.freeze([...expanded.diagnostics]),
+      dependencies,
+      missingDependencies: Object.freeze([]),
+      trace: inspected.trace,
+      cacheKey,
+      virtualFilename: canonical(generated.fileName),
+    });
+    cache.set(cacheKey, {
+      result,
+      dependencies: new Set(dependencies),
+      dependencyFingerprint: fingerprintDependencies(dependencies),
+    });
+    return result;
+  };
+
   return Object.freeze({
+    transformSync,
+    // Declared async so a failure is still a rejected promise rather than a
+    // synchronous throw, which is what every existing caller expects. There is
+    // nothing to await inside it.
     async transform(
       request: SweetenerTransformRequest,
     ): Promise<SweetenerTransformResult> {
-      if (closed) throw new Error("Sweetener session is closed");
-      const filename = canonical(request.filename);
-      const onDisk = readFileSync(filename, "utf8");
-      if (onDisk !== request.code)
-        throw new Error(
-          `Sweetener source for ${filename} changed before expansion; invalidate and retry from disk`,
-        );
-      const configFile = canonical(
-        request.configFile ?? discoverConfig(filename),
-      );
-      const cacheKey = fingerprint([
-        filename,
-        request.code,
-        configFile,
-        request.mode ?? "development",
-      ]);
-      const existing = cache.get(cacheKey);
-      if (
-        existing !== undefined &&
-        existing.dependencyFingerprint ===
-          fingerprintDependencies(existing.dependencies)
-      )
-        return existing.result;
-      if (existing !== undefined) cache.delete(cacheKey);
-
-      const project = loadSweetProject(configFile);
-      const expanded = provider.expandProject(project);
-      const inspected = provider.inspectSource(filename);
-      const sourceStem = filename.replace(/\.s(?:ts|js)x?$/u, "");
-      const generated = expanded.files.find(
-        (file) =>
-          canonical(file.fileName).replace(/\.(?:ts|js)x?$/u, "") ===
-          sourceStem,
-      );
-      if (
-        inspected === undefined ||
-        inspected.sourceMap === undefined ||
-        generated === undefined
-      )
-        throw new Error(`${filename} is not opted into Sweetener expansion`);
-      const dependencies = Object.freeze(
-        [...new Set([configFile, ...provider.macroDependencies(project)])]
-          .map(canonical)
-          .sort(),
-      );
-      const result: SweetenerTransformResult = Object.freeze({
-        code: generated.generated.text,
-        originMap: generated.generated.originMap,
-        map: inspected.sourceMap,
-        diagnostics: Object.freeze([...expanded.diagnostics]),
-        dependencies,
-        missingDependencies: Object.freeze([]),
-        trace: inspected.trace,
-        cacheKey,
-        virtualFilename: canonical(generated.fileName),
-      });
-      cache.set(cacheKey, {
-        result,
-        dependencies: new Set(dependencies),
-        dependencyFingerprint: fingerprintDependencies(dependencies),
-      });
-      return result;
+      return transformSync(request);
     },
     invalidate(paths: readonly string[]): void {
       const invalidated = new Set(paths.map(canonical));

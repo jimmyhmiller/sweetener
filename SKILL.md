@@ -50,6 +50,11 @@ Deno and Bun are recognised by their own config, so a project with no
 `package.json` is still read as the project it is rather than an empty
 directory.
 
+On Deno, `deno run --import @sweetener/deno/register app.ts` expands sources as
+they are imported, with no build step. `deno test` and `deno check` build their
+module graph before loader hooks apply and so reject a `.sts` import; for those,
+expand ahead of time with `emitStandalone` from `@sweetener/cli`.
+
 ## What it will and will not do
 
 `init` prints every file it would create and then asks. Answer no and nothing
