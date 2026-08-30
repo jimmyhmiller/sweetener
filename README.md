@@ -202,3 +202,11 @@ mapping, integrations, compatibility checks, and alpha release artifacts are
 implemented and tested locally. npm publication and a release tag remain
 intentionally blocked until explicitly authorized. See [STATUS.md](STATUS.md)
 for the generated capability dashboard and current validation evidence.
+
+Two limits are worth knowing before adopting it. There is no editor
+extension yet: the language-service mapping that one would be built on is
+implemented and tested, but nothing ships that connects it to an editor, so
+`.sts` files get no hover, diagnostics, or go-to-definition in an IDE today.
+And renaming a symbol through a macro invocation is declined rather than
+attempted, because a captured reference carries no proof of which binding
+each copy denotes.
