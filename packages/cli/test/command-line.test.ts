@@ -67,6 +67,7 @@ describe("sweet-ts command line", () => {
     const inspectionProvider = {
       inspectSource: () => ({
         origins: new OriginStore(),
+        diagnostics: [],
         sourceId: 20 as SourceId,
         sourceText: "value",
         generated: {
@@ -111,6 +112,7 @@ describe("sweet-ts command line", () => {
     const inspectionProvider = {
       inspectSource: () => ({
         origins: new OriginStore(),
+        diagnostics: [],
         sourceId: 1 as never,
         sourceText: "form",
         generated: {

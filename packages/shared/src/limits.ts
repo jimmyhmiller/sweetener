@@ -84,10 +84,20 @@ export class ResourceTracker {
   #matcherSteps = 0;
   #nestingDepth = 0;
 
+  /**
+   * When this tracker started, so `deadlineMs` can mean how long expansion may
+   * take rather than a moment in history. Read as an absolute time, any
+   * plausible setting — `deadlineMs: 30000` for thirty seconds — was already
+   * decades past and failed on the first check.
+   */
+  readonly #startedAt: number;
+
   constructor(
     readonly budget: ResourceBudget,
     private readonly now: () => number = Date.now,
-  ) {}
+  ) {
+    this.#startedAt = now();
+  }
 
   get usage(): ResourceUsage {
     return {
@@ -163,13 +173,12 @@ export class ResourceTracker {
 
   checkDeadline(): void {
     if (this.budget.deadlineMs === undefined) return;
-    const observed = this.now();
-    if (observed > this.budget.deadlineMs) {
-      throw new ResourceLimitError(
-        "deadline",
-        this.budget.deadlineMs,
-        observed,
-      );
+    // At or past the budget, so a deadline of zero permits no work at all
+    // rather than quietly allowing anything that finishes within the same
+    // millisecond.
+    const elapsed = this.now() - this.#startedAt;
+    if (elapsed >= this.budget.deadlineMs) {
+      throw new ResourceLimitError("deadline", this.budget.deadlineMs, elapsed);
     }
   }
 

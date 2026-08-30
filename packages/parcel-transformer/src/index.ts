@@ -4,11 +4,29 @@ import { createSweetenerSession } from "@sweetener/compiler";
 
 const session = createSweetenerSession();
 
+interface SweetenerTransformerConfig {
+  readonly configFile?: string | undefined;
+}
+
 export default new Transformer({
-  async transform({ asset, options }) {
+  // Read from .sweetenerrc / a `sweetener` key, so a project whose macros are
+  // described by something other than a tsconfig beside them can say where.
+  // Without this there was no way to point the transformer at a config at all.
+  async loadConfig({ config }) {
+    const found = await config.getConfig<SweetenerTransformerConfig>(
+      [".sweetenerrc", ".sweetenerrc.json"],
+      { packageKey: "sweetener" },
+    );
+    return found?.contents ?? {};
+  },
+
+  async transform({ asset, options, config }) {
+    const configFile = (config as SweetenerTransformerConfig | undefined)
+      ?.configFile;
     const result = await session.transform({
       code: await asset.getCode(),
       filename: asset.filePath,
+      ...(configFile === undefined ? {} : { configFile }),
       mode: options.mode === "production" ? "production" : "development",
     });
     if (result.diagnostics.length > 0)

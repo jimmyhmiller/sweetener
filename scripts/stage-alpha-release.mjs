@@ -57,6 +57,15 @@ for (const directory of packageDirectories) {
     ...(manifest.main === undefined ? {} : { main: manifest.main }),
     ...(manifest.types === undefined ? {} : { types: manifest.types }),
     ...(manifest.bin === undefined ? {} : { bin: manifest.bin }),
+    // A package that imports its host at runtime — @babel/core, webpack, jest,
+    // vite — has to say so, or it installs cleanly, warns about nothing, and
+    // fails on the first import.
+    ...(manifest.peerDependencies === undefined
+      ? {}
+      : { peerDependencies: manifest.peerDependencies }),
+    ...(manifest.peerDependenciesMeta === undefined
+      ? {}
+      : { peerDependenciesMeta: manifest.peerDependenciesMeta }),
     files: manifest.files ?? ["dist"],
     dependencies,
     // The range the compatibility matrix and its workflow actually verify.

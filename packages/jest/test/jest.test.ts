@@ -1,9 +1,10 @@
 import { execFile } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { expect, test } from "vitest";
+import transformer from "../src/index.js";
 
 const execute = promisify(execFile);
 
@@ -53,4 +54,55 @@ test("Jest executes .sts through its real async transformer API", async () => {
     },
   );
   expect(result.stderr).toMatch(/1 passed/u);
+});
+
+test("re-expands after a macro changes, with no configFile given", async () => {
+  // The cache key hashed the macros only when a configFile was passed, so a
+  // project without one kept serving an expansion from before its macros were
+  // edited — and kept passing tests that should have changed.
+  const directory = mkdtempSync(join(tmpdir(), "sweet-jest-stale-"));
+  const macros = join(directory, "macros.sts");
+  writeFileSync(
+    macros,
+    `export syntax twice:expr {\n  rule { twice($value:expr) } => { [$value, $value] }\n}\n`,
+    "utf8",
+  );
+  const main = join(directory, "value.sts");
+  writeFileSync(
+    main,
+    `import { twice } from "./macros.sts" for syntax;\nexport const answer = twice(21);\n`,
+    "utf8",
+  );
+  writeFileSync(
+    join(directory, "tsconfig.json"),
+    JSON.stringify({
+      compilerOptions: {
+        strict: true,
+        noEmit: true,
+        target: "ES2022",
+        module: "ESNext",
+        moduleResolution: "Bundler",
+      },
+      sweet: { macroExtensions: [".sts"] },
+      files: ["macros.sts", "value.sts"],
+    }),
+    "utf8",
+  );
+
+  const options = {
+    config: { rootDir: directory },
+    transformerConfig: {},
+  };
+  const source = readFileSync(main, "utf8");
+  const before = await transformer.getCacheKeyAsync(source, main, options);
+
+  writeFileSync(
+    macros,
+    `export syntax twice:expr {\n  rule { twice($value:expr) } => { [$value, $value, $value] }\n}\n`,
+    "utf8",
+  );
+  const after = await transformer.getCacheKeyAsync(source, main, options);
+
+  // The file itself did not change; the macros it expands through did.
+  expect(after).not.toBe(before);
 });

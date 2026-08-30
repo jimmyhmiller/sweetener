@@ -200,13 +200,6 @@ export function parseSweetCompilerOptions(value: unknown): {
   });
 }
 
-function macroExtensionScriptKind(extension: string): ts.ScriptKind {
-  if (extension === ".stsx") return ts.ScriptKind.TSX;
-  if (extension === ".sjsx") return ts.ScriptKind.JSX;
-  if (extension === ".sjs") return ts.ScriptKind.JS;
-  return ts.ScriptKind.TS;
-}
-
 /**
  * Whether the project can contain JavaScript the expander has to handle.
  *
@@ -272,11 +265,16 @@ export function loadSweetProject(configPath: string): LoadedSweetProject {
   const read = ts.readConfigFile(absolute, ts.sys.readFile);
   const raw = read.config as Record<string, unknown> | undefined;
   const parsedSweet = parseSweetCompilerOptions(raw?.["sweet"]);
+  // Deferred, which is what makes a wildcard pick these up at all: TypeScript
+  // only admits an extra extension into `include` resolution when its kind
+  // says the host owns the file. Declared as TS, every .sts under an `include`
+  // glob was quietly left out of the program and the build still succeeded.
+  // How the file is then parsed comes from scriptKindForFileName, not here.
   const extraFileExtensions = parsedSweet.options.macroExtensions.map(
     (extension) => ({
       extension,
       isMixedContent: false,
-      scriptKind: macroExtensionScriptKind(extension),
+      scriptKind: ts.ScriptKind.Deferred,
     }),
   );
   // `allowJs` has to be settled before the file list is resolved: without it

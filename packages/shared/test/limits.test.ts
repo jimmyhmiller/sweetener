@@ -36,13 +36,21 @@ describe("resource budgets", () => {
     );
   });
 
-  it("checks an injected deadline clock", () => {
+  it("measures the deadline from when it started, not from the epoch", () => {
+    // A deadline is how long expansion may take. Compared against the clock
+    // directly, any plausible setting is a moment decades past and fails on
+    // the first check — which is what `deadlineMs: 30000` used to do.
+    let clock = 1_000_000;
     const tracker = new ResourceTracker(
       createResourceBudget({ deadlineMs: 10 }),
-      () => 11,
+      () => clock,
     );
+    expect(() => tracker.checkDeadline()).not.toThrow();
+    clock += 5;
+    expect(() => tracker.checkDeadline()).not.toThrow();
+    clock += 20;
     expect(() => tracker.checkDeadline()).toThrowError(
-      new ResourceLimitError("deadline", 10, 11),
+      new ResourceLimitError("deadline", 10, 25),
     );
   });
 

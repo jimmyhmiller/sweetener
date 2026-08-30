@@ -2,7 +2,20 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { transformAsync } from "@babel/core";
 import typescript from "@babel/preset-typescript";
-import { createSweetenerSession, loadSweetProject } from "@sweetener/compiler";
+import {
+  createSweetenerSession,
+  discoverSweetConfig,
+  loadSweetProject,
+} from "@sweetener/compiler";
+
+/** The governing config, or nothing when the file has none to find. */
+function discoverSweetConfigFor(sourcePath: string): string | undefined {
+  try {
+    return discoverSweetConfig(sourcePath);
+  } catch {
+    return undefined;
+  }
+}
 
 interface TransformerConfig {
   readonly configFile?: string | undefined;
@@ -22,7 +35,13 @@ const transformer = {
     const hash = createHash("sha256");
     hash.update(sourceText);
     hash.update(sourcePath);
-    const configFile = options.transformerConfig.configFile;
+    // The macros a file expands through are as much of its input as its own
+    // text. Hashing these only when a configFile was passed meant a project
+    // without one served an expansion from before its macros were edited, and
+    // kept passing tests that should have changed.
+    const configFile =
+      options.transformerConfig.configFile ??
+      discoverSweetConfigFor(sourcePath);
     if (configFile !== undefined) {
       const project = loadSweetProject(configFile);
       hash.update(readFileSync(configFile));

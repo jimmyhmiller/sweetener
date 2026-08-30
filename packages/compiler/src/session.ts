@@ -61,6 +61,16 @@ function canonical(fileName: string): string {
   );
 }
 
+/**
+ * The config that governs a file, found the way expansion finds it.
+ *
+ * Exported so an integration deciding what to cache against asks the same
+ * question the compiler does, rather than approximating it.
+ */
+export function discoverSweetConfig(fileName: string): string {
+  return discoverConfig(fileName);
+}
+
 function discoverConfig(fileName: string): string {
   let directory = dirname(resolve(fileName));
   const root = parse(directory).root;

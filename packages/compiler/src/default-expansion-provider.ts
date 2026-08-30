@@ -1392,6 +1392,17 @@ export class DefaultProjectExpansionProvider
           sourceText: file.sourceText,
           generated,
           origins,
+          // The ones raised against this file, so an inspection can say that
+          // what it holds is unexpanded rather than presenting it as output.
+          diagnostics: Object.freeze(
+            diagnostics
+              .filter(
+                ({ primaryOrigin }) => primaryOrigin.sourceId === file.sourceId,
+              )
+              .map((diagnostic) =>
+                asTypeScriptDiagnostic(diagnostic, bySource),
+              ),
+          ),
           generatedNames: Object.freeze(generatedNames),
           // Building a source map walks every printed region. Only the
           // build-tool transforms ask for one; `check` never does, so it is

@@ -3,6 +3,7 @@ import type {
   OriginalOriginQueryResult,
   PrintedExpandedFile,
 } from "@sweetener/printer";
+import type * as ts from "typescript";
 import type { SourceId } from "@sweetener/shared";
 import type { OriginStore } from "@sweetener/syntax";
 import type { RawSourceMap } from "@sweetener/typescript-host";
@@ -19,6 +20,13 @@ export interface SourceExpansionInspection {
   readonly generated: PrintedExpandedFile;
   readonly sourceMap?: RawSourceMap | undefined;
   readonly index: OriginQueryIndex;
+  /**
+   * What went wrong expanding this file, if anything.
+   *
+   * Without these an inspection could not tell a caller that what it holds is
+   * the unexpanded source, so `expand` printed it and reported success.
+   */
+  readonly diagnostics: readonly ts.Diagnostic[];
   /**
    * Origins behind the expansion. A language service maps an editor's position
    * through these, so an inspection that withholds them cannot drive one.

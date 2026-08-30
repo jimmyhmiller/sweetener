@@ -312,7 +312,13 @@ export function detectHost(options: {
       wiring: [
         `Add a rule to your webpack config:`,
         ``,
-        `  { test: /\\.sts$/, use: "@sweetener/webpack-loader" }`,
+        `  {`,
+        `    test: /\\.sts$/,`,
+        `    use: {`,
+        `      loader: "@sweetener/webpack-loader",`,
+        `      options: { configFile: resolve("sweetener.json") },`,
+        `    },`,
+        `  }`,
       ],
     };
   if (has("jest"))
@@ -322,13 +328,26 @@ export function detectHost(options: {
       wiring: [
         `Add the transform to your Jest config:`,
         ``,
-        `  transform: { "^.+\\.sts$": "@sweetener/jest" }`,
+        `  transform: {`,
+        `    "^.+\\.sts$": ["@sweetener/jest", { configFile: "sweetener.json" }],`,
+        `  }`,
+        ``,
+        `The configFile is what tells it which macros this project has, and`,
+        `what to re-expand when one of them changes.`,
       ],
     };
   return undefined;
 }
 
-const consumerConfig = (files: readonly string[]): string =>
+/**
+ * The config beside a project that already builds itself.
+ *
+ * A bundler emits the result itself and only wants the expansion, so nothing
+ * should be written to disk. Where no bundler was recognised the advice is to
+ * run `sweetener build`, and a config that cannot emit would have reported
+ * success while producing no files.
+ */
+const consumerConfig = (files: readonly string[], emit: boolean): string =>
   `${JSON.stringify(
     {
       compilerOptions: {
@@ -337,7 +356,9 @@ const consumerConfig = (files: readonly string[]): string =>
         moduleResolution: "Bundler",
         strict: true,
         skipLibCheck: true,
-        noEmit: true,
+        ...(emit
+          ? { declaration: true, outDir: "dist", rootDir: "src" }
+          : { noEmit: true }),
       },
       files,
     },
@@ -374,7 +395,10 @@ export function scaffoldIntoProject(options: {
     files: Object.freeze([
       {
         path: "sweetener.json",
-        text: consumerConfig(["src/macros.sts", "src/example.sts"]),
+        text: consumerConfig(
+          ["src/macros.sts", "src/example.sts"],
+          host === undefined,
+        ),
       },
       { path: join("src", "macros.sts"), text: macros },
       { path: join("src", "example.sts"), text: main },

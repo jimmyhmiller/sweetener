@@ -98,13 +98,16 @@ try {
       "packages",
       item.name.split("/").at(-1),
     );
-    const workspaceManifest = JSON.parse(
-      await readFile(join(workspaceDirectory, "package.json"), "utf8"),
-    );
     const from = createRequire(join(workspaceDirectory, "package.json"));
+    // Read from the packed manifest, not the workspace one. Taking peers from
+    // the workspace supplied whatever the published package forgot to declare,
+    // so the import always succeeded and the omission could not be seen.
+    const packedManifest = JSON.parse(
+      await readFile(join(modules, item.name, "package.json"), "utf8"),
+    );
     const needed = [
-      ...Object.keys(workspaceManifest.dependencies ?? {}),
-      ...Object.keys(workspaceManifest.peerDependencies ?? {}),
+      ...Object.keys(packedManifest.dependencies ?? {}),
+      ...Object.keys(packedManifest.peerDependencies ?? {}),
     ];
     for (const name of needed) {
       if (name.startsWith("@sweetener/") || linked.has(name)) continue;

@@ -1,6 +1,7 @@
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import rspack, { type Stats as RspackStats } from "@rspack/core";
 import webpack from "webpack";
 import { describe, expect, test } from "vitest";
@@ -97,4 +98,60 @@ describe("native webpack loader", () => {
     expect(stats.hasErrors(), stats.toString({ errors: true })).toBe(false);
     expect(readFileSync(join(output, "bundle.js"), "utf8")).toContain("21,21");
   });
+});
+
+test("reports a macro failure to webpack instead of taking the process down", async () => {
+  // The loader used to throw from inside a `.then` success branch, so the
+  // error escaped as an unhandled rejection and the callback was never
+  // called. Under `webpack --watch` that kills the dev server rather than
+  // printing a compile error.
+  const directory = mkdtempSync(join(tmpdir(), "sweet-loader-fail-"));
+  writeFileSync(
+    join(directory, "macros.sts"),
+    `export syntax twice:expr {\n  rule { twice($value:expr) } => { [$value, $value] }\n}\n`,
+    "utf8",
+  );
+  writeFileSync(
+    join(directory, "main.sts"),
+    `import { twice } from "./macros.sts" for syntax;\nexport const broken = twice(1, 2, 3);\n`,
+    "utf8",
+  );
+  writeFileSync(
+    join(directory, "tsconfig.json"),
+    JSON.stringify({
+      compilerOptions: {
+        strict: true,
+        noEmit: true,
+        target: "ES2022",
+        module: "ESNext",
+        moduleResolution: "Bundler",
+      },
+      sweet: { macroExtensions: [".sts"] },
+      files: ["macros.sts", "main.sts"],
+    }),
+    "utf8",
+  );
+
+  const reported = await new Promise<Error | null>((resolve) => {
+    const context = {
+      resourcePath: join(directory, "main.sts"),
+      mode: "development",
+      addDependency: () => {},
+      getOptions: () => ({}),
+      async: () => (error: Error | null) => resolve(error),
+    };
+    void import(pathToFileURL(loader).href).then(
+      ({
+        default: run,
+      }: {
+        default: (this: unknown, source: string) => void;
+      }) =>
+        run.call(context, readFileSync(join(directory, "main.sts"), "utf8")),
+    );
+  });
+
+  expect(reported).toBeInstanceOf(Error);
+  expect(reported?.message).toContain("No rule for macro twice");
+  // And with the position, as the command line reports it.
+  expect(reported?.message).toMatch(/main\.sts:2:\d+/u);
 });

@@ -263,3 +263,37 @@ describe("runtimes without a bundler", () => {
     expect(output).toContain("Bun.build");
   });
 });
+
+describe("the config init writes", () => {
+  function config(manifest: Record<string, unknown>): {
+    readonly compilerOptions: Record<string, unknown>;
+  } {
+    const directory = mkdtempSync(join(tmpdir(), "sweet-cfg-"));
+    writeFileSync(
+      join(directory, "package.json"),
+      `${JSON.stringify({ name: "host", type: "module", ...manifest })}\n`,
+      "utf8",
+    );
+    runCli({
+      argv: ["init", directory, "--yes"],
+      io: { stdout: () => {}, stderr: () => {} },
+    });
+    return JSON.parse(readFileSync(join(directory, "sweetener.json"), "utf8"));
+  }
+
+  test("can emit where the advice is to run the build", () => {
+    // With no bundler, init says to run `sweetener build -p sweetener.json`.
+    // A config that cannot emit made that command report success and write
+    // nothing at all.
+    const { compilerOptions } = config({ dependencies: { express: "^4.0.0" } });
+    expect(compilerOptions["noEmit"]).toBeUndefined();
+    expect(compilerOptions["outDir"]).toBe("dist");
+    expect(compilerOptions["rootDir"]).toBe("src");
+  });
+
+  test("emits nothing where a bundler owns the output", () => {
+    const { compilerOptions } = config({ devDependencies: { vite: "^6.0.0" } });
+    expect(compilerOptions["noEmit"]).toBe(true);
+    expect(compilerOptions["outDir"]).toBeUndefined();
+  });
+});

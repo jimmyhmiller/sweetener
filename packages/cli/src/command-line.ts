@@ -300,18 +300,38 @@ export function runCli(options: {
       options.io.stderr(`No expansion available for ${fileName}\n`);
       return Object.freeze({ exitCode: 1 });
     }
-    if (invocation.command === "expand")
+    if (invocation.command === "expand") {
+      // Printing the source and reporting success would say the macros ran.
+      if (inspected.diagnostics.length > 0) {
+        for (const diagnostic of inspected.diagnostics)
+          options.io.stderr(`${renderDiagnostic(diagnostic)}\n`);
+        return Object.freeze({ exitCode: 1 });
+      }
       options.io.stdout(expansionView(inspected.generated));
-    else
+    } else {
+      // A position past the end of the file is something a person types, not
+      // an internal fault: it used to escape as a raw stack trace naming dist
+      // paths.
+      let offset: number;
+      try {
+        offset = sourceOffset(
+          inspected.sourceText,
+          position!.line,
+          position!.column,
+        );
+      } catch {
+        const lines = inspected.sourceText.split("\n").length;
+        options.io.stderr(
+          `${fileName} has ${String(lines)} line${lines === 1 ? "" : "s"}; ` +
+            `${String(position!.line)}:${String(position!.column)} is outside it\n`,
+        );
+        return Object.freeze({ exitCode: 1 });
+      }
       options.io.stdout(
         `${JSON.stringify(
           explainOriginalPosition({
             sourceId: inspected.sourceId,
-            offset: sourceOffset(
-              inspected.sourceText,
-              position!.line,
-              position!.column,
-            ),
+            offset,
             index: inspected.index,
             trace: inspected.trace,
             generatedNames: inspected.generatedNames,
@@ -320,6 +340,7 @@ export function runCli(options: {
           2,
         )}\n`,
       );
+    }
     return Object.freeze({ exitCode: 0 });
   }
   if (invocation.command === "watch") {
