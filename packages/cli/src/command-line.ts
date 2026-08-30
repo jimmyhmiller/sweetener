@@ -1,4 +1,10 @@
-import { scaffoldProject, writeScaffold } from "./scaffold.js";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import {
+  scaffoldIntoProject,
+  scaffoldProject,
+  writeScaffold,
+} from "./scaffold.js";
 import type { System } from "typescript";
 import * as ts from "typescript";
 import {
@@ -175,14 +181,37 @@ export function runCli(options: {
   }
   if (invocation.command === "init") {
     try {
-      const project = scaffoldProject({ directory: invocation.directory });
+      // A project that already builds itself gets what it is missing, not a
+      // refusal: adding macros to something that exists is the ordinary case,
+      // and starting from nothing is the rare one.
+      const manifestPath = resolve(invocation.directory, "package.json");
+      const existing = existsSync(manifestPath)
+        ? (JSON.parse(readFileSync(manifestPath, "utf8")) as {
+            dependencies?: Record<string, string>;
+            devDependencies?: Record<string, string>;
+          })
+        : undefined;
+      const project =
+        existing === undefined
+          ? scaffoldProject({ directory: invocation.directory })
+          : scaffoldIntoProject({
+              directory: invocation.directory,
+              manifest: existing,
+            });
       const written = writeScaffold(project, invocation.directory);
       options.io.stdout(
         `${[
           "Created:",
           ...written.map((path: string) => `  ${path}`),
           "",
-          ...project.notes.map((note: string) => `- ${note}`),
+          // A note may carry a block to paste into a config file. Only its
+          // first line is a bullet; the rest is printed as it should appear.
+          ...project.notes.map((note: string) =>
+            note
+              .split("\n")
+              .map((line, index) => (index === 0 ? `- ${line}` : `  ${line}`))
+              .join("\n"),
+          ),
           "",
         ].join("\n")}`,
       );

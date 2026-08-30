@@ -16,8 +16,9 @@ system is reimplemented.
 sweetener init my-app
 ```
 
-That writes `package.json`, `tsconfig.json`, and a `src/` with a macro
-definition and a file that uses it. Install, then:
+In a directory with no `package.json`, that writes `package.json`,
+`tsconfig.json`, and a `src/` with a macro definition and a file that uses it.
+Install, then:
 
 ```sh
 npm run check   # expand and type-check
@@ -28,6 +29,19 @@ npm run watch   # rebuild on change
 If the packages are not published yet, `init` points the project at the
 checkout it was scaffolded from and says so. Build that checkout once before
 installing.
+
+## Add macros to a project you already have
+
+Run the same command in it. `init` reads what the project depends on, adds a
+`sweetener.json` listing the files to expand and a starter macro under `src/`,
+and prints the integration that host needs with the config to paste:
+`@sweetener/unplugin` for Vite, Astro, Nuxt, SvelteKit and the rest of that
+family, `@sweetener/webpack-loader` for Next and webpack,
+`@sweetener/parcel-transformer` for Parcel, `@sweetener/jest` for Jest. When it
+recognises no bundler it sets the project up for the command line instead.
+
+It never edits a file that is already there — bundler config is printed for you
+to paste, not rewritten.
 
 ## Declare a macro
 

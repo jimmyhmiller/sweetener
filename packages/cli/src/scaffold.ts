@@ -153,7 +153,7 @@ export function writeScaffold(project: ScaffoldedProject, directory: string) {
     .filter((path) => existsSync(join(root, path)));
   if (existing.length > 0)
     throw new Error(
-      `Refusing to overwrite ${existing.join(", ")} in ${root}. Scaffold into an empty directory.`,
+      `Refusing to overwrite ${existing.join(", ")} in ${root}. Move or delete them, or scaffold into a different directory.`,
     );
   for (const { path, text } of project.files) {
     const target = join(root, path);
@@ -161,4 +161,180 @@ export function writeScaffold(project: ScaffoldedProject, directory: string) {
     writeFileSync(target, text, "utf8");
   }
   return Object.freeze(project.files.map(({ path }) => path));
+}
+
+/** How a host project compiles, and so which integration belongs in it. */
+export interface DetectedHost {
+  readonly name: string;
+  readonly integration: string;
+  readonly wiring: readonly string[];
+}
+
+const viteWiring = (importPath: string, plugins: string) => [
+  `Add the plugin to your config:`,
+  ``,
+  `  import sweetener from "${importPath}";`,
+  `  import { resolve } from "node:path";`,
+  ``,
+  `  ${plugins}`,
+  `    ...sweetener({`,
+  `      configFile: resolve(import.meta.dirname, "sweetener.json"),`,
+  `    }),`,
+  `  ]`,
+];
+
+/**
+ * Which integration a project needs, read from what it already depends on.
+ *
+ * Every one of these is how one of the projects under `examples/` is wired.
+ * Working it out otherwise means finding the example that matches your host
+ * and reading its config, which is only discoverable if you know to look.
+ */
+export function detectHost(manifest: {
+  readonly dependencies?: Readonly<Record<string, string>> | undefined;
+  readonly devDependencies?: Readonly<Record<string, string>> | undefined;
+}): DetectedHost | undefined {
+  const dependencies = {
+    ...manifest.dependencies,
+    ...manifest.devDependencies,
+  };
+  const has = (name: string) => Object.hasOwn(dependencies, name);
+
+  if (has("next"))
+    return {
+      name: "Next.js",
+      integration: "@sweetener/webpack-loader",
+      wiring: [
+        `Add a rule for .sts files in next.config, loading them as TypeScript:`,
+        ``,
+        `  turbopack: {`,
+        `    rules: {`,
+        `      "*.sts": {`,
+        `        loaders: [`,
+        `          {`,
+        `            loader: require.resolve("@sweetener/webpack-loader"),`,
+        `            options: { configFile: resolve(here, "sweetener.json") },`,
+        `          },`,
+        `        ],`,
+        `        as: "*.ts",`,
+        `      },`,
+        `    },`,
+        `  }`,
+      ],
+    };
+  if (has("@sveltejs/kit"))
+    return {
+      name: "SvelteKit",
+      integration: "@sweetener/unplugin",
+      wiring: viteWiring("@sweetener/unplugin/vite", "plugins: ["),
+    };
+  if (has("nuxt"))
+    return {
+      name: "Nuxt",
+      integration: "@sweetener/unplugin",
+      wiring: viteWiring("@sweetener/unplugin/vite", "vite: { plugins: ["),
+    };
+  if (has("astro"))
+    return {
+      name: "Astro",
+      integration: "@sweetener/unplugin",
+      wiring: viteWiring("@sweetener/unplugin/vite", "vite: { plugins: ["),
+    };
+  if (has("vite"))
+    return {
+      name: "Vite",
+      integration: "@sweetener/unplugin",
+      wiring: viteWiring("@sweetener/unplugin/vite", "plugins: ["),
+    };
+  if (has("parcel") || has("@parcel/core"))
+    return {
+      name: "Parcel",
+      integration: "@sweetener/parcel-transformer",
+      wiring: [
+        `Add the transformer to .parcelrc:`,
+        ``,
+        `  { "transformers": { "*.sts": ["@sweetener/parcel-transformer"] } }`,
+      ],
+    };
+  if (has("webpack"))
+    return {
+      name: "webpack",
+      integration: "@sweetener/webpack-loader",
+      wiring: [
+        `Add a rule to your webpack config:`,
+        ``,
+        `  { test: /\\.sts$/, use: "@sweetener/webpack-loader" }`,
+      ],
+    };
+  if (has("jest"))
+    return {
+      name: "Jest",
+      integration: "@sweetener/jest",
+      wiring: [
+        `Add the transform to your Jest config:`,
+        ``,
+        `  transform: { "^.+\\.sts$": "@sweetener/jest" }`,
+      ],
+    };
+  return undefined;
+}
+
+const consumerConfig = (files: readonly string[]): string =>
+  `${JSON.stringify(
+    {
+      compilerOptions: {
+        target: "ES2022",
+        module: "ESNext",
+        moduleResolution: "Bundler",
+        strict: true,
+        skipLibCheck: true,
+        noEmit: true,
+      },
+      files,
+    },
+    null,
+    2,
+  )}\n`;
+
+/**
+ * What to add to a project that already builds itself somehow.
+ *
+ * Nothing it already has is touched. The parts that belong in a file someone
+ * else wrote — a bundler config — are printed rather than edited in.
+ */
+export function scaffoldIntoProject(options: {
+  readonly directory: string;
+  readonly manifest: {
+    readonly dependencies?: Readonly<Record<string, string>> | undefined;
+    readonly devDependencies?: Readonly<Record<string, string>> | undefined;
+  };
+}): ScaffoldedProject {
+  const host = detectHost(options.manifest);
+  const cli = cliSpecifier();
+  const integration = host?.integration ?? "@sweetener/cli";
+  const install =
+    cli.specifier.startsWith("link:") && host !== undefined
+      ? `${integration} is not published yet. Add it as a link: dependency pointing into the checkout, the way ${cliSpecifier().specifier} does.`
+      : `Install ${integration}.`;
+  return Object.freeze({
+    files: Object.freeze([
+      {
+        path: "sweetener.json",
+        text: consumerConfig(["src/macros.sts", "src/example.sts"]),
+      },
+      { path: join("src", "macros.sts"), text: macros },
+      { path: join("src", "example.sts"), text: main },
+    ]),
+    notes: Object.freeze([
+      host === undefined
+        ? "No bundler was recognised here, so this project is set up for the command line: `sweetener build -p sweetener.json` expands into TypeScript you can compile or run."
+        : `Detected ${host.name}.`,
+      install,
+      host === undefined
+        ? "Run `sweetener build -p sweetener.json` to expand, or see examples/ for a bundler setup."
+        : host.wiring.join("\n"),
+      "sweetener.json lists the files to expand. Add your own .sts files to it.",
+      "Nothing you already had was modified.",
+    ]),
+  });
 }
