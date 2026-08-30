@@ -24,5 +24,10 @@ jobs:
         with:
           node-version: 24.18.1
           cache: pnpm
+      # `pnpm check` builds every example, and the Deno example verifies
+      # itself with `deno task`. The runner has no Deno of its own.
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
       - run: pnpm install --frozen-lockfile
       - run: pnpm check

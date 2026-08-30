@@ -27,6 +27,11 @@ jobs:
           for package in . packages/cli packages/enforestation packages/expansion packages/reader packages/typescript-host; do
             pnpm --dir "$package" pkg set "dependencies.typescript=npm:@typescript/typescript6@${{ matrix.typescript }}"
           done
+      # `pnpm check` builds every example, and the Deno example verifies
+      # itself with `deno task`. The runner has no Deno of its own.
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm compatibility:probe
       - run: pnpm check
