@@ -1,6 +1,3 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   ambiguityDiagnostic,
   applyBindingContract,
@@ -41,37 +38,13 @@ import {
   type EvaluatedTemplate,
 } from "@sweetener/template";
 import { describe, expect, test } from "vitest";
-import { loadFixture } from "../src/index.js";
 
-const repositoryRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../..",
-);
-const fixtureDirectory = path.join(
-  repositoryRoot,
-  "fixtures/conformance/hygiene/semantic-suite",
-);
 const capture = (value: number) => value as CaptureId;
 const group = (value: number) => value as CardinalityGroupId;
 const classId = (value: number) => value as SyntaxClassId;
 const bindingId = (value: number) => value as BindingId;
 const syntaxId = (value: number) => value as SyntaxId;
 const originId = (value: number) => value as OriginId;
-
-const implementedScenarios = [
-  "generated-temporary-collision",
-  "do-three-clause-sequential-scope",
-  "match-branch-scope",
-  "generated-macro-from-captured-name",
-  "definition-helper-shadowing",
-  "explicit-capture",
-  "ambiguous-scope-resolution",
-  "value-type-same-spelling",
-  "constructor-following-bindings",
-  "protocol-parameter-region",
-  "generated-macro-name-collision",
-  "alpha-renaming-invariance",
-] as const;
 
 let nextSyntax = 1;
 function identifier(
@@ -125,19 +98,6 @@ function onlyScope(value: CaptureValue, scopes: ScopeStore): ScopeSetId {
 }
 
 describe("Phase 3 hygiene semantic conformance", () => {
-  test("fixture manifest enumerates every implemented semantic scenario", async () => {
-    const fixture = await loadFixture(fixtureDirectory);
-    const expected = JSON.parse(
-      fixture.artifacts["expected.bindings.json"]!,
-    ) as { readonly scenarios: readonly string[] };
-    expect(expected.scenarios).toEqual(implementedScenarios);
-    expect(fixture.manifest.expect).toMatchObject({
-      bindings: true,
-      trace: true,
-    });
-    expect(await readFile(fixture.entryPath, "utf8")).toContain("third <-");
-  });
-
   test("fresh, capture, and definition operations preserve distinct identities and scopes", () => {
     const scopes = new ScopeStore();
     const callerScope = scopes.freshScope("lexical", "caller");

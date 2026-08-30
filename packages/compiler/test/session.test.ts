@@ -135,3 +135,41 @@ describe("public compiler session", () => {
 function readFile(fileName: string): string {
   return readFileSync(fileName, "utf8");
 }
+
+test("does not cache an expansion that failed", async () => {
+  // The public surface says a partial or failed result must not be cached.
+  // That was stated of a class this pipeline does not use; this is the cache
+  // it has. A remembered failure outlives the reason for it — fix the macro
+  // and the old diagnostics come back.
+  const fixture = project();
+  const macros = fixture.main.replace("main.sts", "macros.sts");
+  writeFileSync(
+    macros,
+    `export syntax twice:expr {\n  rule { twice($value:expr) } => { [$value] }\n}\n`,
+    "utf8",
+  );
+  writeFileSync(
+    fixture.main,
+    `import { twice } from "./macros.sts" for syntax;\nexport const broken = twice(1, 2, 3);\n`,
+    "utf8",
+  );
+  const session = createSweetenerSession();
+  const failed = await session.transform({
+    code: readFile(fixture.main),
+    filename: fixture.main,
+  });
+  expect(failed.diagnostics.length).toBeGreaterThan(0);
+
+  // Repair the macro so the same source now expands.
+  writeFileSync(
+    macros,
+    `export syntax twice:expr {\n  rule { twice($($value:expr),*) } => { [$($value),*] }\n}\n`,
+    "utf8",
+  );
+  const repaired = await session.transform({
+    code: readFile(fixture.main),
+    filename: fixture.main,
+  });
+  expect(repaired.diagnostics).toEqual([]);
+  await session.close();
+});

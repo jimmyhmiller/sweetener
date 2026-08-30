@@ -3,7 +3,9 @@
   "id": "hygiene/semantic-suite",
   "languageVersion": "0.1",
   "typescriptVersion": "6.0.2",
-  "compilerOptions": { "strict": true },
+  "compilerOptions": {
+    "strict": true
+  },
   "capabilities": [
     "HYGIENE-BINDING-CONTRACTS",
     "HYGIENE-BINDING-RESOLUTION",
@@ -13,11 +15,11 @@
   ],
   "entry": "input.sts",
   "expect": {
-    "expansion": false,
+    "expansion": true,
     "bindings": true,
     "trace": true,
-    "types": false,
-    "runtime": false
+    "types": true,
+    "runtime": true
   },
   "limits": {}
 }

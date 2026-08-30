@@ -1,17 +1,9 @@
 {
   "schemaVersion": 1,
   "scenarios": [
-    "generated-temporary-collision",
-    "do-three-clause-sequential-scope",
-    "match-branch-scope",
-    "generated-macro-from-captured-name",
-    "definition-helper-shadowing",
-    "explicit-capture",
-    "ambiguous-scope-resolution",
-    "value-type-same-spelling",
-    "constructor-following-bindings",
-    "protocol-parameter-region",
-    "generated-macro-name-collision",
-    "alpha-renaming-invariance"
+    "introduced-binding-renamed-against-call-site",
+    "captured-binding-keeps-call-site-identity",
+    "template-name-resolves-at-the-definition",
+    "introduced-parameter-does-not-escape"
   ]
 }

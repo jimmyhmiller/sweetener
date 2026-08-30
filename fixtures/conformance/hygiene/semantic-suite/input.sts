@@ -1,14 +1,15 @@
-const tmp = 1;
-const generated = makeTemporary(tmp);
+import { describe, withEach, withTemporary } from "./macros.sts" for syntax;
 
-doSteps(Task) {
-  first <- one();
-  second <- use(first);
-  third <- use(first, second);
-  return use(first, second, third);
+// The same spelling the first macro introduces.
+const tmp = 100;
+
+// A different `helper` from the one the macro's module binds.
+function helper(value: number): string {
+  return `call site helper saw ${String(value)}`;
 }
 
-const result = match (value) {
-  Some(item) => item;
-  None() => fallback;
-};
+export const temporary: number = withTemporary(tmp);
+export const described: string = describe(7);
+export const callSite: string = helper(7);
+export const mapped: readonly number[] = withEach([1, 2, 3], 0);
+export const untouched: number = tmp;

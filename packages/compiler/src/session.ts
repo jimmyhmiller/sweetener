@@ -179,11 +179,17 @@ export function createSweetenerSession(
       cacheKey,
       virtualFilename: canonical(generated.fileName),
     });
-    cache.set(cacheKey, {
-      result,
-      dependencies: new Set(dependencies),
-      dependencyFingerprint: fingerprintDependencies(dependencies),
-    });
+    // A failed expansion is not a result to remember. The public surface says
+    // partial results must not enter a content-addressed cache, and that was
+    // stated of a class this pipeline does not use — this is the cache it
+    // actually has. Recomputing a failure is cheap and always correct; serving
+    // one from a cache outlives the reason for it.
+    if (result.diagnostics.length === 0)
+      cache.set(cacheKey, {
+        result,
+        dependencies: new Set(dependencies),
+        dependencyFingerprint: fingerprintDependencies(dependencies),
+      });
     return result;
   };
 

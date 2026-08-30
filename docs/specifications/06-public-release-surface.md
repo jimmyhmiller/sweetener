@@ -107,8 +107,12 @@ compiler and audited by the declarative-boundary gate.
 Every read, match, template, expansion, generated definition, and recursive
 operation charges the configured resource tracker. Input/output tokens, matcher
 steps, template steps, expansion steps, nesting, cancellation, and deadlines
-MUST fail with stable structured diagnostics. Partial or cancelled results MUST
-NOT enter content-addressed caches.
+MUST fail with stable structured diagnostics. Partial, failed, or cancelled
+results MUST NOT be cached: the compiler session caches an expansion only when
+it produced no diagnostics, and a cancellation or exhausted limit throws before
+anything is stored. `ContentAddressedCompilerCache` in `@sweetener/typescript-host`
+offers the same guarantee to a host that keeps its own cache; the compiler does
+not use it.
 
 ## 7. Public packages
 
