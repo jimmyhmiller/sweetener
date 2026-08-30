@@ -8,6 +8,8 @@ import debugMacros from "../examples/debug/macros.sts?raw";
 import debugMain from "../examples/debug/main.sts?raw";
 import recordsMacros from "../examples/records/macros.sts?raw";
 import recordsMain from "../examples/records/main.sts?raw";
+import adtMacros from "../examples/adt/macros.sts?raw";
+import adtMain from "../examples/adt/main.sts?raw";
 import jsxRuntime from "../examples/jsx/runtime.ts?raw";
 import jsxMacros from "../examples/jsx/macros.sts?raw";
 import jsxMain from "../examples/jsx/main.stsx?raw";
@@ -81,6 +83,20 @@ export const examples: PlaygroundExample[] = [
     recordsMain,
   ),
   example(
+    "adt",
+    "Algebraic data types",
+    "`data` generates a union and its constructors; `match` knows them.",
+    adtMacros,
+    adtMain,
+  ),
+  example(
+    "matching",
+    "Pattern matching",
+    "Structural patterns with bindings and guards, and no runtime at all.",
+    matchingMacros,
+    matchingMain,
+  ),
+  example(
     "signals",
     "Reactive state",
     "A macro that writes a macro, so state reads and writes like a variable.",
@@ -96,12 +112,5 @@ export const examples: PlaygroundExample[] = [
     jsxMain,
     [{ fileName: "runtime.ts", source: jsxRuntime }],
     "main.stsx",
-  ),
-  example(
-    "matching",
-    "Pattern matching",
-    "Structural patterns with bindings and guards, and no runtime at all.",
-    matchingMacros,
-    matchingMain,
   ),
 ];
