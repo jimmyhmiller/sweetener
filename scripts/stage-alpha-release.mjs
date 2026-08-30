@@ -56,7 +56,10 @@ for (const directory of packageDirectories) {
     ...(manifest.bin === undefined ? {} : { bin: manifest.bin }),
     files: manifest.files ?? ["dist"],
     dependencies,
-    engines: { node: ">=24" },
+    // The range the compatibility matrix and its workflow actually verify.
+    // The repository's own pin is looser so a developer can run a newer Node,
+    // but that is not a claim made to whoever installs this.
+    engines: { node: ">=24 <25" },
     publishConfig: { access: "public", provenance: true },
   };
   await writeFile(
