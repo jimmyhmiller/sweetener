@@ -118,27 +118,87 @@ function classExpressionWidth(cursor: SyntaxCursor): number | undefined {
   return undefined;
 }
 
-function genericArrowWidth(
+/**
+ * How wide an arrow function is, from `(` or `async` or `<` to its body.
+ *
+ * Only generic arrows were recognised here. A plain `(x) => x` fell through to
+ * the pratt `=>` infix operator, which protects what stands to its left as an
+ * expression — so a parameter list came back wrapped in its own parentheses and
+ * the emitted TypeScript did not parse. `() => x` was worse: an empty
+ * parenthesis group is not a primary atom, so nothing could begin it at all.
+ */
+function arrowWidth(
   cursor: SyntaxCursor,
   context: ConsumerContext,
 ): number | undefined {
-  const typeParameters = consumeBalancedTypeArguments(cursor, context);
-  if (typeParameters === undefined) return undefined;
-  let offset = typeParameters.width;
+  let offset = 0;
+  const head = cursor.peek();
+  if (head?.tag === "token" && head.raw === "async") {
+    const after = cursor.peek(1);
+    // `async` alone is an ordinary identifier; only a parameter list or type
+    // parameters after it begin an arrow.
+    if (
+      !(after?.tag === "group" && after.delimiter === "parenthesis") &&
+      !(after?.tag === "token" && after.raw === "<")
+    )
+      return undefined;
+    offset = 1;
+  }
+  const rest = cursor.fork();
+  rest.advance(offset);
+  const typeParameters = consumeBalancedTypeArguments(rest, context);
+  if (typeParameters !== undefined) offset += typeParameters.width;
   const parameters = cursor.peek(offset);
   if (parameters?.tag !== "group" || parameters.delimiter !== "parenthesis")
     return undefined;
   offset += 1;
-  while (offset < typeParameters.width + 65) {
+  // A return type annotation may stand between the parameters and the arrow.
+  const limit = offset + 64;
+  while (offset < limit) {
     const node = cursor.peek(offset);
     if (node === undefined) return undefined;
     if (node.tag === "token" && node.raw === "=>") {
+      // Only a concise body. Those did not parse here at all, and fell to the
+      // infix `=>`, which protects what is left of it as an expression and
+      // emitted a parameter list wrapped in its own parentheses. A block body
+      // still goes that way: taking it here protects a statement list as an
+      // expression, which mangles it at a call site. Written in a template, a
+      // block-bodied arrow is still emitted wrongly — that is unchanged, and
+      // not something this can fix without breaking the call site.
       const body = cursor.peek(offset + 1);
-      return body === undefined ? undefined : offset + 2;
+      if (body?.tag === "group" && body.delimiter === "brace") return undefined;
+      return arrowBodyEnd(cursor, offset + 1);
     }
+    // Anything that cannot appear in a return type means this is not an arrow.
+    if (node.tag === "group" && node.delimiter === "brace") return undefined;
     offset += 1;
   }
   return undefined;
+}
+
+/**
+ * Where an arrow's body ends, which is the end of an expression rather than
+ * one node. Taking a single node made `(x) => x + 1` parse as
+ * `((x) => x) + 1`, and the `+ 1` moved outside the function.
+ */
+function arrowBodyEnd(
+  cursor: SyntaxCursor,
+  bodyStart: number,
+): number | undefined {
+  if (cursor.peek(bodyStart) === undefined) return undefined;
+  let offset = bodyStart;
+  while (true) {
+    const node = cursor.peek(offset);
+    if (node === undefined) break;
+    // Groups are already balanced, so only a separator at this level ends it.
+    if (
+      node.tag === "token" &&
+      (node.raw === "," || node.raw === ";" || node.raw === ":")
+    )
+      break;
+    offset += 1;
+  }
+  return offset === bodyStart ? undefined : offset;
 }
 
 function isPropertyName(syntax: Syntax | undefined): boolean {
@@ -297,11 +357,11 @@ class PrimaryExpressionConsumer implements SyntaxConsumer {
     );
     const functionWidth = functionExpressionWidth(cursor);
     const classWidth = classExpressionWidth(cursor);
-    const arrowWidth = genericArrowWidth(cursor, context);
+    const arrow = arrowWidth(cursor, context);
     if (
       functionWidth === undefined &&
       classWidth === undefined &&
-      arrowWidth === undefined &&
+      arrow === undefined &&
       !isPrimaryAtom(cursor.peek())
     ) {
       return failure(
@@ -313,7 +373,7 @@ class PrimaryExpressionConsumer implements SyntaxConsumer {
         1,
       );
     }
-    cursor.advance(functionWidth ?? classWidth ?? arrowWidth ?? 1);
+    cursor.advance(functionWidth ?? classWidth ?? arrow ?? 1);
     // Postfix parsing runs first so the macro extent is compared against the
     // whole expression, not just its head.
     let optionalChain = false;

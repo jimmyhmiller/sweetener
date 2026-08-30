@@ -1161,3 +1161,51 @@ export function demo(): number {
     expect(text).toMatch(/const tmp_\d+ =/u);
   });
 });
+
+describe("arrow functions", () => {
+  test("a concise-bodied arrow written in a template is emitted as written", () => {
+    // Only generic arrows were recognised as expressions, so a plain one fell
+    // to the infix `=>`, which protects what stands to its left — emitting a
+    // parameter list wrapped in its own parentheses, which does not parse.
+    const { text, messages } = expand(
+      `export syntax define:item {
+         rule { define($name:ident) } => {
+           export const $name = (value: number) => value + 1;
+         }
+       }`,
+      `import { define } from "./macros.sts" for syntax;
+define(increment);
+`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain("(value: number) => value + 1");
+  });
+
+  test("keeps the whole body, not its first token", () => {
+    const { text } = expand(
+      `export syntax define:item {
+         rule { define($name:ident) } => {
+           export const $name = (value: number) => value * 2 + 1;
+         }
+       }`,
+      `import { define } from "./macros.sts" for syntax;
+define(scaled);
+`,
+    );
+    // `(v) => v * 2 + 1`, not `((v) => v) * 2 + 1`.
+    expect(text).toContain("=> value * 2 + 1");
+  });
+
+  test("a zero-parameter arrow is an expression", () => {
+    for (const source of ["() => 1", "async () => 1"]) {
+      const { text, messages } = expand(
+        `export syntax wrap:expr { rule { wrap($value:expr) } => { [$value] } }`,
+        `import { wrap } from "./macros.sts" for syntax;
+export const held = wrap(${source});
+`,
+      );
+      expect(messages, source).toEqual([]);
+      expect(text, source).toContain(source);
+    }
+  });
+});
