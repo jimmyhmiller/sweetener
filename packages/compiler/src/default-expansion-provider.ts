@@ -1028,6 +1028,35 @@ export class DefaultProjectExpansionProvider
     // One array for the whole project: resolution below remembers the indexes
     // it derives from these, which it can only do if they stay the same array.
     const packageList = Object.freeze([...packageManifests.values()]);
+    // Both describe the project's macro modules, not the file being
+    // expanded, so they are built once rather than once per file.
+    const visibilityByModule = new Map<
+      CompileParsedMacrosResult,
+      Map<string, number>
+    >(
+      [...byPath.values()].map((moduleFile) => [
+        moduleFile.compiled,
+        new Map(
+          moduleFile.compiled.definitions.map(({ definition, macro }) => [
+            `${macro.binding.spelling}|${String(macro.binding.id)}`,
+            definition.kind === "syntax" && definition.recursive
+              ? definition.body.span.start
+              : definition.body.span.end,
+          ]),
+        ),
+      ]),
+    );
+    // Each visibility threshold is an offset into one particular file, so it
+    // can only be compared against a position from that same file.
+    const visibilitySourceByModule = new Map<
+      CompileParsedMacrosResult,
+      SourceId
+    >(
+      [...byPath.values()].map((moduleFile) => [
+        moduleFile.compiled,
+        moduleFile.sourceId,
+      ]),
+    );
     for (const file of projectFiles) {
       const resolvedGraph = resolveMacroProject({
         entry: file.fileName,
@@ -1058,33 +1087,6 @@ export class DefaultProjectExpansionProvider
         CompileParsedMacrosResult,
         Set<BindingId>
       >();
-      const visibilityByModule = new Map<
-        CompileParsedMacrosResult,
-        Map<string, number>
-      >(
-        [...byPath.values()].map((moduleFile) => [
-          moduleFile.compiled,
-          new Map(
-            moduleFile.compiled.definitions.map(({ definition, macro }) => [
-              `${macro.binding.spelling}|${String(macro.binding.id)}`,
-              definition.kind === "syntax" && definition.recursive
-                ? definition.body.span.start
-                : definition.body.span.end,
-            ]),
-          ),
-        ]),
-      );
-      // Each visibility threshold is an offset into one particular file, so it
-      // can only be compared against a position from that same file.
-      const visibilitySourceByModule = new Map<
-        CompileParsedMacrosResult,
-        SourceId
-      >(
-        [...byPath.values()].map((moduleFile) => [
-          moduleFile.compiled,
-          moduleFile.sourceId,
-        ]),
-      );
       const importedModules: CompileParsedMacrosResult[] = [];
       const pending = [file];
       const visited = new Set<string>();
@@ -1112,7 +1114,7 @@ export class DefaultProjectExpansionProvider
           })),
           modules: moduleSources,
           aliases,
-          packages: [...packageManifests.values()],
+          packages: packageList,
         });
         diagnostics.push(...resolvedImports.diagnostics);
         const importerBindings =

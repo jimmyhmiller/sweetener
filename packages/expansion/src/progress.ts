@@ -18,18 +18,37 @@ class InputHasher {
   #left = 0x811c9dc5;
   #right = 0x9e3779b9;
 
+  // Every expansion step hashes its whole input to recognise a macro that is
+  // not making progress, so this runs over every token and every piece of
+  // trivia in a file. Building a string per field to hash it meant allocating
+  // several strings per token; the tag, the length and the characters are
+  // mixed directly instead.
   add(value: string | number | undefined): void {
-    const text = value === undefined ? "u" : `${typeof value}:${String(value)}`;
-    this.#mix(String(text.length));
-    this.#mix(":");
-    this.#mix(text);
-    this.#mix(";");
+    if (value === undefined) {
+      this.#mixCode(0x75);
+      return;
+    }
+    if (typeof value === "number") {
+      this.#mixCode(0x6e);
+      this.#mixCode(value | 0);
+      this.#mixCode(Math.floor(value / 0x1_0000_0000) | 0);
+      return;
+    }
+    this.#mixCode(0x73);
+    this.#mixCode(value.length);
+    this.#mix(value);
   }
 
   digest(): ExpansionInputHash {
     return `${this.#left.toString(16).padStart(8, "0")}${this.#right
       .toString(16)
       .padStart(8, "0")}` as ExpansionInputHash;
+  }
+
+  #mixCode(code: number): void {
+    this.#left = Math.imul(this.#left ^ code, 0x01000193) >>> 0;
+    this.#right =
+      (Math.imul(this.#right ^ code, 0x85ebca6b) + 0xc2b2ae35) >>> 0;
   }
 
   #mix(text: string): void {

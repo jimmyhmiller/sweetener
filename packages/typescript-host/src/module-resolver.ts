@@ -177,14 +177,25 @@ function moduleCandidates(options: {
 export function resolveSourceMacroImports(
   options: ResolveSourceMacroImportsOptions,
 ): ResolvedSourceMacroImports {
-  const modules = new Map(
-    options.modules.map((module) => [canonical(module.path), module]),
+  const modules = remembered(
+    moduleIndexes,
+    options.modules,
+    (input) => new Map(input.map((module) => [canonical(module.path), module])),
   );
-  const packages = new Map(
-    (options.packages ?? []).map((manifest) => [manifest.name, manifest]),
+  const packages = remembered(
+    packageIndexes,
+    options.packages ?? noPackages,
+    (input) => new Map(input.map((manifest) => [manifest.name, manifest])),
   );
-  const aliases = [...(options.aliases ?? [])].sort((left, right) =>
-    left.pattern.localeCompare(right.pattern),
+  const aliases = remembered(
+    sortedAliases,
+    options.aliases ?? noAliases,
+    (input) =>
+      Object.freeze(
+        [...input].sort((left, right) =>
+          left.pattern.localeCompare(right.pattern),
+        ),
+      ),
   );
   const bindings: ResolvedSourceMacroBinding[] = [];
   const diagnostics: Diagnostic[] = [];

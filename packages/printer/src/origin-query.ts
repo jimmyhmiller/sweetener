@@ -290,7 +290,8 @@ export function createLazyOriginQueryIndex(
     return built;
   };
   return Object.freeze({
-    generatedToOriginal: (offset: number) => index().generatedToOriginal(offset),
+    generatedToOriginal: (offset: number) =>
+      index().generatedToOriginal(offset),
     originalToGenerated: (sourceId: SourceId, offset: number) =>
       index().originalToGenerated(sourceId, offset),
     classifyGenerated: (offset: number) => index().classifyGenerated(offset),

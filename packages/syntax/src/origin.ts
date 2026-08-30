@@ -13,7 +13,6 @@ export type SynthesisReason =
   | "grouping-parentheses"
   | "generated-binding"
   | "printer-separator"
-  | "printer-trivia"
   | "source-map-anchor";
 
 export interface SourceOrigin {
@@ -71,6 +70,10 @@ export class OriginStore {
   readonly #ids;
   readonly #origins = new Map<OriginId, Origin>();
   readonly #interned = new Map<string, OriginId>();
+  readonly #sourceIndex = new Map<
+    SourceId,
+    Map<number, Map<number, OriginId>>
+  >();
 
   constructor(options: OriginStoreOptions = {}) {
     this.#ids = createIdAllocator<OriginId>(options.startId);
@@ -89,15 +92,35 @@ export class OriginStore {
   }
 
   source(sourceId: SourceId, span: Span): OriginId {
-    const normalizedSpan = createSpan(span.start, span.end);
-    return this.#intern(`source|${sourceId}|${span.start}|${span.end}`, (id) =>
+    // Source origins outnumber every other kind — one per token — and hardly
+    // ever repeat, since each token occupies its own span. Keying them by a
+    // built-up string meant allocating and hashing a key per token only to
+    // miss on it. Nesting maps on the numbers keeps the same guarantee, that
+    // one span in one file is one origin, without the key.
+    let byStart = this.#sourceIndex.get(sourceId);
+    if (byStart === undefined) {
+      byStart = new Map();
+      this.#sourceIndex.set(sourceId, byStart);
+    }
+    let byEnd = byStart.get(span.start);
+    if (byEnd === undefined) {
+      byEnd = new Map();
+      byStart.set(span.start, byEnd);
+    }
+    const existing = byEnd.get(span.end);
+    if (existing !== undefined) return existing;
+    const id = this.#ids.allocate();
+    this.#origins.set(
+      id,
       Object.freeze({
         id,
         kind: "source",
         sourceId,
-        span: normalizedSpan,
+        span: createSpan(span.start, span.end),
       }),
     );
+    byEnd.set(span.end, id);
+    return id;
   }
 
   copied(capture: CaptureId, parent: OriginId): OriginId {

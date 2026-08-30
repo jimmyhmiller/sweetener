@@ -177,21 +177,15 @@ export function printExpandedFile<Trace>(
     // token. A region carries the token's whole source span, and a position
     // inside it is projected by its offset from the region start, so folding
     // the surrounding layout in would shift every offset within the token.
-    const trivia = () =>
-      options.origins.synthesized(token.origin, "printer-trivia");
-    emit(
-      leading,
-      leading.length === 0 ? token.origin : trivia(),
-      "synthesized",
-    );
+    // The region's kind marks it as layout, and a synthesized region projects
+    // to the start of its source span, so the token's own origin serves —
+    // minting one per token cost an origin and an intern entry for every
+    // piece of trivia in the file.
+    emit(leading, token.origin, "synthesized");
     const start = offset;
     emit(text, token.origin, kind);
     const trailing = token.trailingTrivia.map(({ raw }) => raw).join("");
-    emit(
-      trailing,
-      trailing.length === 0 ? token.origin : trivia(),
-      "synthesized",
-    );
+    emit(trailing, token.origin, "synthesized");
     tokenSpans.push(
       Object.freeze({ syntax: token.id, start, end: start + text.length }),
     );
