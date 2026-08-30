@@ -138,6 +138,13 @@ export type MacroOperatorResolver = (
 ) => MacroOperatorCandidate | undefined;
 
 export interface PrattExpressionConsumerOptions extends PrimaryExpressionConsumerOptions {
+  /**
+   * Consumes what stands to the right of `as` and `satisfies`, which is a type
+   * and not an expression. Parsed as an expression, `x as const` and
+   * `x as string[]` do not parse at all, and the statement holding them fell
+   * back to unexpanded tokens with nothing reported.
+   */
+  readonly consumeType?: SyntaxConsumer | undefined;
   readonly resolveMacroOperator?: MacroOperatorResolver | undefined;
   /** Enables the low-precedence comma operator for full Expression contexts. */
   readonly allowComma?: boolean | undefined;
@@ -242,9 +249,16 @@ function resolveOperator(
   if (spelling === undefined) return undefined;
   if (spelling === ">") return joinGreaterThan(cursor, fixity);
   const core = coreByKey.get(`${fixity}|${spelling}`);
-  return core === undefined
-    ? undefined
-    : { ...core, width: 1, macro: undefined };
+  if (core === undefined) return undefined;
+  // `yield*` is one operator written as two tokens. Taken as `yield` and then
+  // infix `*`, it never parsed, and the body holding it fell back to
+  // unexpanded tokens with nothing reported.
+  if (fixity === "prefix" && spelling === "yield") {
+    const next = cursor.peek(1);
+    if (next?.tag === "token" && next.raw === "*")
+      return { ...core, width: 2, macro: undefined };
+  }
+  return { ...core, width: 1, macro: undefined };
 }
 
 function consumeOperator(
@@ -407,6 +421,46 @@ function parseConditional(
   };
 }
 
+/**
+ * What stands to the right of `as` or `satisfies`: a type, not an expression.
+ *
+ * Read as an expression, `x as const` and `x as string[]` do not parse, and
+ * the statement holding them fell back to unexpanded tokens with nothing
+ * reported — so one `as const` in a function body silently stopped every macro
+ * in it from running.
+ */
+function parseAssertedType(
+  cursor: SyntaxCursor,
+  context: PrattContext,
+  precedence: number,
+): ParsedExpression | ConsumerAttempt {
+  // `const` is a type only here, so the type consumer does not accept it.
+  const spelling = tokenSpelling(cursor);
+  if (spelling === "const") {
+    const token = cursor.consume();
+    if (token !== undefined)
+      return {
+        syntax: protect(context.options, [token], precedence),
+        cursor,
+        outerPrecedence: precedence,
+        unparenthesizedPrefix: false,
+        mixingFamily: undefined,
+      };
+  }
+  const consumer = context.options.consumeType;
+  if (consumer === undefined)
+    return parseExpression(cursor, precedence + 1, context);
+  const attempt = consumer.consume(cursor, context.consumer);
+  if (!attempt.matched) return attempt;
+  return {
+    syntax: attempt.syntax,
+    cursor: attempt.cursor,
+    outerPrecedence: precedence,
+    unparenthesizedPrefix: false,
+    mixingFamily: undefined,
+  };
+}
+
 function parseExpression(
   cursor: SyntaxCursor,
   minimumPrecedence: number,
@@ -510,7 +564,10 @@ function parseExpression(
     const operator = consumeOperator(cursor, infix);
     const rightMinimum =
       infix.associativity === "right" ? infix.precedence : infix.precedence + 1;
-    const right = parseExpression(cursor, rightMinimum, context);
+    const right =
+      infix.spelling === "as" || infix.spelling === "satisfies"
+        ? parseAssertedType(cursor, context, infix.precedence)
+        : parseExpression(cursor, rightMinimum, context);
     if ("matched" in right) return right;
     if (
       (mixingFamily === "logical" && right.mixingFamily === "nullish") ||

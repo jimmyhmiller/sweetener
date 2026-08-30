@@ -464,9 +464,13 @@ export function createExpansionFrontendSession(
     ...shared,
   });
   const consumerShared = { ...shared, resolveMacroOperator: operatorResolver };
+  // Built before the expression consumer, which needs it: what stands to the
+  // right of `as` and `satisfies` is a type.
+  const type = createTypeConsumer(shared);
   const expression = createPrattExpressionConsumer({
     ...consumerShared,
     resolveMacro: extentResolver,
+    consumeType: type,
   });
   const binding = createBindingConsumer({
     ...shared,
@@ -502,7 +506,6 @@ export function createExpansionFrontendSession(
     resolveMacro: extentResolver,
     holdsStatementOperator,
   });
-  const type = createTypeConsumer(shared);
   const jsxChild = createJsxChildConsumer(shared);
   const classElement = createClassElementConsumer({
     ...shared,

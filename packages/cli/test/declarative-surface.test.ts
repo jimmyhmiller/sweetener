@@ -1030,3 +1030,68 @@ export const kept = 1;
     expect(text).toContain("report(1);");
   });
 });
+
+describe("macros beside TypeScript the parser has to understand", () => {
+  const twice = `export syntax twice:expr {
+    rule { twice($value:expr) } => { [$value, $value] }
+  }`;
+
+  test("a type assertion does not stop the body around it expanding", () => {
+    // `as` and `satisfies` take a type, not an expression. Parsed as one,
+    // `as const` did not parse at all, and the whole function body fell back
+    // to unexpanded tokens — silently, with check reporting success.
+    const { text, messages } = expand(
+      twice,
+      `import { twice } from "./macros.sts" for syntax;
+export function run(): readonly number[] {
+  const mode = "a" as const;
+  void mode;
+  return twice(21);
+}
+`,
+    );
+    expect(messages).toEqual([]);
+    expect(text.replaceAll(/\s+/gu, "")).toContain("[21,21]");
+    expect(text).not.toContain("twice(21)");
+  });
+
+  test("every assertion form parses as the type it is", () => {
+    // Each written over something the assertion is actually valid on, so a
+    // diagnostic here is the parse and not TypeScript objecting.
+    for (const [subject, assertion] of [
+      ["[1, 2]", "as const"],
+      ["value", "as number"],
+      ["names", "as string[]"],
+      ["value", "satisfies number"],
+    ] as const) {
+      const { text, messages } = expand(
+        twice,
+        `import { twice } from "./macros.sts" for syntax;
+declare const value: number;
+declare const names: string[];
+export const kept = twice(${subject} ${assertion});
+`,
+      );
+      expect(messages, assertion).toEqual([]);
+      expect(text.replaceAll(/\s+/gu, ""), assertion).toContain(
+        `${subject.replaceAll(" ", "")}${assertion.replaceAll(" ", "")}`,
+      );
+    }
+  });
+
+  test("yield* does not stop the body around it expanding", () => {
+    const { text, messages } = expand(
+      twice,
+      `import { twice } from "./macros.sts" for syntax;
+export function* run(): Generator<number, readonly number[], unknown> {
+  yield* [1, 2];
+  return twice(21);
+}
+`,
+    );
+    expect(messages).toEqual([]);
+    const compact = text.replaceAll(/\s+/gu, "");
+    expect(compact).toContain("[21,21]");
+    expect(compact).toContain("yield*[1,2]");
+  });
+});
