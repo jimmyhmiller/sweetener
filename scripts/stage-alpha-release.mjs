@@ -49,10 +49,13 @@ for (const directory of packageDirectories) {
     version,
     description: `Sweetener alpha package: ${directory}`,
     type: "module",
-    exports: manifest.exports,
-    // Carried from the package rather than assumed: dropping `bin` published a
-    // command-line tool with no command, and a package that ships more than
-    // `dist` had the rest left out.
+    // Carried from the package rather than assumed. Dropping `bin` published a
+    // command-line tool with no command; dropping `main` and `types` published
+    // a package with no entry point at all, for the ones that name their entry
+    // that way instead of through `exports`.
+    ...(manifest.exports === undefined ? {} : { exports: manifest.exports }),
+    ...(manifest.main === undefined ? {} : { main: manifest.main }),
+    ...(manifest.types === undefined ? {} : { types: manifest.types }),
     ...(manifest.bin === undefined ? {} : { bin: manifest.bin }),
     files: manifest.files ?? ["dist"],
     dependencies,

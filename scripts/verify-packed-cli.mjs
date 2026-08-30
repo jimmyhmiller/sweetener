@@ -60,6 +60,20 @@ try {
         problems.push(`${item.name} declares files["${entry}"] but omits it`);
       }
     }
+    // A consumer reaches the code through `exports`, and a TypeScript consumer
+    // reaches the declarations the same way, so both targets have to be there.
+    for (const [condition, file] of Object.entries(
+      manifest.exports?.["."] ?? {},
+    )) {
+      if (typeof file !== "string") continue;
+      try {
+        await stat(join(target, file));
+      } catch {
+        problems.push(
+          `${item.name} points its ${condition} export at ${file}, which the tarball does not contain`,
+        );
+      }
+    }
     for (const [command, file] of Object.entries(manifest.bin ?? {})) {
       try {
         await readFile(join(target, file), "utf8");
@@ -71,19 +85,64 @@ try {
     }
   }
 
-  // TypeScript comes from the registry for a real consumer. Borrowing the copy
-  // already installed here keeps this check off the network.
-  const require = createRequire(join(root, "package.json"));
-  let typescriptRoot = dirname(require.resolve("typescript"));
-  while (typescriptRoot !== dirname(typescriptRoot)) {
-    try {
-      await readFile(join(typescriptRoot, "package.json"), "utf8");
-      break;
-    } catch {
-      typescriptRoot = dirname(typescriptRoot);
+  // Everything the packages depend on that is not one of them comes from the
+  // registry for a real consumer, peer dependencies included. Borrowing the
+  // copies already installed here keeps this check off the network, and
+  // standing them up at all is what lets the libraries below be loaded rather
+  // than merely inspected. Each is resolved from the package that depends on
+  // it, because the installer keeps them there rather than at the root.
+  const linked = new Set();
+  for (const item of release.packages) {
+    const workspaceDirectory = join(
+      root,
+      "packages",
+      item.name.split("/").at(-1),
+    );
+    const workspaceManifest = JSON.parse(
+      await readFile(join(workspaceDirectory, "package.json"), "utf8"),
+    );
+    const from = createRequire(join(workspaceDirectory, "package.json"));
+    const needed = [
+      ...Object.keys(workspaceManifest.dependencies ?? {}),
+      ...Object.keys(workspaceManifest.peerDependencies ?? {}),
+    ];
+    for (const name of needed) {
+      if (name.startsWith("@sweetener/") || linked.has(name)) continue;
+      let packageRoot;
+      try {
+        packageRoot = dirname(from.resolve(name));
+      } catch {
+        try {
+          packageRoot = dirname(
+            from.resolve(`${name}/package.json`, {
+              paths: [workspaceDirectory],
+            }),
+          );
+        } catch {
+          problems.push(
+            `${item.name} depends on ${name}, which is not installed here to borrow`,
+          );
+          linked.add(name);
+          continue;
+        }
+      }
+      while (packageRoot !== dirname(packageRoot)) {
+        try {
+          const found = JSON.parse(
+            await readFile(join(packageRoot, "package.json"), "utf8"),
+          );
+          if (found.name === name || found.name === undefined) break;
+          break;
+        } catch {
+          packageRoot = dirname(packageRoot);
+        }
+      }
+      const target = join(modules, name);
+      await mkdir(dirname(target), { recursive: true });
+      await symlink(packageRoot, target, "dir");
+      linked.add(name);
     }
   }
-  await symlink(typescriptRoot, join(modules, "typescript"), "dir");
 
   // A project of the shape the README describes.
   await writeFile(
@@ -115,6 +174,42 @@ try {
     )}\n`,
     "utf8",
   );
+
+  // Load every library by name from the unpacked tree. The command line
+  // reaches most of them, but only along the paths it happens to use; a
+  // consumer writing `import { ... } from "@sweetener/compiler"` does not.
+  // By the entry points each package actually declares. One of them exposes
+  // only a subpath, and importing its bare name would fail by design.
+  const importable = [];
+  for (const item of release.packages) {
+    if (item.name === "@sweetener/cli") continue;
+    const manifest = JSON.parse(
+      await readFile(join(modules, item.name, "package.json"), "utf8"),
+    );
+    const subpaths = Object.keys(manifest.exports ?? {});
+    if (subpaths.length === 0) importable.push(item.name);
+    else
+      for (const subpath of subpaths)
+        importable.push(join(item.name, subpath).replaceAll("\\", "/"));
+  }
+  await writeFile(
+    join(directory, "import-check.mjs"),
+    `${importable
+      .map(
+        (name) =>
+          `try { await import(${JSON.stringify(name)}); } catch (error) { process.stdout.write(${JSON.stringify(name)} + ": " + (error?.message ?? String(error)) + "\\n"); }`,
+      )
+      .join("\n")}\n`,
+    "utf8",
+  );
+  const failedImports = execFileSync(
+    process.execPath,
+    [join(directory, "import-check.mjs")],
+    { cwd: directory, encoding: "utf8", stdio: "pipe" },
+  ).trim();
+  if (failedImports.length > 0)
+    for (const line of failedImports.split("\n"))
+      problems.push(`a consumer cannot import ${line}`);
 
   const cli = release.packages.find(({ name }) => name === "@sweetener/cli");
   if (cli === undefined) problems.push("no @sweetener/cli in the release");
