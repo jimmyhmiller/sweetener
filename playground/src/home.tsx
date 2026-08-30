@@ -1,12 +1,23 @@
 import React from "react";
 import { examples } from "./examples";
+import { tokenize } from "./sweet-syntax";
 
 function Code({ file, children }: { file?: string; children: string }) {
   return (
     <figure className="code">
       {file === undefined ? null : <figcaption>{file}</figcaption>}
       <pre>
-        <code>{children}</code>
+        <code>
+          {tokenize(children).map((token, index) =>
+            token.kind === "plain" || token.kind === "punctuation" ? (
+              token.text
+            ) : (
+              <span className={`tok-${token.kind}`} key={index}>
+                {token.text}
+              </span>
+            ),
+          )}
+        </code>
       </pre>
     </figure>
   );

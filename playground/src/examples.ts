@@ -8,8 +8,12 @@ import debugMacros from "../examples/debug/macros.sts?raw";
 import debugMain from "../examples/debug/main.sts?raw";
 import recordsMacros from "../examples/records/macros.sts?raw";
 import recordsMain from "../examples/records/main.sts?raw";
-import threadingMacros from "../examples/threading/macros.sts?raw";
-import threadingMain from "../examples/threading/main.sts?raw";
+import jsxRuntime from "../examples/jsx/runtime.ts?raw";
+import jsxMacros from "../examples/jsx/macros.sts?raw";
+import jsxMain from "../examples/jsx/main.stsx?raw";
+import signalsRuntime from "../examples/signals/runtime.ts?raw";
+import signalsMacros from "../examples/signals/macros.sts?raw";
+import signalsMain from "../examples/signals/main.sts?raw";
 
 export type PlaygroundFile = { fileName: string; source: string };
 export type PlaygroundExample = {
@@ -26,14 +30,17 @@ const example = (
   summary: string,
   macros: string,
   main: string,
+  extra: PlaygroundFile[] = [],
+  entryFileName = "main.sts",
 ): PlaygroundExample => ({
   id,
   name,
   summary,
-  entryFileName: "main.sts",
+  entryFileName,
   files: [
+    ...extra,
     { fileName: "macros.sts", source: macros },
-    { fileName: "main.sts", source: main },
+    { fileName: entryFileName, source: main },
   ],
 });
 
@@ -74,11 +81,21 @@ export const examples: PlaygroundExample[] = [
     recordsMain,
   ),
   example(
-    "threading",
-    "Threading",
-    "A recursive macro that rewrites itself until it bottoms out.",
-    threadingMacros,
-    threadingMain,
+    "signals",
+    "Reactive state",
+    "A macro that writes a macro, so state reads and writes like a variable.",
+    signalsMacros,
+    signalsMain,
+    [{ fileName: "runtime.ts", source: signalsRuntime }],
+  ),
+  example(
+    "jsx",
+    "Control flow in JSX",
+    "`when` and `each` as real syntax, instead of ternaries and .map().",
+    jsxMacros,
+    jsxMain,
+    [{ fileName: "runtime.ts", source: jsxRuntime }],
+    "main.stsx",
   ),
   example(
     "matching",

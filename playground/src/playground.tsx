@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import CompilerWorker from "./compiler-worker?worker";
 import type { CompileResponse } from "./compiler-worker";
 import { examples, type PlaygroundFile } from "./examples";
+import { sweetHighlighting } from "./sweet-syntax";
 
 const worker = new CompilerWorker();
 let requestId = 0;
@@ -49,7 +50,11 @@ function Editor({
         doc: value,
         extensions: [
           basicSetup,
-          javascript({ typescript: true, jsx: true }),
+          // The left pane is .sts and the right is the TypeScript it became,
+          // so only one of them is Sweetener.
+          readOnly
+            ? javascript({ typescript: true, jsx: true })
+            : sweetHighlighting,
           keymap.of([...defaultKeymap, indentWithTab]),
           editorTheme,
           EditorState.readOnly.of(Boolean(readOnly)),
@@ -94,7 +99,9 @@ export function Playground({
   const [files, setFiles] = useState(() => copyFiles(initial.files));
   const [sourceTab, setSourceTab] = useState(initial.entryFileName);
   const [outputs, setOutputs] = useState<PlaygroundFile[]>([]);
-  const [outputTab, setOutputTab] = useState("main.ts");
+  const [outputTab, setOutputTab] = useState(
+    initial.entryFileName.endsWith("x") ? "main.tsx" : "main.ts",
+  );
   const [diagnostics, setDiagnostics] = useState<string[]>(["Compiling…"]);
   const [compiling, setCompiling] = useState(true);
 
@@ -127,7 +134,7 @@ export function Playground({
             result.outputs.some((file) => file.fileName === current)
               ? current
               : (result.outputs.find((file) =>
-                  file.fileName.endsWith("main.ts"),
+                  file.fileName.startsWith("main."),
                 )?.fileName ??
                 result.outputs[0]?.fileName ??
                 ""),
@@ -151,7 +158,7 @@ export function Playground({
     setEntryFileName(next.entryFileName);
     setFiles(copyFiles(next.files));
     setSourceTab(next.entryFileName);
-    setOutputTab("main.ts");
+    setOutputTab(next.entryFileName.endsWith("x") ? "main.tsx" : "main.ts");
   };
 
   const updateSource = (nextSource: string) => {

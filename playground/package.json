@@ -11,9 +11,11 @@
   "dependencies": {
     "@codemirror/commands": "6.10.2",
     "@codemirror/lang-javascript": "6.2.4",
+    "@codemirror/language": "6.12.4",
     "@codemirror/lint": "6.9.5",
     "@codemirror/state": "6.5.4",
     "@codemirror/view": "6.39.16",
+    "@lezer/highlight": "1.2.3",
     "@typescript/typescript6": "6.0.2",
     "codemirror": "6.0.2",
     "react": "19.2.4",

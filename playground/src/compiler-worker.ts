@@ -83,6 +83,10 @@ function compile(request: CompileRequest) {
         moduleResolution: ts.ModuleResolutionKind.Bundler,
         strict: true,
         target: ts.ScriptTarget.ES2022,
+        // So a .stsx example can be about JSX rather than about configuring it.
+        jsx: ts.JsxEmit.React,
+        jsxFactory: "h",
+        jsxFragmentFactory: "Fragment",
       },
       errors: [],
     },

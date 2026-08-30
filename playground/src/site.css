@@ -346,3 +346,37 @@ ul.examples span {
     padding-top: 3rem;
   }
 }
+
+/* Syntax ----------------------------------------------------------------- */
+
+/*
+ * Two families, so the eye can separate them: the macro language warm, the
+ * TypeScript around it cool. Metavariables and template operations are the
+ * parts a reader has not seen before, so they are the ones that stand out.
+ */
+.tok-comment {
+  color: #6b7684;
+  font-style: italic;
+}
+.tok-string {
+  color: #0a7d55;
+}
+.tok-number {
+  color: #9a5000;
+}
+.tok-keyword {
+  color: #1f5fbf;
+}
+.tok-type {
+  color: #2f6f9f;
+}
+.tok-macro {
+  color: #9b2c86;
+  font-weight: 500;
+}
+.tok-meta {
+  color: #b8471f;
+}
+.tok-operation {
+  color: #7a3fb8;
+}
