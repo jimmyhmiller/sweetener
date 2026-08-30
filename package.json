@@ -39,7 +39,7 @@
     "playground:build": "pnpm --dir playground build",
     "examples:build": "pnpm --filter '@sweetener-example/*' --workspace-concurrency=1 run build",
     "release:stage": "pnpm build && node scripts/stage-alpha-release.mjs",
-    "release:check": "pnpm release:stage && node scripts/release-check.mjs",
+    "release:check": "pnpm release:stage && node scripts/release-check.mjs && node scripts/verify-packed-cli.mjs",
     "release:verify": "pnpm release:stage && node scripts/verify-alpha-release.mjs",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm check:boundaries && pnpm check:declarative-boundary && pnpm acceptance:check && pnpm check:release-spec && pnpm samples:check && pnpm examples:build && pnpm release:check && pnpm status > /dev/null && pnpm status:check"
   },
