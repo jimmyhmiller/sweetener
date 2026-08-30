@@ -26,6 +26,11 @@ import { emitStandalone } from "./standalone-emit.js";
 export interface CliIo {
   readonly stdout: (text: string) => void;
   readonly stderr: (text: string) => void;
+  /**
+   * Asks before anything is written. Absent when there is nobody to ask, in
+   * which case a command that would write refuses instead of assuming.
+   */
+  readonly confirm?: ((question: string) => boolean) | undefined;
 }
 
 export type CliInvocation =
@@ -34,7 +39,11 @@ export type CliInvocation =
       readonly configPath: string;
       readonly debug: boolean;
     }
-  | { readonly command: "init"; readonly directory: string }
+  | {
+      readonly command: "init";
+      readonly directory: string;
+      readonly assumeYes: boolean;
+    }
   | { readonly command: "expand"; readonly fileName: string }
   | { readonly command: "explain"; readonly position: string }
   | {
@@ -46,9 +55,20 @@ export type CliInvocation =
 export function parseCliInvocation(argv: readonly string[]): CliInvocation {
   const command = argv[0];
   if (command === "init") {
-    if (argv.length > 2)
+    const rest = argv.slice(1);
+    const assumeYes = rest.some(
+      (argument) => argument === "--yes" || argument === "-y",
+    );
+    const directories = rest.filter(
+      (argument) => argument !== "--yes" && argument !== "-y",
+    );
+    if (directories.length > 1)
       throw new TypeError("init takes at most one directory");
-    return Object.freeze({ command, directory: argv[1] ?? "." });
+    return Object.freeze({
+      command,
+      directory: directories[0] ?? ".",
+      assumeYes,
+    });
   }
   if (command === "expand") {
     if (argv.length !== 2)
@@ -191,13 +211,43 @@ export function runCli(options: {
             devDependencies?: Record<string, string>;
           })
         : undefined;
-      const project =
-        existing === undefined
-          ? scaffoldProject({ directory: invocation.directory })
-          : scaffoldIntoProject({
-              directory: invocation.directory,
-              manifest: existing,
-            });
+      // A project built for a runtime that needs no package.json is still a
+      // project, and writing one into it would be the wrong thing entirely.
+      const settled =
+        existing !== undefined ||
+        ["deno.json", "deno.jsonc", "bunfig.toml", "tsconfig.json"].some(
+          (name) => existsSync(resolve(invocation.directory, name)),
+        );
+      const project = settled
+        ? scaffoldIntoProject({
+            directory: invocation.directory,
+            manifest: existing,
+          })
+        : scaffoldProject({ directory: invocation.directory });
+
+      // Said in full before anything happens, because this writes into a
+      // directory someone else owns.
+      options.io.stdout(
+        `${[
+          `In ${resolve(invocation.directory)} this will create:`,
+          ...project.files.map(({ path }) => `  ${path}`),
+          "",
+          "It will not modify or delete anything already there.",
+          "",
+        ].join("\n")}`,
+      );
+      if (!invocation.assumeYes) {
+        if (options.io.confirm === undefined) {
+          options.io.stderr(
+            "Nothing here can ask for confirmation. Re-run with --yes to write these files.\n",
+          );
+          return Object.freeze({ exitCode: 1 });
+        }
+        if (!options.io.confirm("Create them? [y/N] ")) {
+          options.io.stdout("Nothing was written.\n");
+          return Object.freeze({ exitCode: 0 });
+        }
+      }
       const written = writeScaffold(project, invocation.directory);
       options.io.stdout(
         `${[

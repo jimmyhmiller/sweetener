@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { readFile, readdir } from "node:fs/promises";
+import ts from "typescript";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -58,6 +59,38 @@ function findCycles(graph) {
   return cycles;
 }
 
+/** Every module specifier the file actually imports from, statically or not. */
+function importedSpecifiers(fileName, source) {
+  const parsed = ts.createSourceFile(
+    fileName,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    fileName.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+  const specifiers = [];
+  const visit = (node) => {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier !== undefined &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    )
+      specifiers.push(node.moduleSpecifier.text);
+    if (
+      ts.isCallExpression(node) &&
+      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+        (ts.isIdentifier(node.expression) &&
+          node.expression.text === "require")) &&
+      node.arguments[0] !== undefined &&
+      ts.isStringLiteral(node.arguments[0])
+    )
+      specifiers.push(node.arguments[0].text);
+    ts.forEachChild(node, visit);
+  };
+  ts.forEachChild(parsed, visit);
+  return specifiers;
+}
+
 export async function checkPackageBoundaries(repositoryRoot) {
   const packagesDirectory = join(repositoryRoot, "packages");
   const errors = [];
@@ -74,21 +107,22 @@ export async function checkPackageBoundaries(repositoryRoot) {
 
     for (const file of await filesBelow(packageRoot)) {
       const source = await readFile(file, "utf8");
-      const packageImport = /from\s+["'](@sweetener\/[^"']+)["']/g;
-      for (const match of source.matchAll(packageImport)) {
-        const specifier = match[1];
-        if (specifier.split("/").length > 2) {
+      // Parsed rather than matched: read as text, an import specifier is
+      // indistinguishable from the same words quoted inside a string, and
+      // documentation that shows someone what to import was being reported as
+      // importing it.
+      for (const specifier of importedSpecifiers(file, source)) {
+        if (
+          specifier.startsWith("@sweetener/") &&
+          specifier.split("/").length > 2
+        )
           errors.push(
             `${relative(repositoryRoot, file)} imports internal package path ${specifier}`,
           );
-        }
-      }
-
-      const crossPackageRelative = /from\s+["'](?:\.\.\/){3,}packages\//g;
-      if (crossPackageRelative.test(source)) {
-        errors.push(
-          `${relative(repositoryRoot, file)} uses a relative cross-package import`,
-        );
+        if (/^(?:\.\.\/){3,}packages\//u.test(specifier))
+          errors.push(
+            `${relative(repositoryRoot, file)} uses a relative cross-package import`,
+          );
       }
     }
   }

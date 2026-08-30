@@ -190,15 +190,64 @@ const viteWiring = (importPath: string, plugins: string) => [
  * Working it out otherwise means finding the example that matches your host
  * and reading its config, which is only discoverable if you know to look.
  */
-export function detectHost(manifest: {
-  readonly dependencies?: Readonly<Record<string, string>> | undefined;
-  readonly devDependencies?: Readonly<Record<string, string>> | undefined;
+export function detectHost(options: {
+  readonly manifest?:
+    | {
+        readonly dependencies?: Readonly<Record<string, string>> | undefined;
+        readonly devDependencies?: Readonly<Record<string, string>> | undefined;
+      }
+    | undefined;
+  readonly directory: string;
 }): DetectedHost | undefined {
   const dependencies = {
-    ...manifest.dependencies,
-    ...manifest.devDependencies,
+    ...options.manifest?.dependencies,
+    ...options.manifest?.devDependencies,
   };
   const has = (name: string) => Object.hasOwn(dependencies, name);
+  // A runtime is recognised by its own config, because a project built for one
+  // may carry no package.json to declare anything in.
+  const hasFile = (...names: readonly string[]) =>
+    names.some((name) => existsSync(join(options.directory, name)));
+
+  if (hasFile("deno.json", "deno.jsonc"))
+    return {
+      name: "Deno",
+      integration: "@sweetener/cli",
+      wiring: [
+        `Deno runs the expanded TypeScript rather than loading a plugin, so`,
+        `expand ahead of time from a build script:`,
+        ``,
+        `  import { emitStandalone } from "@sweetener/cli";`,
+        ``,
+        `  const result = emitStandalone({`,
+        `    fileNames: ["src/macros.sts", "src/example.sts"],`,
+        `    outDir: ".sweetener",`,
+        `  });`,
+        ``,
+        `Then point deno check and deno run at .sweetener, and add a task for`,
+        `the build step so it runs before them.`,
+      ],
+    };
+  if (has("bun") || hasFile("bunfig.toml"))
+    return {
+      name: "Bun",
+      integration: "@sweetener/unplugin",
+      wiring: [
+        `Add the plugin to your Bun build:`,
+        ``,
+        `  import sweetener from "@sweetener/unplugin/bun";`,
+        `  import { resolve } from "node:path";`,
+        ``,
+        `  await Bun.build({`,
+        `    entrypoints: ["src/index.ts"],`,
+        `    plugins: [`,
+        `      sweetener({`,
+        `        configFile: resolve(import.meta.dir, "sweetener.json"),`,
+        `      }),`,
+        `    ],`,
+        `  });`,
+      ],
+    };
 
   if (has("next"))
     return {
@@ -304,12 +353,17 @@ const consumerConfig = (files: readonly string[]): string =>
  */
 export function scaffoldIntoProject(options: {
   readonly directory: string;
-  readonly manifest: {
-    readonly dependencies?: Readonly<Record<string, string>> | undefined;
-    readonly devDependencies?: Readonly<Record<string, string>> | undefined;
-  };
+  readonly manifest?:
+    | {
+        readonly dependencies?: Readonly<Record<string, string>> | undefined;
+        readonly devDependencies?: Readonly<Record<string, string>> | undefined;
+      }
+    | undefined;
 }): ScaffoldedProject {
-  const host = detectHost(options.manifest);
+  const host = detectHost({
+    manifest: options.manifest,
+    directory: options.directory,
+  });
   const cli = cliSpecifier();
   const integration = host?.integration ?? "@sweetener/cli";
   const install =

@@ -35,13 +35,29 @@ installing.
 Run the same command in it. `init` reads what the project depends on, adds a
 `sweetener.json` listing the files to expand and a starter macro under `src/`,
 and prints the integration that host needs with the config to paste:
-`@sweetener/unplugin` for Vite, Astro, Nuxt, SvelteKit and the rest of that
-family, `@sweetener/webpack-loader` for Next and webpack,
-`@sweetener/parcel-transformer` for Parcel, `@sweetener/jest` for Jest. When it
-recognises no bundler it sets the project up for the command line instead.
 
-It never edits a file that is already there — bundler config is printed for you
-to paste, not rewritten.
+| Host                                                | Integration                                        |
+| --------------------------------------------------- | -------------------------------------------------- |
+| Vite, Astro, Nuxt, SvelteKit, Solid Start, TanStack | `@sweetener/unplugin`                              |
+| Bun                                                 | `@sweetener/unplugin/bun`, as a `Bun.build` plugin |
+| Next, webpack                                       | `@sweetener/webpack-loader`                        |
+| Parcel                                              | `@sweetener/parcel-transformer`                    |
+| Jest                                                | `@sweetener/jest`                                  |
+| Deno                                                | `@sweetener/cli`, expanding ahead of a `deno run`  |
+| anything else                                       | the command line                                   |
+
+Deno and Bun are recognised by their own config, so a project with no
+`package.json` is still read as the project it is rather than an empty
+directory.
+
+## What it will and will not do
+
+`init` prints every file it would create and then asks. Answer no and nothing
+is written. Where there is no terminal to ask — a script, a pipeline — it says
+so and stops rather than assuming; pass `--yes` to mean it.
+
+It never edits or deletes a file that is already there. Bundler config belongs
+to whoever wrote it, so it is printed for you to paste, not rewritten.
 
 ## Declare a macro
 

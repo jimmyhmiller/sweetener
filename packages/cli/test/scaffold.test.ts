@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
@@ -8,7 +8,7 @@ function scaffold(): { readonly directory: string; readonly output: string } {
   const directory = mkdtempSync(join(tmpdir(), "sweet-init-"));
   let output = "";
   const result = runCli({
-    argv: ["init", directory],
+    argv: ["init", directory, "--yes"],
     io: {
       stdout: (text) => (output += text),
       stderr: (text) => (output += text),
@@ -72,7 +72,7 @@ describe("sweetener init", () => {
     writeFileSync(join(directory, "package.json"), "{}\n", "utf8");
     let output = "";
     const result = runCli({
-      argv: ["init", directory],
+      argv: ["init", directory, "--yes"],
       io: {
         stdout: (text) => (output += text),
         stderr: (text) => (output += text),
@@ -97,7 +97,7 @@ describe("sweetener init in a project that already exists", () => {
     );
     let output = "";
     const result = runCli({
-      argv: ["init", directory],
+      argv: ["init", directory, "--yes"],
       io: {
         stdout: (text) => (output += text),
         stderr: (text) => (output += text),
@@ -153,5 +153,110 @@ describe("sweetener init in a project that already exists", () => {
     expect(
       result.diagnostics.map(({ messageText }) => String(messageText)),
     ).toEqual([]);
+  });
+});
+
+describe("sweetener init asks first", () => {
+  function attempt(options: {
+    readonly argv: readonly string[];
+    readonly confirm?: ((question: string) => boolean) | undefined;
+  }): {
+    readonly directory: string;
+    readonly output: string;
+    readonly exitCode: number;
+  } {
+    const directory = mkdtempSync(join(tmpdir(), "sweet-ask-"));
+    writeFileSync(
+      join(directory, "package.json"),
+      `${JSON.stringify({ name: "host", type: "module" }, null, 2)}\n`,
+      "utf8",
+    );
+    let output = "";
+    const result = runCli({
+      argv: ["init", directory, ...options.argv],
+      io: {
+        stdout: (text) => (output += text),
+        stderr: (text) => (output += text),
+        ...(options.confirm === undefined ? {} : { confirm: options.confirm }),
+      },
+    });
+    return { directory, output, exitCode: result.exitCode };
+  }
+
+  test("names every file before writing any of them", () => {
+    const asked: string[] = [];
+    const { output } = attempt({
+      argv: [],
+      confirm: (question) => {
+        asked.push(question);
+        return true;
+      },
+    });
+    // The plan has to be on screen before the question is put.
+    const plan = output.slice(0, output.indexOf("Created:"));
+    expect(plan).toContain("this will create:");
+    expect(plan).toContain("sweetener.json");
+    expect(plan).toContain("src/macros.sts");
+    expect(plan).toContain("will not modify or delete anything");
+    expect(asked).toHaveLength(1);
+  });
+
+  test("writes nothing when the answer is no", () => {
+    const { directory, output, exitCode } = attempt({
+      argv: [],
+      confirm: () => false,
+    });
+    expect(exitCode).toBe(0);
+    expect(output).toContain("Nothing was written.");
+    expect(existsSync(join(directory, "sweetener.json"))).toBe(false);
+    expect(existsSync(join(directory, "src"))).toBe(false);
+  });
+
+  test("refuses rather than assuming when nobody can be asked", () => {
+    const { directory, output, exitCode } = attempt({ argv: [] });
+    expect(exitCode).toBe(1);
+    expect(output).toContain("Re-run with --yes");
+    expect(existsSync(join(directory, "sweetener.json"))).toBe(false);
+  });
+
+  test("writes without asking only when told to", () => {
+    const { directory, exitCode } = attempt({ argv: ["--yes"] });
+    expect(exitCode).toBe(0);
+    expect(existsSync(join(directory, "sweetener.json"))).toBe(true);
+  });
+});
+
+describe("runtimes without a bundler", () => {
+  function runtime(files: Readonly<Record<string, string>>): string {
+    const directory = mkdtempSync(join(tmpdir(), "sweet-runtime-"));
+    for (const [name, text] of Object.entries(files))
+      writeFileSync(join(directory, name), text, "utf8");
+    let output = "";
+    runCli({
+      argv: ["init", directory, "--yes"],
+      io: {
+        stdout: (text) => (output += text),
+        stderr: (text) => (output += text),
+      },
+    });
+    return output;
+  }
+
+  test("recognises Deno from its own config, with no package.json", () => {
+    // A Deno project may declare nothing in a package.json because it has
+    // none; writing one into it would be the wrong thing entirely.
+    const output = runtime({ "deno.json": `{ "tasks": {} }\n` });
+    expect(output).toContain("Detected Deno");
+    expect(output).toContain("emitStandalone");
+    expect(output).not.toContain("package.json");
+  });
+
+  test("recognises Bun and points at the plugin it has", () => {
+    const output = runtime({
+      "package.json": `{ "name": "api", "devDependencies": { "bun": "1.2.22" } }\n`,
+    });
+    expect(output).toContain("Detected Bun");
+    expect(output).toContain("@sweetener/unplugin/bun");
+    expect(output).toContain("Bun.build");
   });
 });
