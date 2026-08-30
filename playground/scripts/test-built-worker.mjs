@@ -2,7 +2,6 @@ import { readFile, readdir } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
 
-const root = path.resolve(import.meta.dirname, "../..");
 const nodeProcess = globalThis.process;
 const assets = path.join(import.meta.dirname, "../dist/assets");
 const workerFile = (await readdir(assets)).find(
@@ -24,27 +23,19 @@ globalThis.postMessage = (message) => {
 await import(pathToFileURL(path.join(assets, workerFile)).href);
 if (!messageHandler) throw new Error("Compiler worker did not register");
 
-const families = [
-  "adt",
-  "core-rewrites",
-  "csp",
-  "currying",
-  "do-notation",
-  "implicit-return",
-  "multi-part-methods",
-  "new-language",
-  "operators",
-  "protocols",
-  "rewritten-if",
-  "threading",
-];
+// Every example the site ships, expanded by the worker the site ships. An
+// example that stopped compiling would otherwise greet whoever opened it.
+const examplesRoot = path.join(import.meta.dirname, "../examples");
+const names = (await readdir(examplesRoot, { withFileTypes: true }))
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+  .sort();
+if (names.length === 0) throw new Error("No playground examples were found");
 
-for (const [index, family] of families.entries()) {
-  const fixture = path.join(root, "fixtures/acceptance/playground", family);
-  const macros = await readFile(path.join(fixture, "declarative.sts"), "utf8");
-  const main = (
-    await readFile(path.join(fixture, "acceptance.sts"), "utf8")
-  ).replaceAll("./declarative.sts", "./macros.sts");
+for (const [index, name] of names.entries()) {
+  const directory = path.join(examplesRoot, name);
+  const macros = await readFile(path.join(directory, "macros.sts"), "utf8");
+  const main = await readFile(path.join(directory, "main.sts"), "utf8");
   result = undefined;
   await messageHandler({
     data: {
@@ -56,15 +47,15 @@ for (const [index, family] of families.entries()) {
       ],
     },
   });
-  if (result?.error) throw new Error(`${family}: ${result.error}`);
+  if (result?.error) throw new Error(`${name}: ${result.error}`);
   if (result?.result?.diagnostics?.length)
-    throw new Error(`${family}: ${result.result.diagnostics.join("\n")}`);
+    throw new Error(`${name}: ${result.result.diagnostics.join("\n")}`);
   const output = result?.result?.outputs?.find(({ fileName }) =>
     fileName.endsWith("main.ts"),
   )?.source;
-  if (!output) throw new Error(`${family}: generated TypeScript was empty`);
+  if (!output) throw new Error(`${name}: generated TypeScript was empty`);
 }
 
 nodeProcess.stdout.write(
-  `Built browser worker expanded all ${families.length} production fixtures.\n`,
+  `Built browser worker expanded all ${names.length} playground examples.\n`,
 );
