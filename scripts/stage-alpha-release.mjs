@@ -28,9 +28,14 @@ for (const directory of packageDirectories) {
   );
   const targetDirectory = join(staging, directory);
   await mkdir(targetDirectory, { recursive: true });
-  await cp(join(sourceDirectory, "dist"), join(targetDirectory, "dist"), {
-    recursive: true,
-  });
+  // Everything the package says it ships, not just `dist` — a package whose
+  // command lives outside `dist` was staged without it, so the tarball
+  // declared a command it did not contain.
+  for (const entry of manifest.files ?? ["dist"]) {
+    await cp(join(sourceDirectory, entry), join(targetDirectory, entry), {
+      recursive: true,
+    });
+  }
   const dependencies = Object.fromEntries(
     Object.entries(manifest.dependencies ?? {}).map(([name, requirement]) => [
       name,
@@ -45,9 +50,13 @@ for (const directory of packageDirectories) {
     description: `Sweetener alpha package: ${directory}`,
     type: "module",
     exports: manifest.exports,
-    files: ["dist"],
+    // Carried from the package rather than assumed: dropping `bin` published a
+    // command-line tool with no command, and a package that ships more than
+    // `dist` had the rest left out.
+    ...(manifest.bin === undefined ? {} : { bin: manifest.bin }),
+    files: manifest.files ?? ["dist"],
     dependencies,
-    engines: { node: ">=24 <25" },
+    engines: { node: ">=24" },
     publishConfig: { access: "public", provenance: true },
   };
   await writeFile(
