@@ -974,3 +974,59 @@ export const a = field(size :);
     expect(messages.join("\n")).not.toContain("expected a field type");
   });
 });
+
+describe("statement macros at the top level of a module", () => {
+  test("dispatches where a statement is written outside any function", () => {
+    // A module's top level takes statements, so a statement macro belongs
+    // there. It used to resolve only inside a function body, and a top-level
+    // use reported the macro as an undefined name.
+    const { text, messages } = expand(
+      `export syntax unless:stmt {
+         rule { unless ($condition:expr) { $($body:stmt)* } }
+           => { if (!($condition)) { $($body)* } }
+       }`,
+      `import { unless } from "./macros.sts" for syntax;
+declare const value: number;
+unless (value > 0) {
+  globalThis.console.log("not positive");
+}
+export const kept = value;
+`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain("if (!(value > 0))");
+    expect(text).not.toContain("unless");
+  });
+
+  test("still dispatches inside a function body", () => {
+    const { text, messages } = expand(
+      `export syntax unless:stmt {
+         rule { unless ($condition:expr) { $($body:stmt)* } }
+           => { if (!($condition)) { $($body)* } }
+       }`,
+      `import { unless } from "./macros.sts" for syntax;
+export function f(value: number): string {
+  unless (value > 0) { return "no"; }
+  return "yes";
+}
+`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain("if (!(value > 0))");
+  });
+
+  test("leaves an ordinary call of the same shape alone", () => {
+    const { text, messages } = expand(
+      `export syntax noop:stmt {
+         rule { noop(); } => { { } }
+       }`,
+      `import { noop } from "./macros.sts" for syntax;
+declare function report(value: number): void;
+report(1);
+export const kept = 1;
+`,
+    );
+    expect(messages).toEqual([]);
+    expect(text).toContain("report(1);");
+  });
+});

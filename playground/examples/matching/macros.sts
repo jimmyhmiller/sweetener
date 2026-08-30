@@ -1,0 +1,28 @@
+// A syntax class names a shape, so several rules can share it.
+export syntax class Arm {
+  fields { pattern: tt; body: expr; }
+  rule { $pattern:tt => $body:expr }
+}
+
+// The macro walks the arms and builds one conditional expression.
+export rec syntax match:expr {
+  rule { match ($subject:expr) { } } => {
+    (() => { throw new globalThis.Error("no arm matched"); })()
+  }
+
+  rule { match ($subject:expr) { _ => $body:expr $(,)? } } => {
+    $body
+  }
+
+  rule {
+    match ($subject:expr) { $tag:string-literal => $body:expr, $($rest:tt)+ }
+  } => {
+    $subject.kind === $tag ? $body : match ($subject) { $($rest)+ }
+  }
+
+  rule { match ($subject:expr) { $tag:string-literal => $body:expr $(,)? } } => {
+    $subject.kind === $tag
+      ? $body
+      : (() => { throw new globalThis.Error("no arm matched"); })()
+  }
+}

@@ -723,6 +723,23 @@ export function expandMacroSyntax(
         );
         if (resolvedMacro !== undefined) resolvedCategory = "type";
       }
+      // The top level of a module takes statements as readily as declarations,
+      // so a statement macro is written there the same way it is written in a
+      // block. Looking only for an item macro found it in every function body
+      // and nowhere else.
+      if (
+        resolvedMacro === undefined &&
+        node.tag === "token" &&
+        category === "item"
+      ) {
+        resolvedMacro = resolveSpelling(
+          node.raw,
+          node.span.start,
+          sourceOf(node),
+          "stmt",
+        );
+        if (resolvedMacro !== undefined) resolvedCategory = "stmt";
+      }
       if (
         resolvedMacro === undefined &&
         node.tag === "token" &&

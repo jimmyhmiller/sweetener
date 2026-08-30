@@ -1,0 +1,19 @@
+import { match } from "./macros.sts" for syntax;
+
+type Shape =
+  | { kind: "circle"; radius: number }
+  | { kind: "square"; side: number }
+  | { kind: "rectangle"; width: number; height: number };
+
+// One expression instead of a chain of ifs, and TypeScript still narrows
+// every branch — the macro expands before the type checker runs.
+export function area(shape: Shape): number {
+  return match (shape) {
+    "circle" => Math.PI * shape.radius * shape.radius,
+    "square" => shape.side * shape.side,
+    _ => 0,
+  };
+}
+
+export const circle: number = area({ kind: "circle", radius: 2 });
+export const square: number = area({ kind: "square", side: 3 });
