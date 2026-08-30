@@ -1028,6 +1028,15 @@ export class DefaultProjectExpansionProvider
     // One array for the whole project: resolution below remembers the indexes
     // it derives from these, which it can only do if they stay the same array.
     const packageList = Object.freeze([...packageManifests.values()]);
+    // Which module owns each macro binding is a fact about the project, so it
+    // is gathered once rather than for every file expanded.
+    const ownersByBinding = new Map(
+      [...byPath.values()].flatMap((owner) =>
+        owner.compiled.macros.map(
+          ({ binding }) => [binding.id, owner] as const,
+        ),
+      ),
+    );
     // Both describe the project's macro modules, not the file being
     // expanded, so they are built once rather than once per file.
     const visibilityByModule = new Map<
@@ -1240,13 +1249,7 @@ export class DefaultProjectExpansionProvider
           : session.expand(runtime, "item");
       diagnostics.push(...result.diagnostics);
       invocationCount += result.traces.length;
-      const ownersByBinding = new Map(
-        [...byPath.values()].flatMap((owner) =>
-          owner.compiled.macros.map(
-            ({ binding }) => [binding.id, owner] as const,
-          ),
-        ),
-      );
+
       const invokedOwners = [
         ...new Set(
           result.traces.flatMap(({ binding }) => {
