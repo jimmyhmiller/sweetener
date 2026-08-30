@@ -59,6 +59,81 @@ function contains(start: number, end: number, offset: number): boolean {
   return start === end ? offset === start : start <= offset && offset < end;
 }
 
+/**
+ * A printed region, which works out which macro produced it only if asked.
+ *
+ * Finding that means searching the file's invocation traces, twice per trace
+ * through the origin graph. Doing it for every region made indexing a file cost
+ * regions times traces, and a caller asks it of one position when reporting a
+ * diagnostic — never of every token. A class rather than a literal with a
+ * closure keeps the deferral from costing an allocation per region.
+ */
+class MaterializedRegion implements OriginQueryResult {
+  readonly generatedStart: number;
+  readonly generatedEnd: number;
+  readonly origin: OriginId;
+  readonly kind: GeneratedRegionKind;
+  readonly primary: SourceOrigin;
+  readonly sources: readonly SourceOrigin[];
+  readonly #compute:
+    ((origin: OriginId) => readonly ExpansionFrame[]) | undefined;
+  #stack: readonly ExpansionFrame[] | undefined;
+
+  constructor(
+    entry: OriginMapEntry,
+    primary: SourceOrigin,
+    sources: readonly SourceOrigin[],
+    compute: ((origin: OriginId) => readonly ExpansionFrame[]) | undefined,
+  ) {
+    this.generatedStart = entry.generatedStart;
+    this.generatedEnd = entry.generatedEnd;
+    this.origin = entry.origin;
+    this.kind = entry.kind;
+    this.primary = primary;
+    this.sources = sources;
+    this.#compute = compute;
+  }
+
+  get expansionStack(): readonly ExpansionFrame[] {
+    this.#stack ??= Object.freeze([...(this.#compute?.(this.origin) ?? [])]);
+    return this.#stack;
+  }
+}
+
+/** Text-bearing regions before the layout printed around them. */
+function substance(region: OriginQueryResult): number {
+  return region.kind === "source" || region.kind === "copied" ? 0 : 1;
+}
+
+function bySubstanceThenPosition(
+  left: SourceIndexedRegion,
+  right: SourceIndexedRegion,
+): number {
+  return (
+    substance(left.region) - substance(right.region) ||
+    left.region.generatedStart - right.region.generatedStart
+  );
+}
+
+/**
+ * A region's data fields without its `expansionStack` accessor.
+ *
+ * Spreading an object that carries an accessor drops the engine's fast path for
+ * copying it, and both queries below copy a region on every call. A query is
+ * asking about this region in particular, so its stack is worth settling here:
+ * the region remembers it, and the result stays a plain object.
+ */
+function plain(region: OriginQueryResult) {
+  return {
+    generatedStart: region.generatedStart,
+    generatedEnd: region.generatedEnd,
+    origin: region.origin,
+    kind: region.kind,
+    primary: region.primary,
+    sources: region.sources,
+  };
+}
+
 export function createOriginQueryIndex(options: {
   readonly file: PrintedExpandedFile;
   readonly origins: OriginStore;
@@ -82,26 +157,12 @@ export function createOriginQueryIndex(options: {
   });
 
   function materialize(entry: OriginMapEntry): OriginQueryResult {
-    let stack: readonly ExpansionFrame[] | undefined;
-    return Object.freeze({
-      generatedStart: entry.generatedStart,
-      generatedEnd: entry.generatedEnd,
-      origin: entry.origin,
-      kind: entry.kind,
-      primary: options.origins.selectPrimarySource(entry.origin),
-      sources: options.origins.collectSourceOrigins(entry.origin),
-      // Finding which macro produced a region means searching the file's
-      // invocation traces, and a caller asks that of almost no region — a
-      // diagnostic asks about one position, not about every token. Computing
-      // it for the whole file made indexing quadratic: regions times traces.
-      // Deferred and remembered, so a file pays only for what is looked at.
-      get expansionStack(): readonly ExpansionFrame[] {
-        stack ??= Object.freeze([
-          ...(options.expansionStack?.(entry.origin) ?? []),
-        ]);
-        return stack;
-      },
-    });
+    return new MaterializedRegion(
+      entry,
+      options.origins.selectPrimarySource(entry.origin),
+      options.origins.collectSourceOrigins(entry.origin),
+      options.expansionStack,
+    );
   }
 
   const frozen = Object.freeze(entries);
@@ -191,7 +252,8 @@ export function createOriginQueryIndex(options: {
         ? Object.freeze([])
         : Object.freeze([
             Object.freeze({
-              ...region,
+              ...plain(region),
+              expansionStack: region.expansionStack,
               queriedGeneratedOffset: offset,
               projectedOriginalOffset: projectedOriginal(region, offset),
             }),
@@ -221,21 +283,17 @@ export function createOriginQueryIndex(options: {
         )
           matches.push(candidate);
       }
-      // Several regions can derive from one source offset: the text itself, and
-      // the layout printed around it — separators, trivia, grouping parens —
-      // which carry the same origin. A caller asking where its source went
-      // wants the text, so the regions that hold it are ordered first.
-      const substantive = ({ region }: SourceIndexedRegion): number =>
-        region.kind === "source" || region.kind === "copied" ? 0 : 1;
-      matches.sort(
-        (left, right) =>
-          substantive(left) - substantive(right) ||
-          left.region.generatedStart - right.region.generatedStart,
-      );
+      // One source offset can be covered by more than one region: the text
+      // itself, and the layout printed around it — separators, trivia,
+      // grouping parens — which carry the same origin. A caller asking where
+      // its source went wants the text, so regions holding it come first.
+      // Most offsets match a single region, which needs no ordering at all.
+      if (matches.length > 1) matches.sort(bySubstanceThenPosition);
       return Object.freeze(
         matches.map(({ region }) =>
           Object.freeze({
-            ...region,
+            ...plain(region),
+            expansionStack: region.expansionStack,
             queriedSourceId: sourceId,
             queriedOriginalOffset: offset,
             projectedGeneratedOffset:
