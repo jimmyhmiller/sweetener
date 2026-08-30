@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "bin": {
-    "sweetener": "./dist/src/bin.js"
+    "sweetener": "./bin/sweetener.mjs"
   },
   "exports": {
     ".": {
@@ -13,6 +13,7 @@
     }
   },
   "files": [
+    "bin",
     "dist"
   ],
   "dependencies": {
