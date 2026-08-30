@@ -47,9 +47,9 @@ const example = (
 });
 
 /**
- * Algebraic data types first, because it is the one that answers "why would I
- * want this" in a single screen. The rest run from the simplest macro to the
- * most involved.
+ * The first three are the ones worth meeting first: a sum type with a match
+ * that knows its constructors, control flow inside JSX, and an operator with
+ * its own precedence. The rest follow.
  *
  * Each is a whole working program rather than a fragment, and the build
  * expands every one of them, so an example that stopped compiling would fail
@@ -62,6 +62,15 @@ export const examples: PlaygroundExample[] = [
     "`data` generates a union and its constructors; `match` knows them.",
     adtMacros,
     adtMain,
+  ),
+  example(
+    "jsx",
+    "Control flow in JSX",
+    "`when` and `each` as real syntax, instead of ternaries and .map().",
+    jsxMacros,
+    jsxMain,
+    [{ fileName: "runtime.ts", source: jsxRuntime }],
+    "main.stsx",
   ),
   example(
     "pipeline",
@@ -105,14 +114,5 @@ export const examples: PlaygroundExample[] = [
     signalsMacros,
     signalsMain,
     [{ fileName: "runtime.ts", source: signalsRuntime }],
-  ),
-  example(
-    "jsx",
-    "Control flow in JSX",
-    "`when` and `each` as real syntax, instead of ternaries and .map().",
-    jsxMacros,
-    jsxMain,
-    [{ fileName: "runtime.ts", source: jsxRuntime }],
-    "main.stsx",
   ),
 ];
