@@ -159,6 +159,23 @@ Introduced identifiers receive definition and introduction scopes, while
 captured identifiers retain their call-site identity. That keeps generated
 bindings from accidentally capturing—or being captured by—user code.
 
+## Start a project
+
+```bash
+sweetener init my-app
+```
+
+That writes the `package.json`, `tsconfig.json`, and `src/` a macro needs,
+including a macro definition and a file that uses it. `npm run check` expands
+and type-checks it; `npm run build` emits into `dist/`.
+
+Until these packages are published, `init` points the new project at the
+checkout it was scaffolded from and says so in its output, so build the
+checkout once first.
+
+[SKILL.md](SKILL.md) is a short reference for writing macros: declaring them,
+the pattern forms, and how to read the compiler's diagnostics.
+
 ## Run it from source
 
 Sweetener currently requires Node.js 24 and pnpm 11.18.0.

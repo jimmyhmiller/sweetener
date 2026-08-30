@@ -40,7 +40,7 @@ describe("sweet-ts command line", () => {
     expect(result.exitCode).toBe(1);
     expect(stdout).toEqual([]);
     expect(stderr.join("")).toContain(
-      "Expected check, build, watch, expand, explain, or emit",
+      "Expected init, check, build, watch, expand, explain, or emit",
     );
   });
 

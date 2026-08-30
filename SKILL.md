@@ -1,0 +1,107 @@
+---
+name: sweetener
+description: Write hygienic macros for TypeScript with Sweetener — declaring macros in .sts files, running the compiler, and reading its diagnostics.
+---
+
+# Sweetener
+
+Sweetener extends TypeScript syntax with macros. Macro-enabled files use the
+`.sts` and `.stsx` extensions and expand into ordinary TypeScript, which the
+real TypeScript compiler then type-checks and emits. Nothing about the type
+system is reimplemented.
+
+## Start a project
+
+```sh
+sweetener init my-app
+```
+
+That writes `package.json`, `tsconfig.json`, and a `src/` with a macro
+definition and a file that uses it. Install, then:
+
+```sh
+npm run check   # expand and type-check
+npm run build   # expand, type-check, and emit into dist/
+npm run watch   # rebuild on change
+```
+
+If the packages are not published yet, `init` points the project at the
+checkout it was scaffolded from and says so. Build that checkout once before
+installing.
+
+## Declare a macro
+
+A macro is declared with `syntax`, and named for where it may be written —
+`:expr` for expression position, `:stmt` for statement, `:item` for
+declarations, `:type` for types.
+
+```ts
+export syntax twice:expr {
+  rule { twice($value:expr) } => { [$value, $value] }
+}
+```
+
+A rule is a pattern and the syntax it expands to. `$value:expr` captures one
+expression under the name `value`; write `$value` in the template to place it.
+
+Macros are imported for compile time, and the import does not survive into the
+emitted TypeScript:
+
+```ts
+import { twice } from "./macros.sts" for syntax;
+export const pair = twice(21);
+```
+
+## What to reach for
+
+- **Several shapes**: write several `rule`s. They are tried in order, and the
+  first that matches wins. A trailing comma is a different shape and needs its
+  own rule.
+- **Repetition**: `$($item:expr),*` matches a comma-separated list, and
+  `$($item),*` places it back.
+- **Optional**: `$value:expr?`, tested in a template with
+  `#if(present $value) { ... } #else { ... }`.
+- **A named shape used by several rules**: declare a syntax class.
+
+  ```ts
+  export syntax class Arm {
+    fields { pattern: tt; body: expr; }
+    rule { $pattern:tt => $body:expr }
+  }
+  ```
+
+- **The source text of a capture**: `#text($value)`, which yields a string
+  literal.
+- **A name no call site can collide with**: just introduce it. Hygiene renames
+  it if the call site already uses that name; nothing is required of you.
+
+## Read the diagnostics
+
+`No rule for macro X accepted this input: expected ...` names what the closest
+rule was still waiting for, and the line under it points at the rule in the
+macro definition that wanted it. When a macro will not match, compare the
+input against that rule rather than guessing.
+
+To describe a rule's intent in that message, give the rule an `expect` clause:
+
+```ts
+rule { field($name:ident : $kind:ident) }
+  expect "a field type after the colon";
+  => { [#text($name), #text($kind)] }
+```
+
+Other commands:
+
+- `sweetener expand file.sts` prints the expansion of one file.
+- `sweetener explain file.sts:line:column` reports where a position came from,
+  as JSON.
+
+## Know the limits
+
+- **No editor support.** Editing `.sts` gives no hover, diagnostics, or
+  go-to-definition. The loop is edit, run `check`, read the output.
+- **Rename through a macro is declined.** A captured reference carries no proof
+  of which binding each copy denotes, so the language service refuses rather
+  than guessing.
+- Macros run at compile time only, and cannot call host functions or inspect
+  runtime values.

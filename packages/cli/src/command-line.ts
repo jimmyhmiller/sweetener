@@ -1,3 +1,4 @@
+import { scaffoldProject, writeScaffold } from "./scaffold.js";
 import type { System } from "typescript";
 import * as ts from "typescript";
 import {
@@ -27,6 +28,7 @@ export type CliInvocation =
       readonly configPath: string;
       readonly debug: boolean;
     }
+  | { readonly command: "init"; readonly directory: string }
   | { readonly command: "expand"; readonly fileName: string }
   | { readonly command: "explain"; readonly position: string }
   | {
@@ -37,6 +39,11 @@ export type CliInvocation =
 
 export function parseCliInvocation(argv: readonly string[]): CliInvocation {
   const command = argv[0];
+  if (command === "init") {
+    if (argv.length > 2)
+      throw new TypeError("init takes at most one directory");
+    return Object.freeze({ command, directory: argv[1] ?? "." });
+  }
   if (command === "expand") {
     if (argv.length !== 2)
       throw new TypeError("expand requires one source file");
@@ -76,7 +83,7 @@ export function parseCliInvocation(argv: readonly string[]): CliInvocation {
   }
   if (command !== "check" && command !== "build" && command !== "watch")
     throw new TypeError(
-      "Expected check, build, watch, expand, explain, or emit command",
+      "Expected init, check, build, watch, expand, explain, or emit command",
     );
   let configPath = "tsconfig.json";
   let debug = false;
@@ -165,6 +172,27 @@ export function runCli(options: {
       options.io.stdout(`${fileName}\n`);
     options.io.stdout("emit: success\n");
     return Object.freeze({ exitCode: 0 });
+  }
+  if (invocation.command === "init") {
+    try {
+      const project = scaffoldProject({ directory: invocation.directory });
+      const written = writeScaffold(project, invocation.directory);
+      options.io.stdout(
+        `${[
+          "Created:",
+          ...written.map((path: string) => `  ${path}`),
+          "",
+          ...project.notes.map((note: string) => `- ${note}`),
+          "",
+        ].join("\n")}`,
+      );
+      return Object.freeze({ exitCode: 0 });
+    } catch (error) {
+      options.io.stderr(
+        `${error instanceof Error ? error.message : String(error)}\n`,
+      );
+      return Object.freeze({ exitCode: 1 });
+    }
   }
   if (invocation.command === "expand" || invocation.command === "explain") {
     if (inspectionProvider === undefined) {
