@@ -346,6 +346,21 @@ export function createOriginQueryIndex(options: {
 export function createLazyOriginQueryIndex(
   options: Parameters<typeof createOriginQueryIndex>[0],
 ): OriginQueryIndex {
+  // Deferring the index would otherwise defer the check that its regions are
+  // ordered and in bounds, so a malformed map — from a stale cache entry, or a
+  // tool that wrote one — would be accepted and only rejected later, at
+  // whichever query happened to touch it. This says so now, and reads nothing
+  // but the entries themselves.
+  let previousEnd = 0;
+  for (const entry of options.file.originMap.entries) {
+    if (
+      entry.generatedStart < previousEnd ||
+      entry.generatedEnd < entry.generatedStart ||
+      entry.generatedEnd > options.file.text.length
+    )
+      throw new RangeError("Origin-map regions must be ordered and in bounds");
+    previousEnd = entry.generatedEnd;
+  }
   let built: OriginQueryIndex | undefined;
   const index = (): OriginQueryIndex => {
     built ??= createOriginQueryIndex(options);

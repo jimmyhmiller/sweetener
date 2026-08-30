@@ -89,11 +89,20 @@ export interface ResolvedSourceMacroImports {
 // pure, and a project's paths are few, so the answers are kept.
 const canonicalPaths = new Map<string, string>();
 
+/**
+ * Enough to hold the paths of a large project several times over, so a build
+ * keeps every answer it needs, while a process that outlives many projects —
+ * a watch server, an editor host — cannot grow without bound. Clearing rather
+ * than evicting one entry keeps this off the hot path.
+ */
+const canonicalPathLimit = 20_000;
+
 function canonical(path: string): string {
   const remembered = canonicalPaths.get(path);
   if (remembered !== undefined) return remembered;
   const normalized = posix.normalize(path.replaceAll("\\", "/"));
   const result = normalized.startsWith("/") ? normalized : `/${normalized}`;
+  if (canonicalPaths.size >= canonicalPathLimit) canonicalPaths.clear();
   canonicalPaths.set(path, result);
   return result;
 }
