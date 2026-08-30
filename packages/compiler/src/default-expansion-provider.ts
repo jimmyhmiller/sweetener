@@ -25,7 +25,7 @@ import {
   type ParseMacroDefinitionsResult,
 } from "@sweetener/macro-language";
 import {
-  createOriginQueryIndex,
+  createLazyOriginQueryIndex,
   printExpandedFile,
   type NameRewrite,
   type PrintedExpandedFile,
@@ -59,6 +59,7 @@ import {
   resolveSourceMacroImports,
   resolveMacroProject,
   createExpansionSourceMap,
+  type RawSourceMap,
   parseMacroModuleManifest,
   type DeclarativeMacroManifest,
   type MacroPackageManifest,
@@ -1024,6 +1025,9 @@ export class DefaultProjectExpansionProvider
     });
     diagnostics.push(...bindingLiterals.diagnostics);
     let invocationCount = 0;
+    // One array for the whole project: resolution below remembers the indexes
+    // it derives from these, which it can only do if they stay the same array.
+    const packageList = Object.freeze([...packageManifests.values()]);
     for (const file of projectFiles) {
       const resolvedGraph = resolveMacroProject({
         entry: file.fileName,
@@ -1031,7 +1035,7 @@ export class DefaultProjectExpansionProvider
         compilerVersion: "0.1.0",
         modules: moduleSources,
         aliases,
-        packages: [...packageManifests.values()],
+        packages: packageList,
       });
       diagnostics.push(
         ...resolvedGraph.diagnostics.filter(
@@ -1346,6 +1350,7 @@ export class DefaultProjectExpansionProvider
           printedName,
         ]),
       );
+      let expansionSourceMap: RawSourceMap | undefined;
       this.#inspections.set(
         resolve(file.fileName),
         Object.freeze({
@@ -1354,19 +1359,26 @@ export class DefaultProjectExpansionProvider
           generated,
           origins,
           generatedNames: Object.freeze(generatedNames),
-          sourceMap: createExpansionSourceMap({
-            file: file.kind.virtualFileName,
-            generated,
-            index: createOriginQueryIndex({
-              file: generated,
-              origins,
-              expansionStack: () => [],
-            }),
-            sourceName: (sourceId) =>
-              bySource.get(sourceId)?.fileName ?? `source-${String(sourceId)}`,
-            sourceText: (sourceId) => bySource.get(sourceId)?.sourceText,
-          }),
-          index: createOriginQueryIndex({
+          // Building a source map walks every printed region. Only the
+          // build-tool transforms ask for one; `check` never does, so it is
+          // built when it is first read and remembered after that.
+          get sourceMap(): RawSourceMap {
+            expansionSourceMap ??= createExpansionSourceMap({
+              file: file.kind.virtualFileName,
+              generated,
+              index: createLazyOriginQueryIndex({
+                file: generated,
+                origins,
+                expansionStack: () => [],
+              }),
+              sourceName: (sourceId) =>
+                bySource.get(sourceId)?.fileName ??
+                `source-${String(sourceId)}`,
+              sourceText: (sourceId) => bySource.get(sourceId)?.sourceText,
+            });
+            return expansionSourceMap;
+          },
+          index: createLazyOriginQueryIndex({
             file: generated,
             origins,
             expansionStack: (origin) =>

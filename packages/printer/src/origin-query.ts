@@ -82,6 +82,7 @@ export function createOriginQueryIndex(options: {
   });
 
   function materialize(entry: OriginMapEntry): OriginQueryResult {
+    let stack: readonly ExpansionFrame[] | undefined;
     return Object.freeze({
       generatedStart: entry.generatedStart,
       generatedEnd: entry.generatedEnd,
@@ -89,9 +90,17 @@ export function createOriginQueryIndex(options: {
       kind: entry.kind,
       primary: options.origins.selectPrimarySource(entry.origin),
       sources: options.origins.collectSourceOrigins(entry.origin),
-      expansionStack: Object.freeze([
-        ...(options.expansionStack?.(entry.origin) ?? []),
-      ]),
+      // Finding which macro produced a region means searching the file's
+      // invocation traces, and a caller asks that of almost no region — a
+      // diagnostic asks about one position, not about every token. Computing
+      // it for the whole file made indexing quadratic: regions times traces.
+      // Deferred and remembered, so a file pays only for what is looked at.
+      get expansionStack(): readonly ExpansionFrame[] {
+        stack ??= Object.freeze([
+          ...(options.expansionStack?.(entry.origin) ?? []),
+        ]);
+        return stack;
+      },
     });
   }
 
@@ -261,5 +270,34 @@ export function createOriginQueryIndex(options: {
       kind === undefined
         ? frozen
         : Object.freeze(frozen.filter((region) => region.kind === kind)),
+  });
+}
+
+/**
+ * An index that builds itself when it is first asked something.
+ *
+ * Indexing a file walks every printed region and sorts them by source, which
+ * costs about a fifth of a build. Nothing reads the result unless a diagnostic
+ * has to be moved back to the source it came from, or someone asks to explain
+ * an expansion, so a build with no diagnostics pays for none of it.
+ */
+export function createLazyOriginQueryIndex(
+  options: Parameters<typeof createOriginQueryIndex>[0],
+): OriginQueryIndex {
+  let built: OriginQueryIndex | undefined;
+  const index = (): OriginQueryIndex => {
+    built ??= createOriginQueryIndex(options);
+    return built;
+  };
+  return Object.freeze({
+    generatedToOriginal: (offset: number) => index().generatedToOriginal(offset),
+    originalToGenerated: (sourceId: SourceId, offset: number) =>
+      index().originalToGenerated(sourceId, offset),
+    classifyGenerated: (offset: number) => index().classifyGenerated(offset),
+    expansionStackAtGenerated: (offset: number) =>
+      index().expansionStackAtGenerated(offset),
+    innermostInvocationAtGenerated: (offset: number) =>
+      index().innermostInvocationAtGenerated(offset),
+    regions: (kind?: GeneratedRegionKind) => index().regions(kind),
   });
 }

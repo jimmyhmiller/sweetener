@@ -84,9 +84,18 @@ export interface ResolvedSourceMacroImports {
   readonly diagnostics: readonly Diagnostic[];
 }
 
+// Every module in a project resolves its imports against the same handful of
+// directories, so the same paths are normalized over and over. Normalizing is
+// pure, and a project's paths are few, so the answers are kept.
+const canonicalPaths = new Map<string, string>();
+
 function canonical(path: string): string {
+  const remembered = canonicalPaths.get(path);
+  if (remembered !== undefined) return remembered;
   const normalized = posix.normalize(path.replaceAll("\\", "/"));
-  return normalized.startsWith("/") ? normalized : `/${normalized}`;
+  const result = normalized.startsWith("/") ? normalized : `/${normalized}`;
+  canonicalPaths.set(path, result);
+  return result;
 }
 
 function packageParts(specifier: string): { name: string; subpath: string } {
@@ -258,17 +267,57 @@ export function resolveSourceMacroImports(
   });
 }
 
+// Indexing the modules, packages and aliases of a project depends only on the
+// project, not on the file being resolved, but a build resolves once per file.
+// Rebuilding the indexes each time made resolution cost grow with the square of
+// the project. They are derived from frozen inputs, so they are kept per input.
+const moduleIndexes = new WeakMap<
+  readonly MacroModuleSource[],
+  ReadonlyMap<string, MacroModuleSource>
+>();
+const packageIndexes = new WeakMap<
+  readonly MacroPackageManifest[],
+  ReadonlyMap<string, MacroPackageManifest>
+>();
+const sortedAliases = new WeakMap<readonly PathAlias[], readonly PathAlias[]>();
+
+const noPackages: readonly MacroPackageManifest[] = Object.freeze([]);
+const noAliases: readonly PathAlias[] = Object.freeze([]);
+
+function remembered<Key extends object, Value>(
+  cache: WeakMap<Key, Value>,
+  key: Key,
+  build: (key: Key) => Value,
+): Value {
+  const existing = cache.get(key);
+  if (existing !== undefined) return existing;
+  const built = build(key);
+  cache.set(key, built);
+  return built;
+}
+
 export function resolveMacroProject(
   options: ResolveMacroProjectOptions,
 ): ResolvedMacroProject {
-  const modules = new Map(
-    options.modules.map((module) => [canonical(module.path), module]),
+  const modules = remembered(
+    moduleIndexes,
+    options.modules,
+    (input) => new Map(input.map((module) => [canonical(module.path), module])),
   );
-  const packages = new Map(
-    (options.packages ?? []).map((manifest) => [manifest.name, manifest]),
+  const packages = remembered(
+    packageIndexes,
+    options.packages ?? noPackages,
+    (input) => new Map(input.map((manifest) => [manifest.name, manifest])),
   );
-  const aliases = [...(options.aliases ?? [])].sort((left, right) =>
-    left.pattern.localeCompare(right.pattern),
+  const aliases = remembered(
+    sortedAliases,
+    options.aliases ?? noAliases,
+    (input) =>
+      Object.freeze(
+        [...input].sort((left, right) =>
+          left.pattern.localeCompare(right.pattern),
+        ),
+      ),
   );
   const diagnostics: Diagnostic[] = [];
   const resolved = new Set<string>();
