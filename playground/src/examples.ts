@@ -47,13 +47,22 @@ const example = (
 });
 
 /**
- * Ordered so that reading them top to bottom teaches the system.
+ * Algebraic data types first, because it is the one that answers "why would I
+ * want this" in a single screen. The rest run from the simplest macro to the
+ * most involved.
  *
  * Each is a whole working program rather than a fragment, and the build
  * expands every one of them, so an example that stopped compiling would fail
  * the build rather than greet the next person who opened it.
  */
 export const examples: PlaygroundExample[] = [
+  example(
+    "adt",
+    "Algebraic data types",
+    "`data` generates a union and its constructors; `match` knows them.",
+    adtMacros,
+    adtMain,
+  ),
   example(
     "pipeline",
     "Pipeline operator",
@@ -81,13 +90,6 @@ export const examples: PlaygroundExample[] = [
     "One declaration expands into a class, a constructor, and a printer.",
     recordsMacros,
     recordsMain,
-  ),
-  example(
-    "adt",
-    "Algebraic data types",
-    "`data` generates a union and its constructors; `match` knows them.",
-    adtMacros,
-    adtMain,
   ),
   example(
     "matching",

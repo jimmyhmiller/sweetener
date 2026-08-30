@@ -128,15 +128,20 @@ export function Playground({
             return;
           }
           const result = event.data.result!;
-          setOutputs(result.outputs);
+          // A module of nothing but macro definitions expands to nothing:
+          // macros are compile-time only. A tab onto an empty file suggests
+          // the expansion produced something it did not.
+          const written = result.outputs.filter(
+            (file) => file.source.trim().length > 0,
+          );
+          setOutputs(written);
           setDiagnostics(result.diagnostics);
           setOutputTab((current) =>
-            result.outputs.some((file) => file.fileName === current)
+            written.some((file) => file.fileName === current)
               ? current
-              : (result.outputs.find((file) =>
-                  file.fileName.startsWith("main."),
-                )?.fileName ??
-                result.outputs[0]?.fileName ??
+              : (written.find((file) => file.fileName.startsWith("main."))
+                  ?.fileName ??
+                written[0]?.fileName ??
                 ""),
           );
         };
