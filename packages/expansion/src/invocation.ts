@@ -18,6 +18,7 @@ import {
   type MatchFailure,
   type MatcherProgram,
   type SyntaxClassConsumer,
+  describeExpectations,
 } from "@sweetener/pattern";
 import {
   neverCancelled,
@@ -522,9 +523,25 @@ export function invokeMacro(
   }
 
   const failure = mergedFailure(failures);
-  const failureDescription = failure?.expectations.find(
+  // What the closest rule was still waiting for, rather than how many rules
+  // were tried. A count says only that something is wrong; this says what
+  // could have been written there.
+  //
+  // Wording a macro author wrote for this rule is used as they wrote it: they
+  // know what the rule is for, and phrasing it again around their sentence
+  // would only garble it.
+  const described = failure?.expectations.find(
     (expectation) => expectation.kind === "description",
   );
+  const expected =
+    described?.kind === "description"
+      ? described.description
+      : failure === undefined
+        ? undefined
+        : describeExpectations(
+            failure.expectations,
+            options.consumeClass.nameOfClass,
+          );
   const trace: MacroTraceEvent = Object.freeze({
     invocationId,
     parent: options.parentInvocation,
@@ -549,15 +566,13 @@ export function invokeMacro(
       primaryOrigin: options.diagnosticOrigin(invocationHead.origin),
       messageArguments: [
         options.macro.binding.spelling,
-        failureDescription?.kind === "description"
-          ? failureDescription.description
-          : `${String(attempts.length)} rule attempt(s)`,
+        expected ?? `${String(attempts.length)} rule attempt(s)`,
       ],
       relatedOrigins:
         failure === undefined
           ? []
           : failure.origins.map((origin) => ({
-              message: "Expected by a failed rule",
+              message: "The closest rule was still expecting syntax here",
               origin: options.diagnosticOrigin(origin),
             })),
     }),

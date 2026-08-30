@@ -643,6 +643,16 @@ export function createSyntaxClassConsumer(
   };
   return Object.freeze(
     Object.assign(consume, {
+      nameOfClass: (classId: SyntaxClassId): string | undefined => {
+        // The builtins are matched before the registry is consulted, so they
+        // have no entry there to take a name from.
+        for (const [name, builtin] of Object.entries(options.builtins))
+          if (builtin === classId) return name;
+        return (
+          registry.get(classId)?.name ??
+          options.externalConsumer?.nameOfClass?.(classId)
+        );
+      },
       describeFailure: (classId: SyntaxClassId): string | undefined => {
         const syntaxClass = registry.get(classId);
         if (syntaxClass === undefined)

@@ -913,3 +913,64 @@ export const a = never(1);
     );
   });
 });
+
+describe("macro match failures", () => {
+  test("says which literal a rule was still waiting for", () => {
+    const { messages } = expand(
+      `export syntax unless:stmt {
+         rule { unless ($condition:expr) then { $body:stmt ... } }
+           => { if (!($condition)) { $body ... } }
+       }`,
+      `import { unless } from "./macros.sts" for syntax;
+export function f(x: number): number {
+  unless (x > 0) { return 1; }
+  return 2;
+}
+`,
+    );
+    expect(messages.join("\n")).toContain("expected `then`");
+  });
+
+  test("says which syntax class a rule was still waiting for", () => {
+    const { messages } = expand(
+      `export syntax typed:expr {
+         rule { typed($name:ident) } => { #text($name) }
+       }`,
+      `import { typed } from "./macros.sts" for syntax;
+export const a = typed(1);
+`,
+    );
+    expect(messages.join("\n")).toContain("expected `ident`");
+  });
+
+  test("says when a rule wanted the invocation to end", () => {
+    // The shape that reads as an ordinary trailing comma but needs a rule of
+    // its own, which reported only a count of rules tried.
+    const { messages } = expand(
+      `export syntax pipeline:expr {
+         rule { pipeline($head:expr, $step:expr) } => { $step($head) }
+       }`,
+      `import { pipeline } from "./macros.sts" for syntax;
+declare function top(n: number): (values: number[]) => number[];
+export const a = pipeline([1, 2, 3], top(2),);
+`,
+    );
+    expect(messages.join("\n")).toContain("expected the end of the group");
+    expect(messages.join("\n")).not.toContain("rule attempt(s)");
+  });
+
+  test("uses the wording a rule supplied, as supplied", () => {
+    const { messages } = expand(
+      `export syntax field:expr {
+         rule { field($name:ident : $kind:ident) }
+           expect "a field type after the colon";
+           => { [#text($name), #text($kind)] }
+       }`,
+      `import { field } from "./macros.sts" for syntax;
+export const a = field(size :);
+`,
+    );
+    expect(messages.join("\n")).toContain("a field type after the colon");
+    expect(messages.join("\n")).not.toContain("expected a field type");
+  });
+});

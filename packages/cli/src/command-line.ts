@@ -93,12 +93,27 @@ export function parseCliInvocation(argv: readonly string[]): CliInvocation {
   return Object.freeze({ command, configPath, debug });
 }
 
+function at(file: ts.SourceFile, start: number): string {
+  const position = file.getLineAndCharacterOfPosition(start);
+  return `${file.fileName}:${String(position.line + 1)}:${String(position.character + 1)}`;
+}
+
 function renderDiagnostic(diagnostic: ts.Diagnostic): string {
   const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-  if (diagnostic.file === undefined || diagnostic.start === undefined)
-    return `TS${String(diagnostic.code)}: ${message}`;
-  const at = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-  return `${diagnostic.file.fileName}:${String(at.line + 1)}:${String(at.character + 1)} TS${String(diagnostic.code)}: ${message}`;
+  const head =
+    diagnostic.file === undefined || diagnostic.start === undefined
+      ? `TS${String(diagnostic.code)}: ${message}`
+      : `${at(diagnostic.file, diagnostic.start)} TS${String(diagnostic.code)}: ${message}`;
+  // A diagnostic that points somewhere else as well — the rule that wanted
+  // different syntax, the binding already holding a name — is most of the
+  // answer, and printing only the first line threw that away.
+  const related = (diagnostic.relatedInformation ?? []).map((entry) => {
+    const text = ts.flattenDiagnosticMessageText(entry.messageText, "\n");
+    return entry.file === undefined || entry.start === undefined
+      ? `  ${text}`
+      : `  ${at(entry.file, entry.start)} ${text}`;
+  });
+  return [head, ...related].join("\n");
 }
 
 export function runCli(options: {

@@ -180,17 +180,36 @@ function asTypeScriptDiagnostic(
   diagnostic: Diagnostic,
   files: ReadonlyMap<SourceId, ParsedFile>,
 ): ts.Diagnostic {
-  const source = files.get(diagnostic.primaryOrigin.sourceId);
-  const file =
-    source === undefined
-      ? undefined
-      : ts.createSourceFile(
-          source.fileName,
-          source.sourceText,
-          ts.ScriptTarget.Latest,
-          true,
-          scriptKindForFileName(source.kind.virtualFileName),
-        );
+  const sourceFiles = new Map<SourceId, ts.SourceFile | undefined>();
+  const sourceFile = (sourceId: SourceId): ts.SourceFile | undefined => {
+    if (sourceFiles.has(sourceId)) return sourceFiles.get(sourceId);
+    const parsed = files.get(sourceId);
+    const created =
+      parsed === undefined
+        ? undefined
+        : ts.createSourceFile(
+            parsed.fileName,
+            parsed.sourceText,
+            ts.ScriptTarget.Latest,
+            true,
+            scriptKindForFileName(parsed.kind.virtualFileName),
+          );
+    sourceFiles.set(sourceId, created);
+    return created;
+  };
+  const file = sourceFile(diagnostic.primaryOrigin.sourceId);
+  // A diagnostic that names other places — the rule that expected something
+  // else, the binding already holding a name — carried them this far and then
+  // lost them here, so nothing could show the author where to look.
+  const relatedInformation: ts.DiagnosticRelatedInformation[] =
+    diagnostic.relatedOrigins.map((related) => ({
+      category: ts.DiagnosticCategory.Message,
+      code: Number(diagnostic.code.slice(3)),
+      file: sourceFile(related.origin.sourceId),
+      start: related.origin.start,
+      length: Math.max(0, related.origin.end - related.origin.start),
+      messageText: related.message,
+    }));
   return Object.freeze({
     category:
       diagnostic.severity === "error"
@@ -206,6 +225,7 @@ function asTypeScriptDiagnostic(
       diagnostic.primaryOrigin.end - diagnostic.primaryOrigin.start,
     ),
     messageText: describeDiagnostic(diagnostic),
+    ...(relatedInformation.length === 0 ? {} : { relatedInformation }),
   });
 }
 

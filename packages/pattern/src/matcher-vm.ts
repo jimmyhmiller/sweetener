@@ -58,6 +58,13 @@ export interface SyntaxClassConsumer {
   ): SyntaxClassMatch | undefined;
   readonly describeFailure?:
     ((classId: SyntaxClassId) => string | undefined) | undefined;
+  /**
+   * What a class is called, for reporting what a rule was waiting for.
+   * Separate from `describeFailure`, which answers with the wording a macro
+   * author supplied and is absent when they supplied none.
+   */
+  readonly nameOfClass?:
+    ((classId: SyntaxClassId) => string | undefined) | undefined;
 }
 
 function classBoundary(
