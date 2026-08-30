@@ -4,7 +4,7 @@ Updated: 2026-08-03
 Current phase: phase-07  
 Current slice: Alpha release review and publication  
 Health: yellow  
-Repository commit: 28cd7e8
+Repository commit: 8a243ac
 
 The default declarative TypeScript macro compiler, CLI, external workflow, and reproducible alpha artifacts are complete and verified locally. npm publication and Git-tag creation are not authorized.
 
@@ -122,7 +122,7 @@ Next action: Keep all release artifacts local. npm publication and Git-tag creat
 
 | Check | Result | Commit |
 |---|---|---|
-| unit | 872 passed | 28cd7e8 |
+| unit | 873 passed | 8a243ac |
 
 ## Decisions requiring review
 

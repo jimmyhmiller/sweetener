@@ -189,8 +189,14 @@ try {
     const subpaths = Object.keys(manifest.exports ?? {});
     if (subpaths.length === 0) importable.push(item.name);
     else
-      for (const subpath of subpaths)
+      for (const subpath of subpaths) {
+        // A register entry point exists to install loader hooks into whatever
+        // imports it, and which runtime that is decides whether it should.
+        // Importing one here would be asking the wrong question; each is
+        // covered by its own tests and, for Deno, by the example CI runs.
+        if (subpath.endsWith("/register")) continue;
         importable.push(join(item.name, subpath).replaceAll("\\", "/"));
+      }
   }
   // One process each, rather than one process for all of them. A package
   // whose whole purpose is a global side effect — a loader hook that installs

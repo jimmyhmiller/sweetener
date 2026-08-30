@@ -98,3 +98,13 @@ describe("Deno loader hooks", () => {
     expect(resolved.shortCircuit).toBe(true);
   });
 });
+
+describe("the register entry point", () => {
+  test("refuses to install itself on a runtime it is not for", async () => {
+    // Node implements registerHooks as well, so it would install these and
+    // then behave differently. Refusing beats half-working.
+    await expect(import("../src/register.js")).rejects.toThrow(
+      /is for Deno.*@sweetener\/node\/register/su,
+    );
+  });
+});
