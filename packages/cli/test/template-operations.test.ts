@@ -132,6 +132,27 @@ export syntax named:item {
     );
   });
 
+  test("#count drives the repetitions outside the one it collapses", () => {
+    // A count collapses only its innermost dimension. Given no shape at all,
+    // it drove nothing, and a repetition whose content was a count was refused
+    // as having no driving capture.
+    const { generated, messages } = run(
+      "export syntax sizes:expr { rule { sizes($([$($x:tt),*]),*) } => { [$(#count($x)),*] } }",
+      'import { sizes } from "./macros.sts" for syntax;\n' +
+        "export const a = sizes([1,2,3], [4,5]);\n",
+    );
+    expect(messages).toEqual([]);
+    expect(generated).toContain("[3,2]");
+  });
+
+  test("#count still cannot drive the repetition it collapses", () => {
+    const { messages } = run(
+      "export syntax p:expr { rule { p($($x:tt),*) } => { [$(#count($x)),*] } }",
+      'import { p } from "./macros.sts" for syntax;\nexport const a = p(1,2,3);\n',
+    );
+    expect(messages.join("\n")).toContain("has no driving capture");
+  });
+
   test("#core still reaches the expander", () => {
     const { generated, messages } = run(
       `

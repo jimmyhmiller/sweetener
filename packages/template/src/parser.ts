@@ -97,6 +97,27 @@ function projectFieldShape(
   });
 }
 
+/**
+ * The shape a `#count` of this one leaves standing.
+ *
+ * Counting collapses the innermost dimension to a single number and leaves
+ * every dimension outside it alone, so a `#count` written inside a repetition
+ * counts a different run on each turn of that repetition and drives it. It was
+ * given no shape at all, on the reading that a count drives nothing -- true
+ * only of the dimension it collapses. A repetition whose content was a count
+ * was then refused as having no driving capture.
+ */
+function shapeWithoutInnermost(shape: CaptureShape): CaptureShape {
+  if (shape.kind !== "sequence") return shape;
+  if (shape.element.kind !== "sequence") return shape.element;
+  return createSequenceShape({
+    element: shapeWithoutInnermost(shape.element),
+    cardinalityGroup: shape.cardinalityGroup,
+    minimum: shape.minimum,
+    maximum: shape.maximum,
+  });
+}
+
 function cardinalityAtDepth(
   shape: CaptureShape,
   depth: number,
@@ -486,10 +507,12 @@ class TemplateParser {
                     | "count",
                   path: resolved.path,
                 },
-                // `#count` collapses a repetition to one number, so it reads a
-                // sequence without driving one. The rest select the element
-                // being repeated and so can drive the repetition around them.
-                operationName === "count" ? undefined : resolved.shape,
+                // `#count` collapses the innermost dimension, and drives the
+                // repetitions outside it. The rest select the element being
+                // repeated and so drive the repetition around them.
+                operationName === "count"
+                  ? shapeWithoutInnermost(resolved.shape)
+                  : resolved.shape,
                 current as TokenSyntax,
               ),
             );
