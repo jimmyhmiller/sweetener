@@ -3,7 +3,10 @@ import { DiagnosticRegistry, diagnosticCode } from "@sweetener/shared";
 export const expectedDefinitionPartCode = diagnosticCode("SWR2001");
 export const malformedPatternCode = diagnosticCode("SWR2002");
 export const unknownSyntaxCategoryCode = diagnosticCode("SWR2003");
-export const malformedSyntaxImportCode = diagnosticCode("SWR2004");
+// SWR2004 belongs to the pattern registry's duplicate-capture diagnostic. Two
+// registries claiming one code left a reader of `SWR2004` unable to say which
+// of two unrelated faults it named.
+export const malformedSyntaxImportCode = diagnosticCode("SWR2019");
 
 export const macroLanguageDiagnosticRegistry = new DiagnosticRegistry([
   {

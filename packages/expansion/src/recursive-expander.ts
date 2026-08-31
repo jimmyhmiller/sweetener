@@ -175,6 +175,17 @@ function punctuationSpelled(spelling: string): boolean {
   return !/^[\p{ID_Start}_$]/u.test(spelling);
 }
 
+/**
+ * How many tokens spell this operator here, or nothing if it is not spelled
+ * here at all.
+ *
+ * An operator whose spelling the scanner splits across tokens -- `<-` is `<`
+ * then `-` -- is only that operator when the tokens are written together.
+ * Joining their text regardless of what stood between them read `a < - b`,
+ * which is a comparison against a negation, as the operator: a silent
+ * misreading of ordinary TypeScript, in a file that merely had the operator in
+ * scope.
+ */
 export function operatorWidthAt(
   syntax: SyntaxSequence,
   index: number,
@@ -184,6 +195,7 @@ export function operatorWidthAt(
   for (let width = 1; actual.length <= spelling.length; width += 1) {
     const node = syntax[index + width - 1];
     if (node?.tag !== "token") return undefined;
+    if (width > 1 && node.leadingTrivia.length > 0) return undefined;
     actual += node.raw;
     if (actual === spelling) return width;
     if (!spelling.startsWith(actual)) return undefined;
@@ -1243,9 +1255,17 @@ export function expandMacroSyntax(
           index += 1;
           continue;
         }
+        // A group standing in an expression holds expressions, and an operator
+        // written inside one has to be dispatched there too. Only brackets were
+        // walked this way, so `(a <- b)` and every call argument spelled with a
+        // custom operator kept the reading the ordinary parse gave them --
+        // `a < (-b)` for an operator spelled `<-` -- silently and with no
+        // diagnostic. The group is only entered when an operator's spelling
+        // actually stands in it, so an ordinary parenthesised expression and an
+        // arrow's parameter list are left as they were.
         if (
           node.tag === "group" &&
-          node.delimiter === "bracket" &&
+          (node.delimiter === "bracket" || node.delimiter === "parenthesis") &&
           category === "expr" &&
           activeModules
             .flatMap(({ operators }) => operators)

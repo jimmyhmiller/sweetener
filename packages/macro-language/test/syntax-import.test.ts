@@ -38,7 +38,7 @@ describe("compile-time syntax imports", () => {
 
     expect(result.imports).toEqual([]);
     expect(result.diagnostics).toMatchObject([
-      { code: "SWR2004", severity: "error" },
+      { code: "SWR2019", severity: "error" },
     ]);
   });
 

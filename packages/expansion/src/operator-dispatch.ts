@@ -138,6 +138,17 @@ export function operatorInvocationSyntax(
   ]);
 }
 
+/**
+ * How many tokens spell this operator at the cursor, or nothing if it is not
+ * spelled there.
+ *
+ * An operator whose spelling the scanner splits across tokens -- `<-` is `<`
+ * then `-` -- is only that operator when the tokens are written together.
+ * Joining their text regardless of what stood between them read `a < - b`,
+ * which is a comparison against a negation, as the operator: a silent
+ * misreading of ordinary TypeScript, in a file that merely had the operator in
+ * scope.
+ */
 function matchingWidth(
   cursor: SyntaxCursor,
   spelling: string,
@@ -146,6 +157,7 @@ function matchingWidth(
   for (let width = 1; actual.length <= spelling.length; width += 1) {
     const node = cursor.peek(width - 1);
     if (node?.tag !== "token") return undefined;
+    if (width > 1 && node.leadingTrivia.length > 0) return undefined;
     actual += node.raw;
     if (actual === spelling) return width;
     if (!spelling.startsWith(actual)) return undefined;
