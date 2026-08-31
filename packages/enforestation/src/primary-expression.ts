@@ -2,6 +2,8 @@ import type { SyntaxId } from "@sweetener/shared";
 import {
   createPrecedence,
   createProtectedSyntax,
+  createSyntaxCursor,
+  createSyntaxSequence,
   spanEnvelope,
   type OriginStore,
   type Precedence,
@@ -31,6 +33,20 @@ export interface PrimaryExpressionConsumerOptions {
    * replace one that already covers the same syntax.
    */
   readonly resolveMacro?: MacroExtentResolver | undefined;
+  /**
+   * Parses an expression standing on its own.
+   *
+   * An arrow is taken here by measuring how far it reaches, which left its body
+   * as the tokens it was written with rather than as the expression it is. A
+   * custom operator spelled in it was never offered them, so
+   * `[1, 2].map((n) => n |> double)` kept the reading the ordinary parse gives
+   * `n | > double`, while `21 |> double` beside it expanded. The body is
+   * parsed with this once the arrow's extent is settled, so what the arrow
+   * reaches over does not change.
+   */
+  readonly consumeExpression?:
+    | ((cursor: SyntaxCursor, context: ConsumerContext) => ConsumerAttempt)
+    | undefined;
 }
 
 const literalKinds = new Set<TokenSyntax["kind"]>([
@@ -127,10 +143,16 @@ function classExpressionWidth(cursor: SyntaxCursor): number | undefined {
  * the emitted TypeScript did not parse. `() => x` was worse: an empty
  * parenthesis group is not a primary atom, so nothing could begin it at all.
  */
+interface ArrowExtent {
+  readonly width: number;
+  /** Offset of the first node after `=>`. */
+  readonly bodyStart: number;
+}
+
 function arrowWidth(
   cursor: SyntaxCursor,
   context: ConsumerContext,
-): number | undefined {
+): ArrowExtent | undefined {
   let offset = 0;
   const head = cursor.peek();
   if (head?.tag === "token" && head.raw === "async") {
@@ -167,7 +189,8 @@ function arrowWidth(
       // not something this can fix without breaking the call site.
       const body = cursor.peek(offset + 1);
       if (body?.tag === "group" && body.delimiter === "brace") return undefined;
-      return arrowBodyEnd(cursor, offset + 1);
+      const width = arrowBodyEnd(cursor, offset + 1);
+      return width === undefined ? undefined : { width, bodyStart: offset + 1 };
     }
     // Anything that cannot appear in a return type means this is not an arrow.
     if (node.tag === "group" && node.delimiter === "brace") return undefined;
@@ -329,6 +352,27 @@ function consumePostfix(
   return undefined;
 }
 
+/**
+ * An arrow's nodes with its body parsed, or the nodes as they were when it
+ * cannot be. Falling back keeps a body this cannot read printed as written.
+ */
+function arrowChildren(
+  raw: readonly Syntax[],
+  arrow: ArrowExtent,
+  options: PrimaryExpressionConsumerOptions,
+  context: ConsumerContext,
+): readonly Syntax[] {
+  const consumeExpression = options.consumeExpression;
+  const body = raw.slice(arrow.bodyStart);
+  if (consumeExpression === undefined || body.length < 2) return raw;
+  const attempt = consumeExpression(
+    createSyntaxCursor(createSyntaxSequence(body)),
+    context,
+  );
+  if (!attempt.matched || !attempt.cursor.atEnd) return raw;
+  return [...raw.slice(0, arrow.bodyStart), attempt.syntax];
+}
+
 class PrimaryExpressionConsumer implements SyntaxConsumer {
   constructor(readonly options: PrimaryExpressionConsumerOptions) {
     Object.freeze(this);
@@ -373,7 +417,7 @@ class PrimaryExpressionConsumer implements SyntaxConsumer {
         1,
       );
     }
-    cursor.advance(functionWidth ?? classWidth ?? arrow ?? 1);
+    cursor.advance(functionWidth ?? classWidth ?? arrow?.width ?? 1);
     // Postfix parsing runs first so the macro extent is compared against the
     // whole expression, not just its head.
     let optionalChain = false;
@@ -399,10 +443,16 @@ class PrimaryExpressionConsumer implements SyntaxConsumer {
         cursor,
       });
     }
-    const consumed = cursor
+    const raw = cursor
       .fork()
       .remainingRange()
       .sequence.slice(start, cursor.index);
+    // Only when the arrow is the whole of what was taken: anything postfix
+    // reached past its body, and the slice would no longer line up.
+    const consumed =
+      arrow !== undefined && cursor.index === start + arrow.width
+        ? arrowChildren(raw, arrow, this.options, context)
+        : raw;
     const first = consumed[0]!;
     return Object.freeze({
       matched: true,

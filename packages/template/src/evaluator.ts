@@ -108,7 +108,6 @@ export interface TemplateOperationTrace {
 
 export interface EvaluateTemplateOptions {
   readonly captures: CaptureRecord;
-  readonly selectedAlternatives?: ReadonlyMap<CaptureId, string> | undefined;
   readonly budget?: Partial<ResourceBudget> | undefined;
   readonly tracker?: ResourceTracker | undefined;
   readonly cancellation?: CancellationToken | undefined;
@@ -285,7 +284,6 @@ interface FoldLocals {
 
 class Evaluator {
   readonly #captures: CaptureRecord;
-  readonly #alternatives: ReadonlyMap<CaptureId, string>;
   readonly #tracker: ResourceTracker;
   readonly #cancellation: CancellationToken;
   readonly #trace: TemplateOperationTrace[] = [];
@@ -293,7 +291,6 @@ class Evaluator {
 
   constructor(options: EvaluateTemplateOptions) {
     this.#captures = options.captures;
-    this.#alternatives = options.selectedAlternatives ?? new Map();
     this.#tracker =
       options.tracker ??
       new ResourceTracker(createResourceBudget(options.budget ?? {}));
@@ -621,17 +618,8 @@ class Evaluator {
     predicate: ConditionalPredicate,
     indices: readonly number[],
   ): boolean {
-    if (predicate.kind === "present") {
-      const optional = tryResolvePath(this.#captures, predicate.path, indices);
-      return optional !== undefined && isPresent(optional);
-    }
-    // Resolved for its checks: an alternative conditional still names a
-    // capture that has to exist, even though the tag comes from the match.
-    resolvePath(this.#captures, predicate.path, indices);
-    return (
-      this.#alternatives.get(finalCaptureId(predicate.path)) ===
-      predicate.alternative
-    );
+    const optional = tryResolvePath(this.#captures, predicate.path, indices);
+    return optional !== undefined && isPresent(optional);
   }
 
   #capture(value: CaptureLeaf): EvaluatedSyntax {

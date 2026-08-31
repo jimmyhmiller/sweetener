@@ -612,7 +612,30 @@ class PrattExpressionConsumer implements SyntaxConsumer {
   readonly #primary: SyntaxConsumer;
 
   constructor(readonly options: PrattExpressionConsumerOptions) {
-    this.#primary = createPrimaryExpressionConsumer(options);
+    // The primary consumer parses an arrow's body with this, so that a custom
+    // operator written in one is dispatched as it is anywhere else. Commas are
+    // not taken: a comma ends an arrow's body, as it does in a call's
+    // arguments and an array literal.
+    const primary: SyntaxConsumer = createPrimaryExpressionConsumer({
+      ...options,
+      consumeExpression: (cursor, context) => {
+        const parsed = parseExpression(cursor, 0, {
+          consumer: context,
+          options,
+          primary,
+          start: cursor.index,
+          allowComma: false,
+        });
+        return "matched" in parsed
+          ? parsed
+          : Object.freeze({
+              matched: true as const,
+              syntax: parsed.syntax,
+              cursor: parsed.cursor,
+            });
+      },
+    });
+    this.#primary = primary;
     Object.freeze(this);
   }
 

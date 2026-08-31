@@ -101,6 +101,41 @@ describe("where an operator is dispatched", () => {
     expect(expand("export const x = call(a);")).toContain("call(a)");
   });
 
+  test("inside an arrow's body", () => {
+    // An arrow was taken by measuring how far it reaches, which left its body
+    // as the tokens it was written with rather than as the expression it is.
+    // `[1, 2].map((n) => n |> double)` is the obvious thing to write, and the
+    // operator was never offered it.
+    expect(expand("export const x = [a].map((n) => n <- b);")).toContain(
+      "(n) =>assign( n, b)",
+    );
+  });
+
+  test("inside a typed arrow's body", () => {
+    expect(
+      expand("export const x = [a].map((n: number): number => n <- b);"),
+    ).toContain("=>assign( n, b)");
+  });
+
+  test("through a chain of them in one body", () => {
+    expect(expand("export const x = [a].map((n) => n <- b <- a);")).toContain(
+      "assign(assign( n, b), a)",
+    );
+  });
+
+  test("inside an arrow nested in another arrow's body", () => {
+    expect(
+      expand("export const x = [a].map((n) => [n].map((m) => m <- b));"),
+    ).toContain("(m) =>assign( m, b)");
+  });
+
+  test("an arrow whose body holds no operator is printed as written", () => {
+    // The body is parsed now, so it reaches the printer as one node. Wrapping
+    // that in parentheses would spell the same function worse.
+    const generated = expand("export const f = (value: number) => value + 1;");
+    expect(generated).toContain("(value: number) => value + 1");
+  });
+
   test("an arrow's parameter list is left as written", () => {
     const generated = expand(
       "export const f = (left: number, right: number) => assign(left, right);",

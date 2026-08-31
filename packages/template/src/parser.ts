@@ -538,12 +538,12 @@ class TemplateParser {
           predicateGroup.children,
           1,
         );
-        // `alternative` is refused rather than read. Nothing on the matching
-        // side records which alternative a capture matched -- the map the
-        // evaluator consults is populated only by its own tests -- so an
-        // alternative conditional never selected its consequent and silently
-        // took the `#else` branch for every input. The refinement language
-        // refuses the same predicate for the same reason.
+        // `alternative` was a second predicate, asking which of a pattern's
+        // choices a capture took. Nothing on the matching side ever recorded
+        // that, so it was always answered no and the `#else` branch was taken
+        // for every input. A syntax class with a rule per shape and an optional
+        // field for each answers the same question and does work, so the
+        // predicate that did not is gone rather than kept beside it.
         const unsupportedAlternative =
           token(predicateKind) && predicateKind.raw === "alternative";
         if (
@@ -560,7 +560,7 @@ class TemplateParser {
             malformedTemplateCode,
             predicateCapture?.origin ?? predicateGroup.origin,
             unsupportedAlternative
-              ? "alternative conditionals are not supported: nothing records which alternative a capture matched, so one would never select its consequent"
+              ? "conditional requires present $capture; to branch on which shape a capture matched, give a syntax class one rule per shape and test an optional field of it"
               : "conditional requires present $capture",
           );
           elements.push(createLiteralTemplate(current));

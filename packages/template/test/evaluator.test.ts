@@ -229,27 +229,6 @@ describe("template evaluator", () => {
     expect(
       raws(evaluateTemplate(present, { captures: absentCaptures }).output),
     ).toEqual(["no"]);
-
-    const alternative = createSequenceTemplate(group.origin, [
-      createConditionalTemplate({
-        origin: group.origin,
-        predicate: Object.freeze({
-          kind: "selected-alternative",
-          path,
-          alternative: "some",
-        }),
-        consequent: yes,
-        alternate: no,
-      }),
-    ]);
-    expect(
-      raws(
-        evaluateTemplate(alternative, {
-          captures: absentCaptures,
-          selectedAlternatives: new Map([[optional, "some"]]),
-        }).output,
-      ),
-    ).toEqual(["yes"]);
   });
 
   test("enforces template-step budgets and cancellation", () => {

@@ -149,10 +149,15 @@ Version 1 supplies pure refinements:
 - identifier spelling equals, starts with uppercase/lowercase, or belongs to a
   finite set;
 - token kind belongs to a finite set;
-- capture followed or preceded by a literal boundary;
-- capture matched a named alternative;
 - repetition length comparison with an integer literal;
 - delimiter kind.
+
+Two further predicates were specified and are not supplied: a literal boundary
+on either side of a capture, and a capture having matched a named alternative.
+Both are questions about the match that nothing in the matcher records, so a
+rule written with one would never match, and both are refused where they are
+written. A syntax class with one rule per shape, and an optional field for
+each, distinguishes shapes without either of them.
 
 The macro-language compiler lowers refinements into fixed IR. Macro source cannot
 call host functions.
@@ -193,8 +198,10 @@ The validator rejects:
 
 ## 11. Conditional templates and folds
 
-Conditionals inspect matched alternative tags, optional presence, or fixed
-refinement results. They cannot inspect runtime TypeScript values.
+Conditionals inspect optional presence. They cannot inspect runtime TypeScript
+values, and they cannot ask which alternative a capture matched -- see the note
+in section 8. A template branches on the shape a capture took by naming a
+syntax class with one rule per shape and testing an optional field of it.
 
 The declarative surface uses fixed predicates and syntax branches:
 

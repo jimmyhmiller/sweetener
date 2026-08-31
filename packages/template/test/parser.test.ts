@@ -275,9 +275,9 @@ describe("template parser", () => {
   });
 
   test("refuses an alternative conditional", () => {
-    // Nothing on the matching side records which alternative a capture
-    // matched, so one of these never selected its consequent and silently took
-    // the `#else` branch for every input.
+    // It asked which of a pattern's choices a capture took, which nothing ever
+    // recorded, so it was always answered no. A syntax class with a rule per
+    // shape answers the same question and does work.
     const result = parse('{ #if(alternative $maybe "some") { selected } }', [
       binding("maybe", 1, optionalShape()),
     ]);
@@ -285,7 +285,7 @@ describe("template parser", () => {
       "SWR2016",
     ]);
     expect(String(result.diagnostics[0]?.messageArguments[0])).toContain(
-      "alternative conditionals are not supported",
+      "give a syntax class one rule per shape",
     );
   });
 

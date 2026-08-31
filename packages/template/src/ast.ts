@@ -54,13 +54,20 @@ export interface RepeatTemplate extends TemplateBase {
   readonly drivers: readonly CapturePath[];
 }
 
-export type ConditionalPredicate =
-  | { readonly kind: "present"; readonly path: CapturePath }
-  | {
-      readonly kind: "selected-alternative";
-      readonly path: CapturePath;
-      readonly alternative: string;
-    };
+/**
+ * A conditional asks whether an optional capture matched.
+ *
+ * It once also offered `alternative`, which asked which of a pattern's choices
+ * a capture took. Nothing on the matching side ever recorded that, so the
+ * question was always answered no and the `#else` branch was taken for every
+ * input. A syntax class with a rule per shape and an optional field for each
+ * answers the same question, and does work, so the predicate that did not is
+ * gone rather than kept as a second way to ask.
+ */
+export type ConditionalPredicate = {
+  readonly kind: "present";
+  readonly path: CapturePath;
+};
 
 export interface ConditionalTemplate extends TemplateBase {
   readonly kind: "conditional";
@@ -223,12 +230,6 @@ export function createConditionalTemplate(options: {
   requireFrozen(options.consequent, "Conditional consequent");
   if (options.alternate !== undefined) {
     requireFrozen(options.alternate, "Conditional alternate");
-  }
-  if (
-    options.predicate.kind === "selected-alternative" &&
-    options.predicate.alternative.length === 0
-  ) {
-    throw new RangeError("Alternative tag must not be empty");
   }
   return Object.freeze({
     kind: "conditional",

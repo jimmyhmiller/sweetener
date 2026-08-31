@@ -184,6 +184,15 @@ export function printExpandedFile<Trace>(
   const tokenSpans: PrintedTokenSpan[] = [];
   let offset = 0;
   let lastCharacter: string | undefined;
+  /**
+   * The last token printed, which says whether a grouping is needed after it.
+   * An arrow's body is parsed as an expression, so it arrives here as one
+   * protected node; wrapping that in parentheses printed
+   * `(value: number) => (value + 1)`, which is the same function spelled
+   * worse. Nothing to either side of a body can re-associate into it -- it
+   * runs to the end of the arrow -- so nothing has to hold it together.
+   */
+  let lastToken: string | undefined;
   const emit = (text: string, origin: OriginId, kind: GeneratedRegionKind) => {
     if (text.length === 0) return;
     const start = offset;
@@ -251,6 +260,7 @@ export function printExpandedFile<Trace>(
     }
     const start = offset;
     emit(text, token.origin, kind);
+    lastToken = text;
     const trailing = token.trailingTrivia.map(({ raw }) => raw).join("");
     emit(trailing, token.origin, "synthesized");
     tokenSpans.push(
@@ -299,6 +309,7 @@ export function printExpandedFile<Trace>(
         const group =
           (item.category === "expr" || item.category === "type") &&
           !atomic &&
+          lastToken !== "=>" &&
           (options.groupProtectedExpression?.(item) ?? true);
         if (group)
           pending.push({ text: ")", origin: item.origin, grouping: true });
