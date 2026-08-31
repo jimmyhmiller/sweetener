@@ -1,4 +1,5 @@
 export const packageName = "@sweetener/expansion" as const;
+export * from "./enforestation-error.js";
 export * from "./environment.js";
 export * from "./definition-context.js";
 export * from "./diagnostics.js";

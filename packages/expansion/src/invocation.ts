@@ -55,9 +55,11 @@ import {
   type SequenceTemplate,
   type TemplateOperationTrace,
 } from "@sweetener/template";
+import { EnforestationError } from "./enforestation-error.js";
 import {
   expansionDiagnosticRegistry,
   noMatchingMacroRuleCode,
+  uncategorizedExpansionCode,
 } from "./diagnostics.js";
 import type { CoreDispatchTrace } from "./core-shadowing.js";
 import { createExpansionFingerprint, type ExpansionGuard } from "./progress.js";
@@ -509,15 +511,64 @@ export function invokeMacro(
         tracker: options.tracker,
         cancellation,
       });
-      const expanded = options.expandReplacement({
-        syntax: instantiated.syntax,
-        category: options.category,
-        phase: options.phase,
-        environmentEpoch: options.environmentEpoch,
-        invocationId,
-        followingScopes: contracts.followingScopes,
-        environment: contracts.environment,
-      });
+      let expanded;
+      try {
+        expanded = options.expandReplacement({
+          syntax: instantiated.syntax,
+          category: options.category,
+          phase: options.phase,
+          environmentEpoch: options.environmentEpoch,
+          invocationId,
+          followingScopes: contracts.followingScopes,
+          environment: contracts.environment,
+        });
+      } catch (error) {
+        // The rule's template did not produce one node of the category this
+        // macro declares -- two statements where an expression was wanted, or
+        // JSX in a file whose extension cannot hold it. That is something its
+        // author wrote, so it is reported against the invocation rather than
+        // thrown, which abandoned the expansion of every file in the project
+        // and named neither the macro nor where it was written.
+        if (!(error instanceof EnforestationError)) throw error;
+        return Object.freeze({
+          expanded: false as const,
+          cursor: options.cursor.fork(),
+          diagnostic: expansionDiagnosticRegistry.create(
+            uncategorizedExpansionCode,
+            {
+              primaryOrigin: options.diagnosticOrigin(invocationHead.origin),
+              messageArguments: [
+                options.macro.binding.spelling,
+                error.category,
+                error.syntaxText,
+              ],
+              relatedOrigins: [
+                {
+                  message: "This rule produced it",
+                  origin: options.diagnosticOrigin(rule.origin),
+                },
+              ],
+            },
+          ),
+          trace: Object.freeze({
+            invocationId,
+            parent: options.parentInvocation,
+            binding: options.macro.binding.id,
+            category: options.category,
+            phase: options.phase,
+            invocationOrigin: invocationHead.origin,
+            attemptedRules: Object.freeze(attempts),
+            selectedRule: rule.rule,
+            captures: Object.freeze([]),
+            scopesIntroduced: Object.freeze([]),
+            bindingsIntroduced: Object.freeze([]),
+            operations: Object.freeze([]),
+            outputOrigins: Object.freeze([]),
+            cache: "miss" as const,
+            coreInterception: options.coreInterception,
+          }),
+        });
+      }
       if (expanded.category !== options.category) {
         throw new TypeError(
           `Recursive expansion returned ${expanded.category} for ${options.category}`,

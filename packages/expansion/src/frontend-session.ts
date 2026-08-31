@@ -1,3 +1,4 @@
+import { EnforestationError } from "./enforestation-error.js";
 import {
   bindingMacroResolver,
   createBindingConsumer,
@@ -651,9 +652,7 @@ export function createExpansionFrontendSession(
       activeOperatorModule = previousOperatorModule;
     }
     if (!attempted.matched || !attempted.cursor.atEnd)
-      throw new TypeError(
-        `expanded syntax is not one ${category}: ${diagnosticSyntaxText(syntax)}`,
-      );
+      throw new EnforestationError(category, diagnosticSyntaxText(syntax));
     return attempted.syntax;
   };
   const protect = (

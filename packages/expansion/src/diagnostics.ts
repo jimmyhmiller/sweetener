@@ -10,8 +10,19 @@ export const conflictingOperatorImportCode = diagnosticCode("SWR4007");
 export const invalidMacroContextCode = diagnosticCode("SWR4008");
 export const unresolvedBindingLiteralCode = diagnosticCode("SWR4009");
 export const duplicateMacroDefinitionCode = diagnosticCode("SWR4010");
+export const uncategorizedExpansionCode = diagnosticCode("SWR4011");
 
 export const expansionDiagnosticRegistry = new DiagnosticRegistry([
+  {
+    code: uncategorizedExpansionCode,
+    owner: "expansion-enforestation",
+    stage: "expansion",
+    severity: "error",
+    documentation:
+      "A macro's expansion must read as one node of the category the macro declares.",
+    format: (arguments_) =>
+      `Macro ${String(arguments_[0] ?? "unknown")} expanded to syntax that is not one ${String(arguments_[1] ?? "node")}: ${String(arguments_[2] ?? "")}`,
+  },
   {
     code: duplicateMacroDefinitionCode,
     owner: "expansion-enforestation",

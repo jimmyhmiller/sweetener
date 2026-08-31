@@ -26,6 +26,11 @@ import {
   resolveCompiledMacro,
   type CompileParsedMacrosResult,
 } from "./compile-macros.js";
+import {
+  expansionDiagnosticRegistry,
+  uncategorizedExpansionCode,
+} from "./diagnostics.js";
+import { EnforestationError } from "./enforestation-error.js";
 import type { CompiledMacroBinding, MacroContext } from "./invocation.js";
 import type { CoreDispatchTrace } from "./core-shadowing.js";
 import type {
@@ -1489,19 +1494,50 @@ export function expandMacroSyntax(
     options.module,
     options.contexts ?? new Set(),
   );
-  const syntax =
-    diagnostics.length === 0
-      ? expanded.syntax.length === 0
-        ? createSyntaxSequence([])
-        : createSyntaxSequence([
-            enforestSequence(
-              expanded.syntax,
-              options.category,
-              options.module,
-              options.contexts ?? new Set(),
-            ),
-          ])
-      : expanded.syntax;
+  /**
+   * The whole expansion has to read as one node of the category asked for. A
+   * template that does not produce one is something its author wrote -- two
+   * statements where an expression was wanted, or JSX in a file whose
+   * extension cannot hold it -- so it is reported, rather than leaving here as
+   * a thrown error that abandons the expansion of every file in the project
+   * and names neither the macro nor where it was written.
+   */
+  const categorized = (): SyntaxSequence => {
+    if (diagnostics.length > 0) return expanded.syntax;
+    if (expanded.syntax.length === 0) return createSyntaxSequence([]);
+    try {
+      return createSyntaxSequence([
+        enforestSequence(
+          expanded.syntax,
+          options.category,
+          options.module,
+          options.contexts ?? new Set(),
+        ),
+      ]);
+    } catch (error) {
+      if (!(error instanceof EnforestationError)) throw error;
+      const at = expanded.syntax[0];
+      const source =
+        at === undefined
+          ? undefined
+          : options.origins.selectPrimarySource(at.origin);
+      if (at !== undefined && source !== undefined)
+        diagnostics.push(
+          expansionDiagnosticRegistry.create(uncategorizedExpansionCode, {
+            primaryOrigin: {
+              sourceId: source.sourceId,
+              start: source.span.start,
+              end: source.span.end,
+              originId: at.origin,
+            },
+            messageArguments: [error.category, error.syntaxText],
+          }),
+        );
+      else throw error;
+      return expanded.syntax;
+    }
+  };
+  const syntax = categorized();
   return Object.freeze({
     syntax,
     environment: expanded.environment,
