@@ -463,14 +463,20 @@ export function createExpansionFrontendSession(
     matchesBindingLiteral: options.matchesBindingLiteral,
     ...shared,
   });
-  const consumerShared = { ...shared, resolveMacroOperator: operatorResolver };
-  // Built before the expression consumer, which needs it: what stands to the
-  // right of `as` and `satisfies` is a type.
+  // Built before the consumers that need it: what stands to the right of `as`
+  // and `satisfies` is a type, and the statement and item consumers build
+  // expression consumers of their own, so it has to reach all of them. Passing
+  // it only to the expression consumer left `const value = 1 as number;`
+  // unparseable inside a function body while working at the top level.
   const type = createTypeConsumer(shared);
+  const consumerShared = {
+    ...shared,
+    resolveMacroOperator: operatorResolver,
+    consumeType: type,
+  };
   const expression = createPrattExpressionConsumer({
     ...consumerShared,
     resolveMacro: extentResolver,
-    consumeType: type,
   });
   const binding = createBindingConsumer({
     ...shared,
