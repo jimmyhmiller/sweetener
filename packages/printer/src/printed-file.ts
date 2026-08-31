@@ -112,6 +112,27 @@ function wordCharacter(value: string | undefined): boolean {
   return value !== undefined && /[\p{ID_Continue}$]/u.test(value);
 }
 
+/** Tokens that bind against neighbours, and so need the grouping kept. */
+const nonBinding = new Set([".", "?.", "!", ",", ";", ":", "=>", "...", "?"]);
+
+function bindingOperator(token: TokenSyntax): boolean {
+  if (token.kind === "keyword")
+    return [
+      "as",
+      "satisfies",
+      "in",
+      "instanceof",
+      "typeof",
+      "void",
+      "delete",
+      "await",
+      "yield",
+      "new",
+    ].includes(token.raw);
+  if (token.kind !== "punctuation") return false;
+  return !nonBinding.has(token.raw);
+}
+
 export function printExpandedFile<Trace>(
   options: PrintExpandedFileOptions<Trace>,
 ): PrintedExpandedFile<Trace> {
@@ -214,8 +235,16 @@ export function printExpandedFile<Trace>(
         // Parentheses exist to preserve precedence, which a lone token never
         // needs. Adding them anyway produces `{ (x) }` for a shorthand
         // property, which is not an object literal member at all.
+        //
+        // Nor does anything without an operator of its own to protect: a call,
+        // a member chain, a literal or a group cannot be re-associated by what
+        // surrounds it, and wrapping those turned readable output into nests
+        // of redundant parentheses.
         const atomic =
-          item.children.length === 1 && item.children[0]!.tag === "token";
+          (item.children.length === 1 && item.children[0]!.tag === "token") ||
+          !item.children.some(
+            (child) => child.tag === "token" && bindingOperator(child),
+          );
         const group =
           item.category === "expr" &&
           !atomic &&

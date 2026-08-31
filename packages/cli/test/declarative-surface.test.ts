@@ -65,6 +65,15 @@ function expand(
   };
 }
 
+/** Runs one exported binding out of an expansion, to check what it computes. */
+function evalExport(generated: string, name: string): unknown {
+  const body = generated
+    .replaceAll(/^\s*import[^;]*;/gmu, "")
+    .replaceAll(/\bexport\s+/gu, "")
+    .replaceAll(/:\s*(?:readonly\s+)?[A-Za-z_][\w.<>[\]|]*/gu, "");
+  return new Function(`${body}; return ${name};`)();
+}
+
 describe("optional captures", () => {
   test("give an empty sequence to a template repetition when absent", () => {
     const { text } = expand(
@@ -77,7 +86,7 @@ describe("optional captures", () => {
        export const some = atLeast(size > 0);`,
     );
     expect(text).toContain("export const none = [true]");
-    expect(text).toContain("export const some = [true&&size > 0]");
+    expect(text).toContain("export const some = [true&&(size > 0)]");
   });
 
   test("answer #if(present) rather than failing when absent", () => {
@@ -93,7 +102,7 @@ describe("optional captures", () => {
        export const some = atLeast(size > 0);`,
     );
     expect(text).toContain("export const none = [ true]");
-    expect(text).toContain("export const some = [size > 0]");
+    expect(text).toContain("export const some = [(size > 0)]");
   });
 
   test("let a syntax class declare a field a rule may omit", () => {
@@ -119,7 +128,7 @@ describe("optional captures", () => {
        export const table = arms { _ => 1, 2 if (size > 0) => 3 };`,
     );
     expect(messages).toEqual([]);
-    expect(text).toContain("[[ 1, true],[ 3,size > 0]]");
+    expect(text).toContain("[[ 1, true],[ 3,(size > 0)]]");
   });
 });
 
@@ -994,7 +1003,7 @@ export const kept = value;
 `,
     );
     expect(messages).toEqual([]);
-    expect(text).toContain("if (!(value > 0))");
+    expect(text.replaceAll(/\s+/gu, "")).toContain("if(!((value>0)))");
     expect(text).not.toContain("unless");
   });
 
@@ -1012,7 +1021,7 @@ export function f(value: number): string {
 `,
     );
     expect(messages).toEqual([]);
-    expect(text).toContain("if (!(value > 0))");
+    expect(text.replaceAll(/\s+/gu, "")).toContain("if(!((value>0)))");
   });
 
   test("leaves an ordinary call of the same shape alone", () => {
@@ -1207,5 +1216,59 @@ export const held = wrap(${source});
       expect(messages, source).toEqual([]);
       expect(text, source).toContain(source);
     }
+  });
+});
+
+describe("expression grouping", () => {
+  test("keeps a macro's own operators from re-binding outward", () => {
+    // `sum(1, 2) * 10` used to expand to `1 + 2 * 10`, which computes 21
+    // rather than 30 — silently, with the project type-checking clean. The
+    // expansion is one expression and has to stay one.
+    const { text, messages } = expand(
+      `export syntax sum:expr {
+         rule { sum($a:expr, $b:expr) } => { $a + $b }
+       }`,
+      `import { sum } from "./macros.sts" for syntax;
+export const total: number = sum(1, 2) * 10;
+`,
+    );
+    expect(messages).toEqual([]);
+    const compact = text.replaceAll(/\s+/gu, "");
+    expect(compact).toContain("(1+2)*10");
+    expect(evalExport(text, "total")).toBe(30);
+  });
+
+  test("keeps a captured expression from re-binding against the template", () => {
+    // `dbl(1 + 2)` with template `$v * 2` used to expand to `1 + 2 * 2`,
+    // which computes 5 rather than 6.
+    const { text, messages } = expand(
+      `export syntax dbl:expr {
+         rule { dbl($value:expr) } => { $value * 2 }
+       }`,
+      `import { dbl } from "./macros.sts" for syntax;
+export const total: number = dbl(1 + 2);
+`,
+    );
+    expect(messages).toEqual([]);
+    expect(evalExport(text, "total")).toBe(6);
+  });
+
+  test("adds no parentheses where nothing can re-bind", () => {
+    // A call, a member chain or a literal cannot be re-associated by what
+    // surrounds it, and wrapping those turned readable output into nests of
+    // redundant parentheses.
+    const { text, messages } = expand(
+      `export syntax call:expr {
+         rule { call($f:expr, $v:expr) } => { $f($v) }
+       }`,
+      `import { call } from "./macros.sts" for syntax;
+declare function twice(value: number): number;
+export const total: number = call(twice, 3);
+`,
+    );
+    expect(messages).toEqual([]);
+    const compact = text.replaceAll(/\s+/gu, "");
+    expect(compact).toContain("twice(3)");
+    expect(compact).not.toContain("(twice(3))");
   });
 });

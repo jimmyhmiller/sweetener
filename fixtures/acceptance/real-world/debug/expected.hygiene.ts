@@ -5,12 +5,12 @@ const inspected = 1;
 const actual = 2;
 const expected = 3;
 
-export const total: number = ((inspected_1) => {(
+export const total: number = ((inspected_1) => {
       globalThis.console.error(
-        `${"inspected + actual + expected"} = ${(globalThis.JSON.stringify(inspected_1))}`,
-      ));
+        `${"inspected + actual + expected"} = ${globalThis.JSON.stringify(inspected_1)}`,
+      );
       return inspected_1;
-    })(inspected + actual + expected);
+    })(((inspected + actual) + expected));
 
 export function check(): void {
   {
@@ -19,8 +19,8 @@ export function check(): void {
       if (!globalThis.Object.is(actual_1, expected_1)) {
         throw( new globalThis.Error(
           `assertion failed: ${"inspected"} === ${"1"}` +
-            `\n  ${"inspected"} = ${(globalThis.JSON.stringify(actual_1))}` +
-            `\n  ${"1"} = ${(globalThis.JSON.stringify(expected_1))}`,
+            `\n  ${"inspected"} = ${globalThis.JSON.stringify(actual_1)}` +
+            `\n  ${"1"} = ${globalThis.JSON.stringify(expected_1)}`,
         ));
       }
     }

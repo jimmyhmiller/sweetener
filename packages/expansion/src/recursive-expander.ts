@@ -1092,10 +1092,19 @@ export function expandMacroSyntax(
         // replacement keeps the expansion where the call stood.
         if (!eraseReplacement) {
           const head = input[resolvedHeadIndex] ?? node;
+          const trivia = head.tag === "token" ? head.leadingTrivia : [];
+          // An expression keeps the node that says where it begins and ends.
+          // Spreading its children spliced the tokens loose into whatever
+          // surrounded the call, so the operators there re-bound against them:
+          // `sum(1, 2) * 10` expanded to `1 + 2 * 10` and computed 21 rather
+          // than 30, with nothing to say it had happened.
+          const spliceWhole =
+            result.syntax.category === "expr" &&
+            result.syntax.children.length > 1;
           output.push(
             ...withLeadingTrivia(
-              result.syntax.children,
-              head.tag === "token" ? head.leadingTrivia : [],
+              spliceWhole ? [result.syntax] : result.syntax.children,
+              trivia,
             ),
           );
         }

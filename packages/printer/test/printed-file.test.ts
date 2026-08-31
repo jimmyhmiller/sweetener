@@ -62,15 +62,14 @@ describe("expanded TypeScript printing", () => {
       trace: { rule: 2, macro: "pair" },
       groupProtectedExpression: ({ id }) => id === protectedExpression.id,
     });
-    // The two identifiers would lex as one word, so a separator is printed
-    // between them and mapped as its own synthesized region.
-    expect(result.text).toBe("(a b)");
+    // Two identifiers hold no operator, so nothing around them can re-bind and
+    // no parentheses are needed. They would lex as one word, so a separator is
+    // printed between them and mapped as its own synthesized region.
+    expect(result.text).toBe("a b");
     expect(result.originMap.entries).toMatchObject([
-      { generatedStart: 0, generatedEnd: 1, kind: "grouping" },
-      { generatedStart: 1, generatedEnd: 2, kind: "source" },
-      { generatedStart: 2, generatedEnd: 3, kind: "synthesized" },
-      { generatedStart: 3, generatedEnd: 4, kind: "copied" },
-      { generatedStart: 4, generatedEnd: 5, kind: "grouping" },
+      { generatedStart: 0, generatedEnd: 1, kind: "source" },
+      { generatedStart: 1, generatedEnd: 2, kind: "synthesized" },
+      { generatedStart: 2, generatedEnd: 3, kind: "copied" },
     ]);
   });
 

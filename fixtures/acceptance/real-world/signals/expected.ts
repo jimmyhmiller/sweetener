@@ -1,13 +1,13 @@
 import { createEffect, createSignal } from "./runtime.js";
 
-const countSignal =( createSignal( 1));
-const labelSignal =( createSignal( "start"));
-const flagSignal =( createSignal( false));
+const countSignal = createSignal( 1);
+const labelSignal = createSignal( "start");
+const flagSignal = createSignal( false);
 
-export const seen: string[] = [];(
+export const seen: string[] = [];
 
 createEffect(() => {
-  seen.push(`${(labelSignal.get())}:${(countSignal.get())}`); }));
+  seen.push(`${labelSignal.get()}:${countSignal.get()}`); });
 
 countSignal.set( 5);
 countSignal.set(
@@ -22,7 +22,7 @@ countSignal.set(
 countSignal.set(
             countSignal.get() >> 1
           );(
-flagSignal.get()) ||(
+flagSignal.get() ||
             flagSignal.set( true));
 labelSignal.set( "done");
 

@@ -585,9 +585,18 @@ export function createExpansionFrontendSession(
           ),
         });
         if (!attempted.matched) return undefined;
-        const syntax = cursor
+        const raw = cursor
           .remainingRange()
           .sequence.slice(start, attempted.cursor.index);
+        // What the consumer parsed, not the tokens it read. Keeping the raw
+        // run threw away the boundary the parse had just established, so a
+        // captured expression spliced into a template re-associated against
+        // the template's own operators: `$v * 2` with `$v` bound to `1 + 2`
+        // emitted `1 + 2 * 2` and computed 5 rather than 6.
+        const syntax =
+          attempted.syntax.category === "expr" && raw.length > 1
+            ? [attempted.syntax]
+            : raw;
         return Object.freeze({
           cursor: attempted.cursor,
           syntax: createSyntaxSequence(syntax),

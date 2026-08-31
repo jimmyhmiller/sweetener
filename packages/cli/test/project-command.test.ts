@@ -454,7 +454,8 @@ describe("project commands", () => {
       fileName.endsWith("main.ts"),
     )?.generated.text;
     expect(generated).toContain('"global NaN"');
-    expect(generated).toMatch(/=>\s*typeof\s+NaN/u);
+    // Parenthesised because `typeof` binds against what follows it.
+    expect(generated).toMatch(/=>\s*\(?\s*typeof\s+NaN/u);
 
     writeFileSync(
       macros,
