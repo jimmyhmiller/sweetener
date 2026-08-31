@@ -7,8 +7,19 @@ export const missingTemplateDriverCode = diagnosticCode("SWR2014");
 export const incompatibleTemplateDriversCode = diagnosticCode("SWR2015");
 export const malformedTemplateCode = diagnosticCode("SWR2016");
 export const invalidTemplateOperationCode = diagnosticCode("SWR2017");
+export const unknownTemplateOperationCode = diagnosticCode("SWR2018");
 
 export const templateDiagnosticRegistry = new DiagnosticRegistry([
+  {
+    code: unknownTemplateOperationCode,
+    owner: "pattern-definition",
+    stage: "macro-definition",
+    severity: "error",
+    documentation:
+      "A `#name(...)` in a template must name a template operation.",
+    format: (arguments_) =>
+      `Template has no operation #${String(arguments_[0] ?? "unknown")}.`,
+  },
   {
     code: unknownTemplateCaptureCode,
     owner: "pattern-definition",

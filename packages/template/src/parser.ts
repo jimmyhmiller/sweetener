@@ -39,6 +39,7 @@ import {
   templateDiagnosticRegistry,
   unknownTemplateCaptureCode,
   unknownTemplateFieldCode,
+  unknownTemplateOperationCode,
 } from "./diagnostics.js";
 
 export interface TemplateField {
@@ -123,6 +124,30 @@ interface FoldParserContext {
   readonly elementShape: CaptureShape;
 }
 
+/**
+ * Every `#`-form the template language has.
+ *
+ * `#core` is not read here: it is carried through to the expander, which
+ * re-reads its contents as core syntax rather than as a macro invocation.
+ */
+const templateOperations: ReadonlySet<string> = new Set([
+  "callsite",
+  "capture",
+  "core",
+  "count",
+  "definition",
+  "else",
+  "fold",
+  "fresh",
+  "if",
+  "index",
+  "join",
+  "metavar",
+  "syntax",
+  "text",
+  "trim",
+]);
+
 class TemplateParser {
   readonly #options: ParseTemplateOptions;
   readonly #captures: ReadonlyMap<string, CaptureShapeBinding>;
@@ -154,6 +179,29 @@ class TemplateParser {
     });
   }
 
+  /**
+   * Whether a `#name` stands where TypeScript writes a private identifier
+   * rather than where the template language writes an operation.
+   *
+   * `#` is TypeScript's own syntax as well as the template language's, and the
+   * two collide on the names the operations use. A class in a template that
+   * declares `#count(value: number)` or calls `this.#count(1)` was read as the
+   * `#count` operation, which then reported that its argument was invalid and
+   * left the class unexpanded. Where a private identifier is what TypeScript
+   * would read there -- after a `.`, or naming a member the class declares --
+   * it is left alone.
+   */
+  #privateIdentifierPosition(nodes: readonly Syntax[], index: number): boolean {
+    const previous = nodes[index - 1];
+    if (token(previous, ".") || token(previous, "?.")) return true;
+    // `#name(parameters) { body }` declares a method. No operation is written
+    // with a block after its arguments: `#fold` and `#syntax`, the two that
+    // take one, are read before this.
+    return (
+      group(nodes[index + 1], "parenthesis") && group(nodes[index + 2], "brace")
+    );
+  }
+
   #sequence(
     nodes: readonly Syntax[],
     depth: number,
@@ -169,8 +217,12 @@ class TemplateParser {
         token(current) && current.raw.startsWith("#")
           ? current.raw.slice(1)
           : undefined;
+      const memberAccess =
+        token(nodes[index - 1], ".") || token(nodes[index - 1], "?.");
       const compactSyntaxQuote =
-        operationName === "syntax" && group(nodes[index + 1], "brace");
+        !memberAccess &&
+        operationName === "syntax" &&
+        group(nodes[index + 1], "brace");
       const splitSyntaxQuote =
         token(current, "#") &&
         token(nodes[index + 1], "syntax") &&
@@ -194,6 +246,7 @@ class TemplateParser {
         continue;
       }
       if (
+        !memberAccess &&
         operationName === "fold" &&
         group(nodes[index + 1], "parenthesis") &&
         group(nodes[index + 2], "brace")
@@ -274,7 +327,8 @@ class TemplateParser {
           "join",
           "index",
         ].includes(operationName) &&
-        group(nodes[index + 1], "parenthesis")
+        group(nodes[index + 1], "parenthesis") &&
+        !this.#privateIdentifierPosition(nodes, index)
       ) {
         const argumentsGroup = nodes[index + 1] as GroupSyntax;
         if (operationName === "join") {
@@ -437,8 +491,9 @@ class TemplateParser {
         index += 2;
         continue;
       }
-      const compactIf = token(current, "#if");
-      const splitIf = token(current, "#") && token(nodes[index + 1], "if");
+      const compactIf = !memberAccess && token(current, "#if");
+      const splitIf =
+        !memberAccess && token(current, "#") && token(nodes[index + 1], "if");
       const predicateIndex = index + (compactIf ? 1 : 2);
       if (
         (compactIf || splitIf) &&
@@ -749,6 +804,24 @@ class TemplateParser {
         );
         index = next;
         continue;
+      }
+      // A `#name(` that reached here names no operation the template language
+      // has. It used to be printed into the expansion as written, where `#`
+      // is TypeScript's private-identifier syntax -- so a misspelled `#coutn`
+      // was reported as "private identifiers are not allowed outside class
+      // bodies", pointing at generated code the author never wrote.
+      if (
+        operationName !== undefined &&
+        operationName.length > 0 &&
+        !templateOperations.has(operationName) &&
+        group(nodes[index + 1], "parenthesis") &&
+        !this.#privateIdentifierPosition(nodes, index)
+      ) {
+        this.#diagnostic(
+          unknownTemplateOperationCode,
+          current.origin,
+          operationName,
+        );
       }
       elements.push(this.#atom(current, depth, fold, quoted));
       index += 1;
