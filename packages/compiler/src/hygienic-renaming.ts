@@ -25,7 +25,7 @@ interface IdentifierClassification {
   readonly shorthandOffsets: ReadonlySet<number>;
   readonly importBindingOffsets: ReadonlySet<number>;
   readonly publicBinderOffsets: ReadonlySet<number>;
-  readonly exportedNames: ReadonlySet<string>;
+  readonly exportSpecifierOffsets: ReadonlySet<number>;
 }
 
 function nameOf(node: ts.Node): ts.Node | undefined {
@@ -89,13 +89,18 @@ function roleFor(identifier: ts.Identifier): IdentifierRole {
       return (parent as ts.QualifiedName).right === identifier
         ? "property"
         : "reference";
+    // A label declares a name and `break`/`continue` refer to one, in a
+    // namespace of their own. Reading both as properties meant a label a macro
+    // introduced was never renamed, so it collided with a label of the same
+    // spelling around the call site: a duplicate label, and a `break` that
+    // left whichever loop the collision left standing.
     case ts.SyntaxKind.LabeledStatement:
       return (parent as ts.LabeledStatement).label === identifier
-        ? "property"
+        ? "binder"
         : "reference";
     case ts.SyntaxKind.BreakStatement:
     case ts.SyntaxKind.ContinueStatement:
-      return "property";
+      return "reference";
     case ts.SyntaxKind.MetaProperty:
       return "property";
     default:
@@ -148,7 +153,7 @@ function classifyIdentifiers(
   const shorthandOffsets = new Set<number>();
   const importBindingOffsets = new Set<number>();
   const publicBinderOffsets = new Set<number>();
-  const exportedNames = new Set<string>();
+  const exportSpecifierOffsets = new Set<number>();
   const visit = (node: ts.Node): void => {
     if (ts.isIdentifier(node)) {
       const start = node.getStart(parsed);
@@ -177,9 +182,10 @@ function classifyIdentifiers(
         publicBinderOffsets.add(start);
       }
       // `export { name }` names the module surface with no declaration to
-      // anchor on, so any binder spelled that way stays put.
+      // anchor on, so the binder it names stays put. Which binder that is has
+      // to be resolved by scope, not by spelling.
       if (parent !== undefined && ts.isExportSpecifier(parent)) {
-        exportedNames.add(node.text);
+        exportSpecifierOffsets.add(start);
       }
     }
     ts.forEachChild(node, visit);
@@ -190,7 +196,7 @@ function classifyIdentifiers(
     shorthandOffsets,
     importBindingOffsets,
     publicBinderOffsets,
-    exportedNames,
+    exportSpecifierOffsets,
   });
 }
 
@@ -278,6 +284,7 @@ export function planHygienicRenames(
   const shorthandSyntax = new Set<number>();
   const importBindingSyntax = new Set<number>();
   const publicBinderSyntax = new Set<number>();
+  const exportSpecifierSyntax = new Set<number>();
   for (const span of options.tokenSpans) {
     const role = classification.roleByOffset.get(span.start);
     if (role !== undefined) roleBySyntax.set(span.syntax, role);
@@ -287,7 +294,27 @@ export function planHygienicRenames(
       importBindingSyntax.add(span.syntax);
     if (classification.publicBinderOffsets.has(span.start))
       publicBinderSyntax.add(span.syntax);
+    if (classification.exportSpecifierOffsets.has(span.start))
+      exportSpecifierSyntax.add(span.syntax);
   }
+  const exportSpecifiers = tokens.filter((token) =>
+    exportSpecifierSyntax.has(token.id),
+  );
+  /**
+   * Whether an `export { name }` in this file names this binder.
+   *
+   * The check was by spelling alone, so a call site that exported its own
+   * `tmp` pinned a macro-introduced `tmp` as well -- leaving two `const tmp`
+   * declarations in the output and a redeclaration error where hygiene should
+   * have renamed one of them. An export specifier resolves the way any
+   * reference does: to a binder whose scopes it contains.
+   */
+  const isExported = (token: TokenSyntax): boolean =>
+    exportSpecifiers.some(
+      (specifier) =>
+        specifier.raw === token.raw &&
+        options.scopes.subset(token.scopes, specifier.scopes),
+    );
 
   const classes = new Map<string, IntroducedBinderClass>();
   const published = new Set<string>();
@@ -295,10 +322,7 @@ export function planHygienicRenames(
     if (roleBySyntax.get(token.id) !== "binder") continue;
     if (!options.scopes.hasUnmatchedIntroduction(token.scopes)) continue;
     const key = `${token.raw} ${String(token.scopes)}`;
-    if (
-      publicBinderSyntax.has(token.id) ||
-      classification.exportedNames.has(token.raw)
-    ) {
+    if (publicBinderSyntax.has(token.id) || isExported(token)) {
       published.add(key);
       continue;
     }
