@@ -21,8 +21,8 @@ countSignal.set(
           );
 countSignal.set(
             countSignal.get() >> 1
-          );(
-flagSignal.get() ||
+          );
+(flagSignal.get() ||
             flagSignal.set( true));
 labelSignal.set( "done");
 

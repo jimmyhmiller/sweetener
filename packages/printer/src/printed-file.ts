@@ -210,25 +210,22 @@ export function printExpandedFile<Trace>(
     for (let index = children.length - 1; index >= 0; index -= 1)
       pending.push(children[index]!);
   };
+  // A grouping parenthesis stands outside the layout that separates the
+  // expansion from whatever precedes it. Emitted the moment it was reached, it
+  // landed before the first token's leading trivia and printed
+  // `const value: number =( 1 + 2) * 10` — the space belongs before the
+  // parenthesis, not after it. Holding it until a token is actually printed
+  // puts it where it reads.
+  const pendingOpens: { readonly text: string; readonly origin: OriginId }[] =
+    [];
+  const flushOpens = () => {
+    for (const open of pendingOpens) emit(open.text, open.origin, "grouping");
+    pendingOpens.length = 0;
+  };
   const pushToken = (token: TokenSyntax) => {
     const kind = kindFor(token.origin);
     const leading = token.leadingTrivia.map(({ raw }) => raw).join("");
     const text = replacements.get(token.id) ?? token.raw;
-    // A template writes the space in `typeof $value` as trivia on its own
-    // `$value`, which substitution replaces along with the token. Without a
-    // separator the two words print as one, so one is added back when the
-    // characters either side would otherwise lex together.
-    if (
-      leading.length === 0 &&
-      wordCharacter(lastCharacter) &&
-      wordCharacter(text[0])
-    ) {
-      emit(
-        " ",
-        options.origins.synthesized(token.origin, "printer-separator"),
-        "synthesized",
-      );
-    }
     // Trivia gets a region of its own so the token's region is exactly the
     // token. A region carries the token's whole source span, and a position
     // inside it is projected by its offset from the region start, so folding
@@ -238,6 +235,20 @@ export function printExpandedFile<Trace>(
     // minting one per token cost an origin and an intern entry for every
     // piece of trivia in the file.
     emit(leading, token.origin, "synthesized");
+    flushOpens();
+    // A template writes the space in `typeof $value` as trivia on its own
+    // `$value`, which substitution replaces along with the token. Without a
+    // separator the two words print as one, so one is added back when the
+    // characters either side would otherwise lex together. Trivia and an
+    // opening parenthesis both already separate them, so this asks what was
+    // last printed rather than what the token carries.
+    if (wordCharacter(lastCharacter) && wordCharacter(text[0])) {
+      emit(
+        " ",
+        options.origins.synthesized(token.origin, "printer-separator"),
+        "synthesized",
+      );
+    }
     const start = offset;
     emit(text, token.origin, kind);
     const trailing = token.trailingTrivia.map(({ raw }) => raw).join("");
@@ -249,6 +260,11 @@ export function printExpandedFile<Trace>(
   while (pending.length > 0) {
     const item = pending.pop()!;
     if ("grouping" in item) {
+      if (item.text === "(") {
+        pendingOpens.push({ text: item.text, origin: item.origin });
+        continue;
+      }
+      flushOpens();
       emit(item.text, item.origin, "grouping");
       continue;
     }
@@ -295,6 +311,7 @@ export function printExpandedFile<Trace>(
       }
     }
   }
+  flushOpens();
   return Object.freeze({
     text: chunks.join(""),
     originMap: Object.freeze({

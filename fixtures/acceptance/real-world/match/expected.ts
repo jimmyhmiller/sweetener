@@ -7,30 +7,30 @@ export type Event =
 
 export function describe(event: Event): string {
   return ((matched) => {if (((((typeof matched) === "object") &&(matched !== null))
-        &&( ((matched)["type"]) === "click"))) {
+        && (((matched)["type"]) === "click"))) {
         ;
         const x = (matched)["x"];
         const y = (matched)["y"];
           if ((x > 0)) { return `click ${x},${y}`; }
       }if (((((typeof matched) === "object") &&(matched !== null))
-        &&( ((matched)["type"]) === "click"))) {
+        && (((matched)["type"]) === "click"))) {
         ;
           return "click offscreen";
       }if ((((((typeof matched) === "object") &&(matched !== null))
-        &&( ((matched)["type"]) === "key"))
-        &&( ((matched)["key"]) === "Escape"))) {
+        && (((matched)["type"]) === "key"))
+        && (((matched)["key"]) === "Escape"))) {
         ;
         ;
           return "escape";
       }if (((((typeof matched) === "object") &&(matched !== null))
-        &&( ((matched)["type"]) === "key"))) {
+        && (((matched)["type"]) === "key"))) {
         ;
         const key = (matched)["key"];
           return `key ${key}`;
       }if ((((((typeof matched) === "object") &&(matched !== null))
-        &&( ((matched)["type"]) === "scroll"))
-        &&((( globalThis.Array.isArray((matched)["delta"])
-      &&( ((matched)["delta"]).length === 2))&& true)&& true))) {
+        && (((matched)["type"]) === "scroll"))
+        && (((globalThis.Array.isArray((matched)["delta"])
+      && (((matched)["delta"]).length === 2))&& true)&& true))) {
         ;
         const first =((matched)["delta"])[0];const second =((matched)["delta"])[1];
           return `scroll ${first}/${second}`;
@@ -43,15 +43,15 @@ export function describe(event: Event): string {
 // says so. Adding a member to Event makes this a type error.
 export function name(event: Event): string {
   return ((matched_1) => {if (((((typeof matched_1) === "object") &&(matched_1 !== null))
-        &&( ((matched_1)["type"]) === "click"))) {
+        && (((matched_1)["type"]) === "click"))) {
         ;
           return "click";
       }if (((((typeof matched_1) === "object") &&(matched_1 !== null))
-        &&( ((matched_1)["type"]) === "key"))) {
+        && (((matched_1)["type"]) === "key"))) {
         ;
           return "key";
       }if (((((typeof matched_1) === "object") &&(matched_1 !== null))
-        &&( ((matched_1)["type"]) === "scroll"))) {
+        && (((matched_1)["type"]) === "scroll"))) {
         ;
           return "scroll";
       }

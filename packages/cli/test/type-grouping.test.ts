@@ -99,6 +99,14 @@ describe("grouping a type expansion", () => {
     );
   });
 
+  test("the grouping stands outside the layout before it", () => {
+    // Emitted the moment the group was reached, the parenthesis landed before
+    // the first token's leading trivia and printed `=( string | null)[]`.
+    const generated = expand("export type A = orNull(string)[];");
+    expect(generated).toContain("= (string | null)[]");
+    expect(generated).not.toContain("=(");
+  });
+
   test("an expansion still enforests back into one type", () => {
     // Keeping the expansion whole means the type consumer meets a protected
     // type where it used to meet the expansion's tokens.
