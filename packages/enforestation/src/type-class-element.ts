@@ -272,6 +272,18 @@ class TypeConsumer implements SyntaxConsumer {
         break;
       }
 
+      // A type macro that already expanded stands here as one protected type
+      // rather than as its tokens. Reading it as the end of the type left the
+      // whole expansion unconsumed, so `maybe<string>` -- expanded to
+      // `string | undefined` and kept whole so nothing around it re-associates
+      // -- would not enforest back into the one type it is.
+      if (next.tag === "protected") {
+        if (!expectingOperand || next.category !== "type") break;
+        children.push(cursor.consume()!);
+        expectingOperand = false;
+        continue;
+      }
+
       if (!token(next)) break;
       const spelling = next.raw;
       if (

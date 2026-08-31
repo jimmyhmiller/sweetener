@@ -133,6 +133,41 @@ function bindingOperator(token: TokenSyntax): boolean {
   return !nonBinding.has(token.raw);
 }
 
+/**
+ * The same question asked of a type, where the answer is a different one.
+ *
+ * A type has its own operators and its own precedence: `|` and `&` bind looser
+ * than the postfix `[]` and than indexed access, so a macro that expands to
+ * `string | null` is re-associated by whatever follows it -- `orNull(string)[]`
+ * printed as `string | null[]`, which is an array of `null` unioned with
+ * `string`. Where the expression rule reads every punctuation mark as binding
+ * unless excused, this one names what binds: a type holds far more punctuation
+ * that groups on its own -- `.` in a qualified name, `<>` around arguments,
+ * `[]` for an array or an index -- than punctuation that re-associates.
+ *
+ * `extends` covers conditional types, whose `?` and `:` cannot stand without
+ * it; listing those directly would parenthesize every optional property and
+ * every annotation instead.
+ */
+const typePunctuationOperators = new Set(["|", "&", "=>"]);
+const typeKeywordOperators = new Set([
+  "keyof",
+  "typeof",
+  "infer",
+  "readonly",
+  "extends",
+  "is",
+  "asserts",
+  "in",
+]);
+
+function typeBindingOperator(token: TokenSyntax): boolean {
+  if (token.kind === "keyword") return typeKeywordOperators.has(token.raw);
+  return (
+    token.kind === "punctuation" && typePunctuationOperators.has(token.raw)
+  );
+}
+
 export function printExpandedFile<Trace>(
   options: PrintExpandedFileOptions<Trace>,
 ): PrintedExpandedFile<Trace> {
@@ -240,13 +275,15 @@ export function printExpandedFile<Trace>(
         // a member chain, a literal or a group cannot be re-associated by what
         // surrounds it, and wrapping those turned readable output into nests
         // of redundant parentheses.
+        const binds =
+          item.category === "type" ? typeBindingOperator : bindingOperator;
         const atomic =
           (item.children.length === 1 && item.children[0]!.tag === "token") ||
           !item.children.some(
-            (child) => child.tag === "token" && bindingOperator(child),
+            (child) => child.tag === "token" && binds(child),
           );
         const group =
-          item.category === "expr" &&
+          (item.category === "expr" || item.category === "type") &&
           !atomic &&
           (options.groupProtectedExpression?.(item) ?? true);
         if (group)
