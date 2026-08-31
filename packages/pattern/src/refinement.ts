@@ -201,6 +201,46 @@ export function evaluateRefinement(
   }
 }
 
+const lengthComparisonWords: Readonly<Record<LengthComparison, string>> = {
+  equal: "exactly",
+  "less-than": "fewer than",
+  "at-most": "at most",
+  "greater-than": "more than",
+  "at-least": "at least",
+};
+
+/**
+ * Says what a refinement was written to accept, in the words a diagnostic can
+ * use. A rule turned down by a refinement otherwise reports only that no rule
+ * matched, which is the one thing the author already knows.
+ */
+export function describeRefinement(predicate: RefinementPredicate): string {
+  const quoted = (values: readonly string[]) =>
+    values.map((value) => `\`${value}\``).join(", ");
+  switch (predicate.kind) {
+    case "starts-with-lowercase":
+      return "a name starting with a lowercase letter";
+    case "starts-with-uppercase":
+      return "a name starting with an uppercase letter";
+    case "spelling-equals":
+      return `\`${predicate.spelling}\``;
+    case "spelling-in":
+      return `one of ${quoted(predicate.spellings)}`;
+    case "token-kind":
+      return `${quoted(predicate.tokenKinds)} where a token was expected`;
+    case "delimiter":
+      return `a ${predicate.delimiter} group`;
+    case "repetition-length":
+      return `${lengthComparisonWords[predicate.comparison]} ${String(
+        predicate.length,
+      )} repetitions`;
+    case "boundary":
+      return `a boundary on the ${predicate.side} side`;
+    case "selected-alternative":
+      return `alternative ${String(predicate.alternative)}`;
+  }
+}
+
 export function evaluateRefinements(
   refinements: readonly CaptureRefinement[],
   captures: CaptureRecord,

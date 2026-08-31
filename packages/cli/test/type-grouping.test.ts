@@ -85,8 +85,9 @@ describe("grouping a type expansion", () => {
   });
 
   test("the left side of a conditional type", () => {
-    expect(expand("export type A = orNull(string) extends null ? 1 : 2;"))
-      .toContain("(string | null) extends null");
+    expect(
+      expand("export type A = orNull(string) extends null ? 1 : 2;"),
+    ).toContain("(string | null) extends null");
   });
 
   test("a plain reference is left ungrouped", () => {

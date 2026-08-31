@@ -69,13 +69,15 @@ describe("expansion after a type assertion", () => {
 
   for (const [name, assertion] of assertions) {
     test(`${name} leaves the following statement expandable`, () => {
-      expect(expand(`export function f() { ${assertion} return duplicate(2); }`))
-        .toContain("[2,2]");
+      expect(
+        expand(`export function f() { ${assertion} return duplicate(2); }`),
+      ).toContain("[2,2]");
     });
 
     test(`${name} leaves the following item expandable`, () => {
-      expect(expand(`${assertion}\nexport const value = duplicate(2);`))
-        .toContain("[2,2]");
+      expect(
+        expand(`${assertion}\nexport const value = duplicate(2);`),
+      ).toContain("[2,2]");
     });
   }
 

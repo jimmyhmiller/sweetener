@@ -4,7 +4,7 @@ import type {
   StatementItemMacroResolver,
 } from "@sweetener/enforestation";
 import type { SyntaxClassConsumer } from "@sweetener/pattern";
-import { executeMatcher } from "@sweetener/pattern";
+import { evaluateRefinements, executeMatcher } from "@sweetener/pattern";
 import {
   createProtectedSyntax,
   spanEnvelope,
@@ -112,7 +112,13 @@ export function createMacroExtentResolver(
         environmentEpoch: context.environmentEpoch,
         matchesBindingLiteral: options.matchesBindingLiteral,
       });
-      if (matched.matched)
+      // The same question the invocation asks. A rule whose refinements fail
+      // did not match, and an extent measured from it would claim syntax the
+      // rule that does match may not cover.
+      if (
+        matched.matched &&
+        evaluateRefinements(rule.refinements, matched.captures)
+      )
         return protectedExtent(category, cursor, matched.cursor, options);
     }
     // An expression is claimed only by a rule that matched. A statement or item

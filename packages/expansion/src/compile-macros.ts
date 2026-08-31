@@ -3,6 +3,7 @@ import {
   compileParsedBindingContracts,
   compileParsedSyntaxClasses,
   compileParsedTemplates,
+  lowerRuleRefinements,
   type ParseMacroDefinitionsResult,
   type MacroDefinition,
   type DefinitionClause,
@@ -14,9 +15,13 @@ import {
   createGroupPattern,
   createLiteralPattern,
   createOptionalPattern,
+  createRefinement,
   createRepeatPattern,
   createSequencePattern,
   inferCaptureShapes,
+  patternDiagnosticRegistry,
+  invalidRefinementCode,
+  type CaptureRefinement,
   type PatternNode,
   type SyntaxClassRegistry,
 } from "@sweetener/pattern";
@@ -365,6 +370,41 @@ export function compileParsedMacros(
       diagnostics.push(...inference.diagnostics);
       if (inference.diagnostics.some(({ severity }) => severity === "error"))
         continue;
+      // A macro rule takes the same `refine` clauses a syntax-class rule does.
+      // Dropping them made two rules told apart only by a refinement both
+      // match, and the first one written answered for both.
+      const lowered = lowerRuleRefinements(rule.clauses, options);
+      diagnostics.push(...lowered.diagnostics);
+      const captureByName = new Map(
+        inference.bindings.map((binding) => [binding.name, binding.capture]),
+      );
+      const refinements: CaptureRefinement[] = [];
+      for (const refinement of lowered.refinements) {
+        const target = captureByName.get(refinement.targetName);
+        if (target === undefined) {
+          const span = options.spanForOrigin(refinement.origin);
+          diagnostics.push(
+            patternDiagnosticRegistry.create(invalidRefinementCode, {
+              primaryOrigin: {
+                sourceId: options.sourceId,
+                start: span.start,
+                end: span.end,
+                originId: refinement.origin,
+              },
+              messageArguments: [refinement.targetName],
+            }),
+          );
+          continue;
+        }
+        refinements.push(createRefinement(target, refinement.predicate));
+      }
+      // A refinement that could not be lowered would silently widen the rule
+      // to everything it was written to exclude, so the rule does not compile.
+      if (
+        refinements.length !== lowered.refinements.length ||
+        lowered.diagnostics.length > 0
+      )
+        continue;
       rules.push(
         Object.freeze({
           rule: rule.id,
@@ -379,6 +419,7 @@ export function compileParsedMacros(
           ),
           template,
           contracts: contractsByRule.get(rule.id) ?? Object.freeze([]),
+          refinements: Object.freeze(refinements),
           requiredContexts: compileRuleContexts(
             rule.clauses,
             options,

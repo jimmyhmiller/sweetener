@@ -143,6 +143,78 @@ function parseRefinementPredicate(
   return undefined;
 }
 
+type RuleClauses =
+  ParseMacroDefinitionsResult["definitions"][number]["rules"][number]["clauses"];
+
+export interface LowerRuleRefinementsOptions {
+  readonly sourceId: SourceId;
+  readonly spanForOrigin: (origin: OriginId) => Span;
+}
+
+export interface LowerRuleRefinementsResult {
+  readonly refinements: readonly SyntaxClassRefinementInput[];
+  readonly diagnostics: readonly Diagnostic[];
+}
+
+/**
+ * Reads the `refine` clauses written on one rule.
+ *
+ * A macro rule takes the same clauses a syntax-class rule does, and used to
+ * drop them: two rules told apart only by a refinement both matched, and the
+ * first one written answered for both. `matchTest($subject, $name:ident)`
+ * refined to lowercase spellings accepted `Ready` as a binder and reported
+ * every arm as taken.
+ */
+export function lowerRuleRefinements(
+  clauses: RuleClauses,
+  options: LowerRuleRefinementsOptions,
+): LowerRuleRefinementsResult {
+  const diagnostics: Diagnostic[] = [];
+  const refinements = clauses.flatMap((clause) => {
+    if (clause.kind !== "refinement") return [];
+    const tokens = clause.syntax.filter(
+      (syntax): syntax is TokenSyntax => syntax.tag === "token",
+    );
+    const targetToken = tokens[1];
+    const targetName = targetToken?.raw.startsWith("$")
+      ? targetToken.raw.slice(1)
+      : undefined;
+    const predicate = parseRefinementPredicate(clause.syntax.slice(2));
+    if (targetName !== undefined && predicate !== undefined) {
+      return [{ targetName, predicate, origin: clause.origin }];
+    }
+    const span = options.spanForOrigin(clause.origin);
+    diagnostics.push(
+      patternDiagnosticRegistry.create(invalidRefinementCode, {
+        primaryOrigin: {
+          sourceId: options.sourceId,
+          start: span.start,
+          end: span.end,
+          originId: clause.origin,
+        },
+        messageArguments: [targetName ?? "unknown"],
+      }),
+    );
+    return [];
+  });
+  return Object.freeze({
+    refinements: Object.freeze(refinements),
+    diagnostics: Object.freeze(diagnostics),
+  });
+}
+
+/** The `diagnostic "..."` clause written on one rule, if it has one. */
+export function ruleFailureDescription(
+  clauses: RuleClauses,
+): string | undefined {
+  const clause = clauses.find(({ kind }) => kind === "diagnostic");
+  const value = clause?.syntax.find(
+    (syntax): syntax is TokenSyntax =>
+      syntax.tag === "token" && syntax.kind === "string-literal",
+  );
+  return typeof value?.value === "string" ? value.value : undefined;
+}
+
 export function compileParsedSyntaxClasses(
   parsed: ParseMacroDefinitionsResult,
   options: CompileParsedSyntaxClassesOptions,
@@ -158,45 +230,11 @@ export function compileParsedSyntaxClasses(
     throw new Error("Parser result is missing core syntax-class bindings");
   }
   const lowerRefinements = (
-    clauses: ParseMacroDefinitionsResult["definitions"][number]["rules"][number]["clauses"],
-  ): readonly SyntaxClassRefinementInput[] =>
-    clauses.flatMap((clause) => {
-      if (clause.kind !== "refinement") return [];
-      const tokens = clause.syntax.filter(
-        (syntax): syntax is TokenSyntax => syntax.tag === "token",
-      );
-      const targetToken = tokens[1];
-      const targetName = targetToken?.raw.startsWith("$")
-        ? targetToken.raw.slice(1)
-        : undefined;
-      const predicate = parseRefinementPredicate(clause.syntax.slice(2));
-      if (targetName !== undefined && predicate !== undefined) {
-        return [{ targetName, predicate, origin: clause.origin }];
-      }
-      const span = options.spanForOrigin(clause.origin);
-      refinementDiagnostics.push(
-        patternDiagnosticRegistry.create(invalidRefinementCode, {
-          primaryOrigin: {
-            sourceId: options.sourceId,
-            start: span.start,
-            end: span.end,
-            originId: clause.origin,
-          },
-          messageArguments: [targetName ?? "unknown"],
-        }),
-      );
-      return [];
-    });
-
-  const failureDescription = (
-    clauses: ParseMacroDefinitionsResult["definitions"][number]["rules"][number]["clauses"],
-  ): string | undefined => {
-    const clause = clauses.find(({ kind }) => kind === "diagnostic");
-    const value = clause?.syntax.find(
-      (syntax): syntax is TokenSyntax =>
-        syntax.tag === "token" && syntax.kind === "string-literal",
-    );
-    return typeof value?.value === "string" ? value.value : undefined;
+    clauses: RuleClauses,
+  ): readonly SyntaxClassRefinementInput[] => {
+    const lowered = lowerRuleRefinements(clauses, options);
+    refinementDiagnostics.push(...lowered.diagnostics);
+    return lowered.refinements;
   };
 
   const result = compileSyntaxClasses(
@@ -212,7 +250,7 @@ export function compileParsedSyntaxClasses(
           pattern: rule.pattern,
           origin: rule.origin,
           refinements: lowerRefinements(rule.clauses),
-          failureDescription: failureDescription(rule.clauses),
+          failureDescription: ruleFailureDescription(rule.clauses),
         })),
       })),
     {

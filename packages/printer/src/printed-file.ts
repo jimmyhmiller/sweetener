@@ -295,9 +295,7 @@ export function printExpandedFile<Trace>(
           item.category === "type" ? typeBindingOperator : bindingOperator;
         const atomic =
           (item.children.length === 1 && item.children[0]!.tag === "token") ||
-          !item.children.some(
-            (child) => child.tag === "token" && binds(child),
-          );
+          !item.children.some((child) => child.tag === "token" && binds(child));
         const group =
           (item.category === "expr" || item.category === "type") &&
           !atomic &&

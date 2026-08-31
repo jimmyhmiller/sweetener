@@ -94,6 +94,18 @@ function frozen<T>(value: T): T {
   return Object.freeze(value);
 }
 
+/** Words that introduce a clause, and so end the clause written before them. */
+const clauseKeywords: ReadonlySet<string> = new Set([
+  "bind",
+  "refine",
+  "expect",
+  "fixity",
+  "associativity",
+  "precedence",
+  "literal",
+  "context",
+]);
+
 class Parser {
   readonly #sourceId: SourceId;
   readonly #diagnostics: Diagnostic[] = [];
@@ -483,6 +495,27 @@ class Parser {
   #parseClauses(nodes: readonly Syntax[]): readonly DefinitionClause[] {
     const segments: Syntax[][] = [[]];
     for (const node of nodes) {
+      // A clause ends at its `;`, and also where the next one begins. Splitting
+      // on `;` alone folded a clause that followed an unterminated one into it:
+      //
+      //   rule { matchBind($subject:expr, $name:binding); }
+      //   refine $name spelling starts-with-lowercase
+      //   bind $name in following as lexical value;
+      //
+      // read as a single refinement whose predicate ran on past
+      // `starts-with-lowercase`, so it parsed as neither clause -- the rule
+      // matched anything it was refined to exclude, and the binding contract
+      // was dropped, with nothing said about either.
+      //
+      // A keyword only begins a clause where a clause could begin. One spelled
+      // inside a clause stands in a group or a string, neither of which is a
+      // token here.
+      if (
+        segments.at(-1)!.length > 0 &&
+        token(node) &&
+        clauseKeywords.has(node.raw)
+      )
+        segments.push([]);
       segments.at(-1)!.push(node);
       if (token(node, ";")) segments.push([]);
     }

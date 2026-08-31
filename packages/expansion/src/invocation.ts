@@ -10,10 +10,14 @@ import {
   type ScopeStore,
 } from "@sweetener/hygiene";
 import {
+  describeRefinement,
+  evaluateRefinement,
+  evaluateRefinements,
   expectationKey,
   executeMatcher,
   type BindingLiteralKey,
   type CaptureRecord,
+  type CaptureRefinement,
   type CaptureValue,
   type MatchFailure,
   type MatcherProgram,
@@ -65,6 +69,7 @@ export interface CompiledMacroRule {
   readonly matcher: MatcherProgram;
   readonly template: SequenceTemplate;
   readonly contracts: readonly BindingContract[];
+  readonly refinements: readonly CaptureRefinement[];
   readonly requiredContexts: readonly MacroContext[];
   readonly failureDescription?: string | undefined;
 }
@@ -357,6 +362,44 @@ export function invokeMacro(
         Object.freeze({
           rule: rule.rule,
           status: "no-match",
+          matcherSteps: matched.matcherSteps,
+          failure,
+        }),
+      );
+      continue;
+    }
+    // A rule's `refine` clauses narrow what it accepts beyond what its pattern
+    // can say -- how a captured name is spelled, which delimiter surrounded a
+    // capture, how many times a repetition ran. A rule whose refinements fail
+    // did not match, and the next rule is offered the same input.
+    if (!evaluateRefinements(rule.refinements, matched.captures)) {
+      const refused = rule.refinements.find(
+        (refinement) => !evaluateRefinement(refinement, matched.captures),
+      );
+      const failure = Object.freeze({
+        offset:
+          matched.cursor.peek()?.span.start ??
+          options.cursor.peek()?.span.start ??
+          0,
+        cursor: matched.cursor.identity,
+        specificity: 7,
+        expectations: Object.freeze([
+          Object.freeze({
+            kind: "description" as const,
+            description:
+              rule.failureDescription ??
+              (refused === undefined
+                ? "input this rule was refined to accept"
+                : describeRefinement(refused.predicate)),
+          }),
+        ]),
+        origins: Object.freeze([rule.origin]),
+      });
+      failures.push(failure);
+      attempts.push(
+        Object.freeze({
+          rule: rule.rule,
+          status: "no-match" as const,
           matcherSteps: matched.matcherSteps,
           failure,
         }),

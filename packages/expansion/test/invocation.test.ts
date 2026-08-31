@@ -114,6 +114,7 @@ function compileMacro(source: string, scopeStore: ScopeStore) {
       }),
       template,
       contracts: contractsByRule.get(rule.id) ?? Object.freeze([]),
+      refinements: Object.freeze([]),
       requiredContexts: Object.freeze([]),
     });
   });
