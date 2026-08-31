@@ -145,6 +145,46 @@ export syntax only:expr {
     expect(messages.join("\n")).toContain("$missing");
   });
 
+  test("a capture that is not one token refuses a spelling refinement", () => {
+    // `find`ing the first token out of a capture answered for the whole of it,
+    // and a capture with no token at that position answered nothing at all --
+    // so the refinement passed vacuously on everything it was written to
+    // exclude.
+    const { generated, messages } = run({
+      macros: `
+export syntax low:expr {
+  rule { low($x:tt) }
+  refine $x spelling starts-with-lowercase
+  => { "accepted" }
+  rule { low($x:tt) } => { "rejected" }
+}
+export syntax lowExpr:expr {
+  rule { lowExpr($x:expr) }
+  refine $x spelling starts-with-lowercase
+  => { "accepted" }
+  rule { lowExpr($x:expr) } => { "rejected" }
+}
+`,
+      source:
+        'import { low, lowExpr } from "./macros.sts" for syntax;\n' +
+        "export const a = low(ready);\n" +
+        "export const b = low(Ready);\n" +
+        "export const parenthesized = low((Ready));\n" +
+        "export const bracketed = low([Ready]);\n" +
+        "export const member = lowExpr(foo.Bar);\n" +
+        "export const arithmetic = lowExpr(1 + 2);\n" +
+        "export const lone = lowExpr(ready);\n",
+    });
+    expect(messages).toEqual([]);
+    expect(generated).toContain('export const a = "accepted"');
+    expect(generated).toContain('export const b = "rejected"');
+    expect(generated).toContain('export const parenthesized = "rejected"');
+    expect(generated).toContain('export const bracketed = "rejected"');
+    expect(generated).toContain('export const member = "rejected"');
+    expect(generated).toContain('export const arithmetic = "rejected"');
+    expect(generated).toContain('export const lone = "accepted"');
+  });
+
   test("a `bind` clause after an unterminated `refine` still takes effect", () => {
     const { generated, messages } = run({
       macros: `

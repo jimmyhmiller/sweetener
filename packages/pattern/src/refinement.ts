@@ -114,12 +114,35 @@ function leaves(
   return result;
 }
 
-function capturedTokens(value: CaptureValue): readonly TokenSyntax[] {
-  return leaves(value).flatMap((leaf) => {
-    const token = leaf.syntax.find(
-      (syntax): syntax is TokenSyntax => syntax.tag === "token",
-    );
-    return token === undefined ? [] : [token];
+/**
+ * The one token a capture holds, or nothing where it holds anything else.
+ *
+ * A spelling or token-kind refinement asks a question about a token. A capture
+ * holding a group, an already-enforested expression, or a run of several nodes
+ * is not one. Reading the first token out of such a capture answered for the
+ * whole of it -- `foo.Bar` passed a lowercase refinement on the strength of
+ * `foo` -- and a capture with no token at that position, which is every `expr`
+ * capture, answered nothing at all and so passed vacuously.
+ */
+function soleToken(
+  leaf: Extract<CaptureValue, { kind: "leaf" }>,
+): TokenSyntax | undefined {
+  const only = leaf.syntax[0];
+  return leaf.syntax.length === 1 && only?.tag === "token" ? only : undefined;
+}
+
+/**
+ * Whether every leaf of a capture is one token the predicate accepts. A
+ * repetition asks this of each of its elements, so a repetition that matched
+ * nothing has nothing to refuse.
+ */
+function everyToken(
+  value: CaptureValue,
+  accepts: (token: TokenSyntax) => boolean,
+): boolean {
+  return leaves(value).every((leaf) => {
+    const token = soleToken(leaf);
+    return token !== undefined && accepts(token);
   });
 }
 
@@ -158,18 +181,21 @@ export function evaluateRefinement(
   const value = captures.get(refinement.target);
   if (value === undefined) return false;
   const predicate = refinement.predicate;
-  const tokens = capturedTokens(value);
   switch (predicate.kind) {
     case "token-kind":
-      return tokens.every((token) => predicate.tokenKinds.includes(token.kind));
+      return everyToken(value, (token) =>
+        predicate.tokenKinds.includes(token.kind),
+      );
     case "spelling-equals":
-      return tokens.every((token) => token.raw === predicate.spelling);
+      return everyToken(value, (token) => token.raw === predicate.spelling);
     case "spelling-in":
-      return tokens.every((token) => predicate.spellings.includes(token.raw));
+      return everyToken(value, (token) =>
+        predicate.spellings.includes(token.raw),
+      );
     case "starts-with-lowercase":
-      return tokens.every((token) => /^\p{Ll}/u.test(token.raw));
+      return everyToken(value, (token) => /^\p{Ll}/u.test(token.raw));
     case "starts-with-uppercase":
-      return tokens.every((token) => /^\p{Lu}/u.test(token.raw));
+      return everyToken(value, (token) => /^\p{Lu}/u.test(token.raw));
     case "boundary":
       return tokenMatchesLiteral(
         predicate.side === "preceding"
