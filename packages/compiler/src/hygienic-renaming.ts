@@ -4,7 +4,7 @@ import {
   type Phase,
   type ScopeStore,
 } from "@sweetener/hygiene";
-import type { OriginId, ScopeSetId } from "@sweetener/shared";
+import type { BindingId, OriginId, ScopeSetId } from "@sweetener/shared";
 import {
   createHygienicNamePlan,
   type NameAssignmentPlan,
@@ -20,8 +20,21 @@ import * as ts from "typescript";
  */
 type IdentifierRole = "binder" | "property" | "reference";
 
+/**
+ * Which family of names an identifier belongs to.
+ *
+ * A label named `outer` and a variable named `outer` are different names, and
+ * a rename of one must not reach the other. Renaming runs once per namespace.
+ *
+ * A parameter property is not a third namespace: `constructor(private held)`
+ * declares a parameter and a member under the one spelling, and renaming it
+ * has to move both together.
+ */
+type NameNamespace = "value" | "label";
+
 interface IdentifierClassification {
   readonly roleByOffset: ReadonlyMap<number, IdentifierRole>;
+  readonly namespaceByOffset: ReadonlyMap<number, NameNamespace>;
   readonly shorthandOffsets: ReadonlySet<number>;
   readonly importBindingOffsets: ReadonlySet<number>;
   readonly publicBinderOffsets: ReadonlySet<number>;
@@ -32,17 +45,53 @@ function nameOf(node: ts.Node): ts.Node | undefined {
   return (node as { readonly name?: ts.Node }).name;
 }
 
-function roleFor(identifier: ts.Identifier): IdentifierRole {
+/** The namespace the identifier's own position puts it in. */
+function namespaceFor(identifier: ts.Identifier): NameNamespace {
+  const parent: ts.Node | undefined = identifier.parent;
+  if (parent === undefined) return "value";
+  if (
+    ts.isLabeledStatement(parent) ||
+    ts.isBreakStatement(parent) ||
+    ts.isContinueStatement(parent)
+  )
+    return "label";
+  return "value";
+}
+
+/**
+ * The names this file declares as parameter properties.
+ *
+ * A `this.name` may only be renamed along with the parameter that declares it,
+ * so the renamer has to know which names those are before it classifies any
+ * property access.
+ */
+function parameterPropertyNames(parsed: ts.SourceFile): ReadonlySet<string> {
+  const names = new Set<string>();
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isParameter(node) &&
+      ts.isParameterPropertyDeclaration(node, node.parent) &&
+      ts.isIdentifier(node.name)
+    )
+      names.add(node.name.text);
+    ts.forEachChild(node, visit);
+  };
+  visit(parsed);
+  return names;
+}
+
+function roleFor(
+  identifier: ts.Identifier,
+  parameterProperties: ReadonlySet<string>,
+): IdentifierRole {
   const parent: ts.Node | undefined = identifier.parent;
   if (parent === undefined) return "reference";
   switch (parent.kind) {
+    // A parameter property declares a class member as well as a parameter,
+    // under the one spelling. Both are the macro's own, and `this.name` reaches
+    // the member, so the two are renamed together in the member namespace.
     case ts.SyntaxKind.Parameter:
-      // A parameter property also declares a class member under the same
-      // spelling, which `this.name` reaches and a rename would not follow.
-      return nameOf(parent) === identifier &&
-        !ts.isParameterPropertyDeclaration(parent, parent.parent)
-        ? "binder"
-        : "property";
+      return nameOf(parent) === identifier ? "binder" : "property";
     case ts.SyntaxKind.VariableDeclaration:
     case ts.SyntaxKind.FunctionDeclaration:
     case ts.SyntaxKind.FunctionExpression:
@@ -81,10 +130,18 @@ function roleFor(identifier: ts.Identifier): IdentifierRole {
     case ts.SyntaxKind.JsxAttribute:
     case ts.SyntaxKind.NamedTupleMember:
       return nameOf(parent) === identifier ? "property" : "reference";
-    case ts.SyntaxKind.PropertyAccessExpression:
-      return (parent as ts.PropertyAccessExpression).name === identifier
-        ? "property"
-        : "reference";
+    case ts.SyntaxKind.PropertyAccessExpression: {
+      const access = parent as ts.PropertyAccessExpression;
+      if (access.name !== identifier) return "reference";
+      // `this.name` reaching a parameter property declared in this file names
+      // the same thing the parameter does, so a rename has to move both. Every
+      // other property access reaches a name declared somewhere this rename
+      // cannot follow, and stays put.
+      return access.expression.kind === ts.SyntaxKind.ThisKeyword &&
+        parameterProperties.has(identifier.text)
+        ? "reference"
+        : "property";
+    }
     case ts.SyntaxKind.QualifiedName:
       return (parent as ts.QualifiedName).right === identifier
         ? "property"
@@ -149,7 +206,9 @@ function classifyIdentifiers(
     true,
     fileName.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
+  const parameterProperties = parameterPropertyNames(parsed);
   const roleByOffset = new Map<number, IdentifierRole>();
+  const namespaceByOffset = new Map<number, NameNamespace>();
   const shorthandOffsets = new Set<number>();
   const importBindingOffsets = new Set<number>();
   const publicBinderOffsets = new Set<number>();
@@ -157,8 +216,9 @@ function classifyIdentifiers(
   const visit = (node: ts.Node): void => {
     if (ts.isIdentifier(node)) {
       const start = node.getStart(parsed);
-      const role = roleFor(node);
+      const role = roleFor(node, parameterProperties);
       roleByOffset.set(start, role);
+      namespaceByOffset.set(start, namespaceFor(node));
       const parent: ts.Node | undefined = node.parent;
       if (
         parent !== undefined &&
@@ -193,6 +253,7 @@ function classifyIdentifiers(
   visit(parsed);
   return Object.freeze({
     roleByOffset,
+    namespaceByOffset,
     shorthandOffsets,
     importBindingOffsets,
     publicBinderOffsets,
@@ -285,9 +346,12 @@ export function planHygienicRenames(
   const importBindingSyntax = new Set<number>();
   const publicBinderSyntax = new Set<number>();
   const exportSpecifierSyntax = new Set<number>();
+  const namespaceBySyntax = new Map<number, NameNamespace>();
   for (const span of options.tokenSpans) {
     const role = classification.roleByOffset.get(span.start);
     if (role !== undefined) roleBySyntax.set(span.syntax, role);
+    const space = classification.namespaceByOffset.get(span.start);
+    if (space !== undefined) namespaceBySyntax.set(span.syntax, space);
     if (classification.shorthandOffsets.has(span.start))
       shorthandSyntax.add(span.syntax);
     if (classification.importBindingOffsets.has(span.start))
@@ -316,73 +380,103 @@ export function planHygienicRenames(
         options.scopes.subset(token.scopes, specifier.scopes),
     );
 
-  const classes = new Map<string, IntroducedBinderClass>();
-  const published = new Set<string>();
-  for (const token of tokens) {
-    if (roleBySyntax.get(token.id) !== "binder") continue;
-    if (!options.scopes.hasUnmatchedIntroduction(token.scopes)) continue;
-    const key = `${token.raw} ${String(token.scopes)}`;
-    if (publicBinderSyntax.has(token.id) || isExported(token)) {
-      published.add(key);
-      continue;
+  const spaceOf = (token: TokenSyntax): NameNamespace =>
+    namespaceBySyntax.get(token.id) ?? "value";
+
+  /**
+   * Plans the renames for one namespace.
+   *
+   * A token takes part only if it is in the namespace being planned, so a
+   * member named `held` is never renamed by a class built from a variable
+   * named `held`, and neither is renamed by a label of that spelling.
+   */
+  const planFor = (space: NameNamespace): NameAssignmentPlan | undefined => {
+    const inSpace = tokens.filter((token) => spaceOf(token) === space);
+    const classes = new Map<string, IntroducedBinderClass>();
+    const published = new Set<string>();
+    for (const token of inSpace) {
+      if (roleBySyntax.get(token.id) !== "binder") continue;
+      if (!options.scopes.hasUnmatchedIntroduction(token.scopes)) continue;
+      const key = `${token.raw} ${String(token.scopes)}`;
+      if (publicBinderSyntax.has(token.id) || isExported(token)) {
+        published.add(key);
+        continue;
+      }
+      classes.set(key, {
+        spelling: token.raw,
+        scopes: token.scopes,
+        declaration: token.origin,
+      });
     }
-    classes.set(key, {
-      spelling: token.raw,
-      scopes: token.scopes,
-      declaration: token.origin,
-    });
-  }
-  // One published binder holds the whole class in place; the rest of the class
-  // is the same name.
-  for (const key of published) classes.delete(key);
-  if (classes.size === 0) return undefined;
+    // One published binder holds the whole class in place; the rest of the
+    // class is the same name.
+    for (const key of published) classes.delete(key);
+    if (classes.size === 0) return undefined;
 
-  const belongsToClass = (token: TokenSyntax): boolean =>
-    [...classes.values()].some(
-      (candidate) =>
-        candidate.spelling === token.raw &&
-        options.scopes.subset(candidate.scopes, token.scopes),
-    );
+    const belongsToClass = (token: TokenSyntax): boolean =>
+      [...classes.values()].some(
+        (candidate) =>
+          candidate.spelling === token.raw &&
+          options.scopes.subset(candidate.scopes, token.scopes),
+      );
 
-  const environments = new EnvironmentStore();
-  let environment = environments.createRoot();
-  const bindings: Binding[] = [];
-  for (const candidate of classes.values()) {
-    const declared = environments.declare(environment, {
-      spelling: candidate.spelling,
-      scopes: candidate.scopes,
+    const environments = new EnvironmentStore();
+    let environment = environments.createRoot();
+    const bindings: Binding[] = [];
+    for (const candidate of classes.values()) {
+      const declared = environments.declare(environment, {
+        spelling: candidate.spelling,
+        scopes: candidate.scopes,
+        phase: options.phase,
+        space,
+        declaration: candidate.declaration,
+        kind: "generated",
+      });
+      environment = declared.environment;
+      bindings.push(declared.binding);
+    }
+
+    const unavailable = new Set(options.reservedNames ?? []);
+    for (const token of inSpace) {
+      if (roleBySyntax.get(token.id) === "property") continue;
+      if (!belongsToClass(token)) unavailable.add(token.raw);
+    }
+
+    const takesPart = (token: TokenSyntax): boolean =>
+      spaceOf(token) === space && roleBySyntax.get(token.id) !== "property";
+
+    return createHygienicNamePlan({
+      syntax: options.syntax,
+      bindings,
+      environments,
+      environment,
+      scopes: options.scopes,
       phase: options.phase,
-      space: "value",
-      declaration: candidate.declaration,
-      kind: "generated",
+      space,
+      unavailableNames: [...unavailable],
+      includeToken: takesPart,
+      occurrenceKind: (token) =>
+        shorthandSyntax.has(token.id)
+          ? "shorthand-value"
+          : importBindingSyntax.has(token.id)
+            ? "import-binding"
+            : "identifier",
+      propertySpelling: (token) => token.raw,
     });
-    environment = declared.environment;
-    bindings.push(declared.binding);
-  }
+  };
 
-  const unavailable = new Set(options.reservedNames ?? []);
-  for (const token of tokens) {
-    if (roleBySyntax.get(token.id) === "property") continue;
-    if (!belongsToClass(token)) unavailable.add(token.raw);
-  }
-
-  const plan = createHygienicNamePlan({
-    syntax: options.syntax,
-    bindings,
-    environments,
-    environment,
-    scopes: options.scopes,
-    phase: options.phase,
-    space: "value",
-    unavailableNames: [...unavailable],
-    includeToken: (token) => roleBySyntax.get(token.id) !== "property",
-    occurrenceKind: (token) =>
-      shorthandSyntax.has(token.id)
-        ? "shorthand-value"
-        : importBindingSyntax.has(token.id)
-          ? "import-binding"
-          : "identifier",
-    propertySpelling: (token) => token.raw,
+  const plans = (["value", "label"] as const)
+    .map(planFor)
+    .filter((plan): plan is NameAssignmentPlan => plan !== undefined);
+  if (plans.length === 0) return undefined;
+  if (plans.length === 1) return plans[0];
+  // The namespaces rename disjoint sets of tokens, so their plans compose.
+  const names = new Map<BindingId, string>();
+  for (const plan of plans)
+    for (const [binding, name] of plan.names) names.set(binding, name);
+  return Object.freeze({
+    names,
+    rewrites: Object.freeze(plans.flatMap((plan) => [...plan.rewrites])),
+    nameFor: (binding: BindingId) => names.get(binding),
   });
-  return plan;
 }

@@ -100,3 +100,77 @@ describe("labels", () => {
     expect(generated).not.toContain("outer_1");
   });
 });
+
+describe("parameter properties", () => {
+  const box = `
+export syntax box:item {
+  rule { box($value:expr) } => {
+    export class Box {
+      total: number;
+      constructor(private held: number) { this.total = held + ($value); }
+    }
+  }
+}
+`;
+
+  test("an introduced parameter property does not capture the call site", () => {
+    // A parameter property declares a parameter and a member under the one
+    // spelling, and `this.name` reaches the member. Leaving it unrenamed for
+    // that reason let it capture a call-site name of the same spelling: the
+    // captured `held` read the constructor's parameter instead of the
+    // module's own.
+    const { generated, messages } = run(
+      box,
+      'import { box } from "./macros.sts" for syntax;\n' +
+        "const held = 5;\n" +
+        "box(held)\n",
+    );
+    expect(messages).toEqual([]);
+    expect(generated).toContain("private held_1: number");
+    expect(generated).toContain("held_1 + (held)");
+  });
+
+  test("this. follows the parameter property it names", () => {
+    const { generated, messages } = run(
+      `
+export syntax box:item {
+  rule { box($value:expr) } => {
+    export class Box {
+      constructor(private held: number) {}
+      read() { return this.held + ($value); }
+    }
+  }
+}
+`,
+      'import { box } from "./macros.sts" for syntax;\n' +
+        "const held = 5;\n" +
+        "box(held)\n",
+    );
+    expect(messages).toEqual([]);
+    expect(generated).toContain("private held_1: number");
+    expect(generated).toContain("this.held_1");
+  });
+
+  test("a property access naming no parameter property stays put", () => {
+    // A rename cannot follow a member declared anywhere else, so it must not
+    // start one.
+    const { generated, messages } = run(
+      `
+export syntax box:item {
+  rule { box($value:expr) } => {
+    export class Box {
+      held = 1;
+      read() { return this.held + ($value); }
+    }
+  }
+}
+`,
+      'import { box } from "./macros.sts" for syntax;\n' +
+        "const held = 5;\n" +
+        "box(held)\n",
+    );
+    expect(messages).toEqual([]);
+    expect(generated).toContain("this.held");
+    expect(generated).not.toContain("this.held_1");
+  });
+});
