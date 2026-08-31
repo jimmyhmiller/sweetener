@@ -9,6 +9,7 @@ import {
   type DefinitionClause,
 } from "@sweetener/macro-language";
 import {
+  classReferences,
   compileMatcherProgram,
   createBindingLiteralKey,
   createChoicePattern,
@@ -21,6 +22,7 @@ import {
   inferCaptureShapes,
   patternDiagnosticRegistry,
   invalidRefinementCode,
+  unresolvedSyntaxClassCode,
   type CaptureRefinement,
   type PatternNode,
   type SyntaxClassRegistry,
@@ -36,6 +38,7 @@ import type { Span } from "@sweetener/syntax";
 import type { TokenSyntax } from "@sweetener/syntax";
 import {
   expansionDiagnosticRegistry,
+  duplicateMacroDefinitionCode,
   invalidMacroContextCode,
   invalidCoreShadowCode,
   invalidOperatorConfigurationCode,
@@ -292,11 +295,36 @@ function lowerOperator(
  * This is deliberately the only orchestration point that joins pattern,
  * template, binding-contract, and hygiene compilation.
  */
+/** The syntax classes the language provides, which no module declares. */
+const builtinClassNames: ReadonlySet<string> = new Set([
+  "token",
+  "tt",
+  "ident",
+  "expr",
+  "stmt",
+  "item",
+  "type",
+  "binding",
+  "classElement",
+  "jsxChild",
+]);
+
 export function compileParsedMacros(
   parsed: ParseMacroDefinitionsResult,
   options: CompileParsedMacrosOptions,
 ): CompileParsedMacrosResult {
   const classes = compileParsedSyntaxClasses(parsed, options);
+  // Every class a rule may name: the ones this module declares, and the ones
+  // the language provides.
+  const classNameById = new Map(
+    parsed.classBindings.map(({ name, classId }) => [classId, name]),
+  );
+  const knownClassIds = new Set([
+    ...classes.registry.list().map(({ classId }) => classId),
+    ...parsed.classBindings
+      .filter(({ name }) => builtinClassNames.has(name))
+      .map(({ classId }) => classId),
+  ]);
   const templates = compileParsedTemplates(parsed, {
     ...options,
     syntaxClasses: classes.registry,
@@ -362,6 +390,30 @@ export function compileParsedMacros(
     for (const rule of definition.rules) {
       const template = templateByRule.get(rule.id);
       if (template === undefined) continue;
+      // A rule naming a syntax class that does not exist used to compile, and
+      // reported only that no rule matched wherever the macro was used --
+      // pointing at the call rather than at the name that was never declared.
+      // Class rules were already checked this way; macro rules were not.
+      const unresolved = classReferences(rule.pattern).filter(
+        ({ classId }) => !knownClassIds.has(classId),
+      );
+      for (const reference of unresolved) {
+        const span = options.spanForOrigin(reference.origin);
+        diagnostics.push(
+          patternDiagnosticRegistry.create(unresolvedSyntaxClassCode, {
+            primaryOrigin: {
+              sourceId: options.sourceId,
+              start: span.start,
+              end: span.end,
+              originId: reference.origin,
+            },
+            messageArguments: [
+              classNameById.get(reference.classId) ?? reference.classId,
+            ],
+          }),
+        );
+      }
+      if (unresolved.length > 0) continue;
       const inference = inferCaptureShapes(rule.pattern, {
         sourceId: options.sourceId,
         spanForOrigin: options.spanForOrigin,
@@ -458,6 +510,39 @@ export function compileParsedMacros(
     // Registering it anyway would leave a definition with no table entry, which
     // later reads as a broken invariant rather than the error it is.
     if (definition.kind === "operator" && operator === undefined) continue;
+    // A second definition of one name never ran: lookup takes the first, so
+    // the later definition was discarded without a word and a module could
+    // quietly disagree with itself about what a macro does. Two exported
+    // definitions of one name are refused even in different categories,
+    // because a module's export list records one category per name and the
+    // second was silently unreachable through any import.
+    const definedName = macro.binding.spelling;
+    const claimed = definitions.find(
+      ({ definition: existing, macro: existingMacro }) =>
+        existingMacro.binding.spelling === definedName &&
+        (existingMacro.category === macro.category ||
+          (existing.exported && definition.exported)),
+    );
+    if (claimed !== undefined) {
+      const span = options.spanForOrigin(definition.origin);
+      diagnostics.push(
+        expansionDiagnosticRegistry.create(duplicateMacroDefinitionCode, {
+          primaryOrigin: {
+            sourceId: options.sourceId,
+            start: span.start,
+            end: span.end,
+            originId: definition.origin,
+          },
+          messageArguments: [
+            definedName,
+            claimed.macro.category === macro.category
+              ? `another ${macro.category} definition`
+              : `an exported ${claimed.macro.category} definition, and a module's export list records one category per name`,
+          ],
+        }),
+      );
+      continue;
+    }
     macros.push(macro);
     if (operator !== undefined) operators.push(operator);
     definitions.push(Object.freeze({ definition, macro, operator }));

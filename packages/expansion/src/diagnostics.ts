@@ -9,8 +9,19 @@ export const invalidOperatorConfigurationCode = diagnosticCode("SWR4006");
 export const conflictingOperatorImportCode = diagnosticCode("SWR4007");
 export const invalidMacroContextCode = diagnosticCode("SWR4008");
 export const unresolvedBindingLiteralCode = diagnosticCode("SWR4009");
+export const duplicateMacroDefinitionCode = diagnosticCode("SWR4010");
 
 export const expansionDiagnosticRegistry = new DiagnosticRegistry([
+  {
+    code: duplicateMacroDefinitionCode,
+    owner: "expansion-enforestation",
+    stage: "expansion",
+    severity: "error",
+    documentation:
+      "One module may define a macro name only once, and may export it for only one syntax category.",
+    format: (arguments_) =>
+      `Macro ${String(arguments_[0] ?? "unknown")} is already defined in this module: ${String(arguments_[1] ?? "a second definition")}.`,
+  },
   {
     code: noMatchingMacroRuleCode,
     owner: "expansion-enforestation",
