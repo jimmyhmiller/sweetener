@@ -561,9 +561,18 @@ class Parser {
     let index = 0;
     while (index < nodes.length) {
       const current = nodes[index];
+      // A `|` between alternatives is written with space on either side of it,
+      // which is what tells it from a `|` the pattern matches literally --
+      // `$name |= ...` matches an assignment operator. Only the space after it
+      // was asked about, so the rule read backwards for one of the two
+      // one-sided spellings: `$x:tt| $y:tt` was a choice and `$x:tt |$y:tt` was
+      // a literal, neither of which anyone writes on purpose.
+      const previous = nodes[index - 1];
       if (
         token(current, "|") &&
         alternatives.at(-1)?.length &&
+        previous !== undefined &&
+        current.span.start > previous.span.end &&
         nodes[index + 1] !== undefined &&
         nodes[index + 1]!.span.start > current.span.end
       ) {

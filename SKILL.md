@@ -94,8 +94,13 @@ export const pair = twice(21);
   own rule.
 - **Repetition**: `$($item:expr),*` matches a comma-separated list, and
   `$($item),*` places it back.
-- **Optional**: `$value:expr?`, tested in a template with
-  `#if(present $value) { ... } #else { ... }`.
+- **Optional**: `$($value:expr)?`, tested in a template with
+  `#if(present $value) { ... } #else { ... }`. The quantifier goes on the
+  group, as it does for repetition; `$value:expr?` matches a literal `?`
+  after the capture.
+- **One shape or another in one rule**: `$left:tt | $right:tt`. The `|` is
+  written with a space on either side of it, which is what tells it from a `|`
+  the pattern matches literally, as in `$name |= $value:expr`.
 - **A named shape used by several rules**: declare a syntax class.
 
   ```ts
