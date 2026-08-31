@@ -300,13 +300,17 @@ export function runCli(options: {
       options.io.stderr(`No expansion available for ${fileName}\n`);
       return Object.freeze({ exitCode: 1 });
     }
+    // Printing the source, or an account of where it came from, and reporting
+    // success would say the macros ran. `explain` used to report the origins of
+    // an expansion that never happened, which reads as an expansion in which
+    // every token came from the source -- exactly what an unexpanded file looks
+    // like.
+    if (inspected.diagnostics.length > 0) {
+      for (const diagnostic of inspected.diagnostics)
+        options.io.stderr(`${renderDiagnostic(diagnostic)}\n`);
+      return Object.freeze({ exitCode: 1 });
+    }
     if (invocation.command === "expand") {
-      // Printing the source and reporting success would say the macros ran.
-      if (inspected.diagnostics.length > 0) {
-        for (const diagnostic of inspected.diagnostics)
-          options.io.stderr(`${renderDiagnostic(diagnostic)}\n`);
-        return Object.freeze({ exitCode: 1 });
-      }
       options.io.stdout(expansionView(inspected.generated));
     } else {
       // A position past the end of the file is something a person types, not

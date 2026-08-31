@@ -752,7 +752,40 @@ export class DefaultProjectExpansionProvider
         targets: targets.map((target) => resolve(aliasBase, target)),
       }),
     );
+    /**
+     * Every macro module a file reads macros from, however far away. A macro
+     * module that fails to compile stops the macros of everything downstream of
+     * it, not only of its immediate importer.
+     */
+    const macroSourcesFor = (fileName: string): ReadonlySet<SourceId> => {
+      const collected = new Set<SourceId>();
+      const seen = new Set<string>();
+      const pending = [fileName];
+      while (pending.length > 0) {
+        const current = pending.pop()!;
+        if (seen.has(current)) continue;
+        seen.add(current);
+        for (const sourceId of macroSources.get(current) ?? []) {
+          collected.add(sourceId);
+          const parsed = bySource.get(sourceId);
+          if (parsed !== undefined) pending.push(parsed.fileName);
+        }
+      }
+      return collected;
+    };
     const discovered = new Set<string>();
+    // Which macro modules each file reads its macros from. A file whose macros
+    // did not compile expands into itself, and saying nothing about that
+    // reported the unexpanded source as the expansion.
+    const macroSources = new Map<string, Set<SourceId>>();
+    const dependsOn = (importer: ParsedFile, target: ParsedFile): void => {
+      let sources = macroSources.get(importer.fileName);
+      if (sources === undefined) {
+        sources = new Set<SourceId>();
+        macroSources.set(importer.fileName, sources);
+      }
+      sources.add(target.sourceId);
+    };
     const pendingDiscovery = [...projectFiles];
     while (pendingDiscovery.length > 0) {
       const importer = pendingDiscovery.shift()!;
@@ -785,7 +818,9 @@ export class DefaultProjectExpansionProvider
             candidate !== undefined && existsSync(candidate),
         );
         if (localTarget !== undefined) {
-          pendingDiscovery.push(loadFile(localTarget));
+          const target = loadFile(localTarget);
+          dependsOn(importer, target);
+          pendingDiscovery.push(target);
           continue;
         }
         const parsedPackage = packageParts(sourceImport.specifier);
@@ -997,6 +1032,8 @@ export class DefaultProjectExpansionProvider
               ],
             }),
           );
+        for (const packageFile of packageFiles)
+          dependsOn(importer, packageFile);
         pendingDiscovery.push(...packageFiles);
       }
     }
@@ -1393,11 +1430,19 @@ export class DefaultProjectExpansionProvider
           generated,
           origins,
           // The ones raised against this file, so an inspection can say that
-          // what it holds is unexpanded rather than presenting it as output.
+          // what it holds is unexpanded rather than presenting it as output --
+          // and the errors raised against the macro modules it reads its
+          // macros from, which stop those macros running and leave this file
+          // expanding into itself. Reporting only the first meant `expand`
+          // printed the unexpanded source and reported success whenever the
+          // fault was in the macros rather than in their use.
           diagnostics: Object.freeze(
             diagnostics
               .filter(
-                ({ primaryOrigin }) => primaryOrigin.sourceId === file.sourceId,
+                ({ primaryOrigin, severity }) =>
+                  primaryOrigin.sourceId === file.sourceId ||
+                  (severity === "error" &&
+                    macroSourcesFor(file.fileName).has(primaryOrigin.sourceId)),
               )
               .map((diagnostic) =>
                 asTypeScriptDiagnostic(diagnostic, bySource),
