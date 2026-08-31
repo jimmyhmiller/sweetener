@@ -6,6 +6,7 @@ import {
   createDefaultProjectExpansionProvider,
   loadSweetProject,
   runCli,
+  runConfiguredProjectCommand,
 } from "../src/index.js";
 
 /**
@@ -108,5 +109,48 @@ describe("what an inspection reports", () => {
       }).exitCode,
     ).toBe(0);
     expect(stdout.join("")).toContain("[1,1]");
+  });
+});
+
+describe("where a diagnostic's related locations point", () => {
+  test("related information is mapped back to the source", () => {
+    // A diagnostic's related locations are positions in the same generated
+    // file, and were carried through untouched: they named the virtual `.ts`,
+    // which no `check` ever writes, at offsets into text nobody had.
+    const directory = mkdtempSync(join(tmpdir(), "sweet-related-"));
+    writeFileSync(
+      join(directory, "macros.sts"),
+      "export syntax nop:expr { rule { nop($x:tt) } => { $x } }",
+    );
+    const source = `import { nop } from "./macros.sts" for syntax;
+interface Shape { size: number; }
+interface Shape { size: string; }
+export const a = nop(1);
+`;
+    writeFileSync(join(directory, "main.sts"), source);
+    writeFileSync(
+      join(directory, "tsconfig.json"),
+      JSON.stringify({
+        compilerOptions: { noEmit: true, strict: false, target: "ES2022" },
+        sweet: { macroExtensions: [".sts"] },
+        files: ["macros.sts", "main.sts"],
+      }),
+    );
+    const result = runConfiguredProjectCommand({
+      command: "check",
+      configPath: join(directory, "tsconfig.json"),
+      writeThrough: false,
+    });
+    const diagnostic = result.diagnostics.find(({ code }) => code === 2717);
+    expect(diagnostic).toBeDefined();
+    const related = diagnostic?.relatedInformation?.[0];
+    expect(related?.file?.fileName).toMatch(/main\.sts$/u);
+    // Both positions name the `size` each declaration writes.
+    expect(source.slice(related?.start, (related?.start ?? 0) + 4)).toBe(
+      "size",
+    );
+    expect(source.slice(diagnostic?.start, (diagnostic?.start ?? 0) + 4)).toBe(
+      "size",
+    );
   });
 });

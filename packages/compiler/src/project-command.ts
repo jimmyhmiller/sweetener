@@ -73,20 +73,33 @@ function remapGeneratedDiagnostics(options: {
     ]),
   );
   const sourceFiles = new Map<string, ts.SourceFile>();
-  return options.diagnostics.map((diagnostic) => {
-    const virtualName = diagnostic.file?.fileName;
-    const generatedStart = diagnostic.start;
+  /**
+   * Where in the sources a position in a generated file came from, or nothing
+   * when it came from nowhere the sources can name.
+   */
+  const locate = (
+    file: ts.SourceFile | undefined,
+    generatedStart: number | undefined,
+    generatedLength: number | undefined,
+  ):
+    | {
+        readonly file: ts.SourceFile;
+        readonly start: number;
+        readonly length: number;
+      }
+    | undefined => {
+    const virtualName = file?.fileName;
     if (virtualName === undefined || generatedStart === undefined)
-      return diagnostic;
+      return undefined;
     const originalOwner = sourceByVirtual.get(virtualName);
     const inspection =
       originalOwner === undefined ? undefined : inspections.get(originalOwner);
     const mapped = inspection?.index.generatedToOriginal(generatedStart)[0];
-    if (mapped === undefined) return diagnostic;
+    if (mapped === undefined) return undefined;
     const sourceName = sourceById.get(mapped.primary.sourceId);
-    if (sourceName === undefined) return diagnostic;
+    if (sourceName === undefined) return undefined;
     const sourceInspection = inspections.get(sourceName);
-    if (sourceInspection === undefined) return diagnostic;
+    if (sourceInspection === undefined) return undefined;
     let sourceFile = sourceFiles.get(sourceName);
     if (sourceFile === undefined) {
       sourceFile = ts.createSourceFile(
@@ -99,14 +112,41 @@ function remapGeneratedDiagnostics(options: {
       sourceFiles.set(sourceName, sourceFile);
     }
     const start = mapped.projectedOriginalOffset;
-    const length = Math.max(
-      0,
-      Math.min(
-        mapped.primary.span.end - start,
-        diagnostic.length ?? mapped.primary.span.end - start,
+    return {
+      file: sourceFile,
+      start,
+      length: Math.max(
+        0,
+        Math.min(
+          mapped.primary.span.end - start,
+          generatedLength ?? mapped.primary.span.end - start,
+        ),
       ),
+    };
+  };
+  return options.diagnostics.map((diagnostic) => {
+    const located = locate(
+      diagnostic.file,
+      diagnostic.start,
+      diagnostic.length,
     );
-    return Object.freeze({ ...diagnostic, file: sourceFile, start, length });
+    // A diagnostic's related locations are positions in the same generated
+    // file, and were carried through untouched: they named the virtual `.ts`,
+    // which no `check` ever writes, at offsets into text nobody had. "'size'
+    // was also declared here" pointed into a file the author could not open.
+    const related = (diagnostic.relatedInformation ?? []).map((entry) => {
+      const entryLocation = locate(entry.file, entry.start, entry.length);
+      return entryLocation === undefined
+        ? entry
+        : Object.freeze({ ...entry, ...entryLocation });
+    });
+    const remapped =
+      located === undefined ? diagnostic : { ...diagnostic, ...located };
+    return Object.freeze(
+      related.length === 0
+        ? remapped
+        : { ...remapped, relatedInformation: related },
+    );
   });
 }
 
