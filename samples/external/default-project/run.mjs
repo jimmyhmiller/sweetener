@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 import { watchConfiguredProject } from "@sweetener/cli";
 import ts from "typescript";
@@ -62,17 +63,27 @@ const watch = watchConfiguredProject({
     },
   },
 });
+// A watch waits for a burst of writes to settle before it rebuilds, so an
+// edit is answered on a later turn rather than inside the notification.
+const rebuilt = async (text) => {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    if (
+      results
+        .at(-1)
+        ?.virtualFiles.some(({ generated }) => generated.text.includes(text))
+    )
+      return true;
+    await delay(10);
+  }
+  return false;
+};
 try {
   writeFileSync(mainSourcePath, originalMain.replace("twice(21)", "twice(22)"));
   callbacks.get(mainSourcePath)?.(
     mainSourcePath,
     ts.FileWatcherEventKind.Changed,
   );
-  if (
-    !results
-      .at(-1)
-      ?.virtualFiles.some(({ generated }) => generated.text.includes("[22,22]"))
-  )
+  if (!(await rebuilt("[22,22]")))
     throw new Error("call-site watch edit was not rebuilt");
   writeFileSync(
     macroSourcePath,
@@ -82,13 +93,7 @@ try {
     macroSourcePath,
     ts.FileWatcherEventKind.Changed,
   );
-  if (
-    !results
-      .at(-1)
-      ?.virtualFiles.some(({ generated }) =>
-        generated.text.includes("[22,22,22]"),
-      )
-  )
+  if (!(await rebuilt("[22,22,22]")))
     throw new Error("macro-definition watch edit was not rebuilt");
 } finally {
   watch.close();

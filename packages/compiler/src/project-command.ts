@@ -1,3 +1,4 @@
+import { dirname } from "node:path";
 import type { VirtualTypeScriptFile } from "@sweetener/typescript-host";
 import { createVirtualProgram } from "@sweetener/typescript-host";
 import * as ts from "typescript";
@@ -267,48 +268,121 @@ export interface WatchProject {
   close(): void;
 }
 
+/** How long to wait for a burst of writes to settle before rebuilding. */
+const rebuildDelayMilliseconds = 50;
+
+/** Extensions a change to which can change what the project builds. */
+const watchedExtensions = [".ts", ".tsx", ".sts", ".stsx", ".json"];
+
 export function watchConfiguredProject(options: {
   readonly configPath: string;
   readonly expansionProvider?: ProjectExpansionProvider | undefined;
   readonly onResult: (result: ConfiguredProjectCommandResult) => void;
   readonly system?: ts.System;
   readonly writeThrough?: boolean;
+  /**
+   * Wait before rebuilding, so a burst of writes builds once. Tests pass 0 to
+   * rebuild on the next tick instead of after a delay.
+   */
+  readonly debounceMilliseconds?: number | undefined;
 }): WatchProject {
   const system = options.system ?? ts.sys;
   const expansionProvider =
     options.expansionProvider ?? createDefaultProjectExpansionProvider();
-  let result = runConfiguredProjectCommand({
-    command: "build",
-    configPath: options.configPath,
-    expansionProvider,
-    ...(options.writeThrough === undefined
-      ? {}
-      : { writeThrough: options.writeThrough }),
-  });
+  const delay = options.debounceMilliseconds ?? rebuildDelayMilliseconds;
+  const build = () =>
+    runConfiguredProjectCommand({
+      command: "build",
+      configPath: options.configPath,
+      expansionProvider,
+      ...(options.writeThrough === undefined
+        ? {}
+        : { writeThrough: options.writeThrough }),
+    });
+
+  let result = build();
   options.onResult(result);
-  const project = loadSweetProject(options.configPath);
-  const watched = new Set([
-    project.configPath,
-    ...project.typescript.fileNames,
-    ...(expansionProvider.macroDependencies?.(project) ?? []),
-  ]);
-  const watchers = [...watched].map((fileName) =>
-    system.watchFile!(fileName, () => {
-      result = runConfiguredProjectCommand({
-        command: "build",
-        configPath: options.configPath,
-        expansionProvider,
-        ...(options.writeThrough === undefined
-          ? {}
-          : { writeThrough: options.writeThrough }),
-      });
+
+  const fileWatchers = new Map<string, ts.FileWatcher>();
+  const directoryWatchers = new Map<string, ts.FileWatcher>();
+  let pending: ReturnType<typeof setTimeout> | undefined;
+  let closed = false;
+
+  /**
+   * What the project reads now, which is not what it read when the watch
+   * began: a file added to the project, or a macro module a file has newly
+   * imported, was never watched, so editing it rebuilt nothing. The set is
+   * taken again after every build.
+   */
+  const follow = (): void => {
+    if (closed) return;
+    const project = loadSweetProject(options.configPath);
+    const wanted = new Set([
+      project.configPath,
+      ...project.typescript.fileNames,
+      ...(expansionProvider.macroDependencies?.(project) ?? []),
+    ]);
+    for (const [fileName, watcher] of fileWatchers)
+      if (!wanted.has(fileName)) {
+        watcher.close();
+        fileWatchers.delete(fileName);
+      }
+    for (const fileName of wanted)
+      if (!fileWatchers.has(fileName))
+        fileWatchers.set(fileName, system.watchFile!(fileName, schedule));
+    // A file the project has yet to see has no watcher to fire, so the
+    // directories it could appear in are watched as well.
+    if (system.watchDirectory === undefined) return;
+    const directories = new Set(
+      [...wanted].map((fileName) => dirname(fileName)),
+    );
+    for (const [directory, watcher] of directoryWatchers)
+      if (!directories.has(directory)) {
+        watcher.close();
+        directoryWatchers.delete(directory);
+      }
+    for (const directory of directories)
+      if (!directoryWatchers.has(directory))
+        directoryWatchers.set(
+          directory,
+          system.watchDirectory(directory, (changed) => {
+            if (
+              !changed.includes("node_modules") &&
+              watchedExtensions.some((extension) => changed.endsWith(extension))
+            )
+              schedule();
+          }),
+        );
+  };
+
+  function schedule(): void {
+    if (closed) return;
+    // An editor writing one file in two steps, or a save across several files,
+    // used to start a build for each write. Only the last one is wanted.
+    if (pending !== undefined) clearTimeout(pending);
+    pending = setTimeout(() => {
+      pending = undefined;
+      if (closed) return;
+      result = build();
       options.onResult(result);
-    }),
-  );
+      follow();
+    }, delay);
+    pending.unref?.();
+  }
+
+  follow();
   return {
     get result() {
       return result;
     },
-    close: () => watchers.forEach((watcher) => watcher.close()),
+    close: () => {
+      closed = true;
+      if (pending !== undefined) clearTimeout(pending);
+      pending = undefined;
+      for (const watcher of fileWatchers.values()) watcher.close();
+      for (const watcher of directoryWatchers.values()) watcher.close();
+      fileWatchers.clear();
+      directoryWatchers.clear();
+    },
   };
 }
