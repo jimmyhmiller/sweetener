@@ -251,17 +251,18 @@ describe("template parser", () => {
     });
   });
 
-  test("parses declarative presence and alternative conditionals", () => {
-    const optional = createSequenceShape({
+  const optionalShape = () =>
+    createSequenceShape({
       element: createLeafShape(id<SyntaxClassId>(1)),
       cardinalityGroup: id<CardinalityGroupId>(1),
       minimum: 0,
       maximum: 1,
     });
-    const result = parse(
-      '{ #if(present $maybe) { yes } #else { no } #if(alternative $maybe "some") { selected } }',
-      [binding("maybe", 1, optional)],
-    );
+
+  test("parses declarative presence conditionals", () => {
+    const result = parse("{ #if(present $maybe) { yes } #else { no } }", [
+      binding("maybe", 1, optionalShape()),
+    ]);
     expect(result.diagnostics).toEqual([]);
     expect(result.template.elements).toMatchObject([
       {
@@ -270,14 +271,30 @@ describe("template parser", () => {
         consequent: { elements: [{ syntax: { raw: "yes" } }] },
         alternate: { elements: [{ syntax: { raw: "no" } }] },
       },
-      {
-        kind: "conditional",
-        predicate: {
-          kind: "selected-alternative",
-          path: { rootName: "maybe" },
-          alternative: "some",
-        },
-      },
+    ]);
+  });
+
+  test("refuses an alternative conditional", () => {
+    // Nothing on the matching side records which alternative a capture
+    // matched, so one of these never selected its consequent and silently took
+    // the `#else` branch for every input.
+    const result = parse('{ #if(alternative $maybe "some") { selected } }', [
+      binding("maybe", 1, optionalShape()),
+    ]);
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual([
+      "SWR2016",
+    ]);
+    expect(String(result.diagnostics[0]?.messageArguments[0])).toContain(
+      "alternative conditionals are not supported",
+    );
+  });
+
+  test("refuses a presence conditional with more than the capture in it", () => {
+    const result = parse("{ #if(present $maybe and then some) { yes } }", [
+      binding("maybe", 1, optionalShape()),
+    ]);
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual([
+      "SWR2016",
     ]);
   });
 

@@ -2,6 +2,8 @@ import {
   captureShapeDepth,
   createCapturePath,
   createSequenceShape,
+  identifierAffixesAreValid,
+  isIdentifierText,
   parseIdentifierJoinArguments,
   type CaptureShape,
   type CaptureShapeBinding,
@@ -341,6 +343,7 @@ class TemplateParser {
           const valid =
             resolved !== undefined &&
             captureShapeDepth(resolved.shape) <= depth &&
+            identifierAffixesAreValid(resolved.prefix, resolved.suffix) &&
             (allowedClasses === undefined ||
               allowedClasses.includes(baseLeaf(resolved.shape).classId));
           if (!valid) {
@@ -377,7 +380,7 @@ class TemplateParser {
             token(hint) &&
             hint.kind === "string-literal" &&
             typeof hint.value === "string" &&
-            hint.value.length > 0 &&
+            isIdentifierText(hint.value) &&
             token(argumentsGroup.children[1], ",") &&
             resolved !== undefined &&
             resolved.next === argumentsGroup.children.length;
@@ -407,7 +410,11 @@ class TemplateParser {
             !token(hint) ||
             hint.kind !== "string-literal" ||
             typeof hint.value !== "string" ||
-            hint.value.length === 0 ||
+            // The hint becomes the introduced name, so it has to be one. Only
+            // its emptiness was checked, and `#fresh("has space")` printed a
+            // name that was two -- reported by TypeScript as a syntax error in
+            // generated code rather than against the template that wrote it.
+            !isIdentifierText(hint.value) ||
             argumentsGroup.children.length !== 1
           ) {
             this.#diagnostic(
@@ -508,50 +515,39 @@ class TemplateParser {
           predicateGroup.children,
           1,
         );
+        // `alternative` is refused rather than read. Nothing on the matching
+        // side records which alternative a capture matched -- the map the
+        // evaluator consults is populated only by its own tests -- so an
+        // alternative conditional never selected its consequent and silently
+        // took the `#else` branch for every input. The refinement language
+        // refuses the same predicate for the same reason.
+        const unsupportedAlternative =
+          token(predicateKind) && predicateKind.raw === "alternative";
         if (
           resolved === undefined ||
           !token(predicateKind) ||
-          !["present", "alternative"].includes(predicateKind.raw)
+          predicateKind.raw !== "present" ||
+          // The predicate is the whole of the group. Reading a capture path and
+          // stopping there left whatever followed it unexamined, so
+          // `#if(present $value and then some)` was accepted as
+          // `#if(present $value)` and the rest silently discarded.
+          resolved.next !== predicateGroup.children.length
         ) {
           this.#diagnostic(
             malformedTemplateCode,
             predicateCapture?.origin ?? predicateGroup.origin,
-            "conditional requires present $capture or alternative $capture tag",
+            unsupportedAlternative
+              ? "alternative conditionals are not supported: nothing records which alternative a capture matched, so one would never select its consequent"
+              : "conditional requires present $capture",
           );
           elements.push(createLiteralTemplate(current));
           index = predicateIndex + 2;
           continue;
         }
-        let predicate:
-          | {
-              readonly kind: "present";
-              readonly path: ReturnType<typeof createCapturePath>;
-            }
-          | {
-              readonly kind: "selected-alternative";
-              readonly path: ReturnType<typeof createCapturePath>;
-              readonly alternative: string;
-            };
-        if (predicateKind.raw === "present") {
-          predicate = Object.freeze({ kind: "present", path: resolved.path });
-        } else {
-          const tag = predicateGroup.children[resolved.next];
-          if (!token(tag) || tag.raw.length === 0) {
-            this.#diagnostic(
-              malformedTemplateCode,
-              predicateGroup.origin,
-              "alternative conditional requires a tag",
-            );
-            elements.push(createLiteralTemplate(current));
-            index = predicateIndex + 2;
-            continue;
-          }
-          predicate = Object.freeze({
-            kind: "selected-alternative",
-            path: resolved.path,
-            alternative: typeof tag.value === "string" ? tag.value : tag.raw,
-          });
-        }
+        const predicate = Object.freeze({
+          kind: "present" as const,
+          path: resolved.path,
+        });
         let next = predicateIndex + 2;
         let alternate: SequenceTemplate | undefined;
         const compactElse = token(nodes[next], "#else");

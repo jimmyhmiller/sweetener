@@ -72,6 +72,34 @@ export function parseIdentifierJoinArguments(
   });
 }
 
+const identifierText = /^[$_\p{ID_Start}][$_\u200c\u200d\p{ID_Continue}]*$/u;
+const identifierContinuation = /^[$_\u200c\u200d\p{ID_Continue}]*$/u;
+
+/** Whether this text stands as an identifier on its own. */
+export function isIdentifierText(text: string): boolean {
+  return identifierText.test(text);
+}
+
+/**
+ * Whether a prefix and suffix can join onto an identifier and leave one.
+ *
+ * A prefix supplies the joined name's first character, so it must begin one; a
+ * suffix only continues it. Checking them where the template is compiled means
+ * `#join($name, prefix: "1-x ")` is reported against the template that wrote
+ * it. Left to expansion, the join threw, and a thrown error is not a
+ * diagnostic: it abandoned the whole project expansion and reported no file at
+ * all.
+ */
+export function identifierAffixesAreValid(
+  prefix: string,
+  suffix: string,
+): boolean {
+  return (
+    (prefix.length === 0 || identifierText.test(prefix)) &&
+    identifierContinuation.test(suffix)
+  );
+}
+
 export function joinedIdentifierText(
   spec: Omit<IdentifierJoinSpec, "path">,
   captured: string,
@@ -90,7 +118,7 @@ export function joinedIdentifierText(
             ? captured.toLowerCase()
             : captured;
   const result = `${spec.prefix}${cased}${spec.suffix}`;
-  if (!/^[$_\p{ID_Start}][$_\u200c\u200d\p{ID_Continue}]*$/u.test(result)) {
+  if (!identifierText.test(result)) {
     throw new TypeError(
       `Identifier join produced invalid identifier ${JSON.stringify(result)}`,
     );

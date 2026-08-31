@@ -86,6 +86,52 @@ export syntax counter:item {
     expect(generated).toContain("3");
   });
 
+  test("a #join affix that cannot form an identifier is reported", () => {
+    // Left to expansion the join threw, and a thrown error is not a
+    // diagnostic: it abandoned the whole project expansion and reported no
+    // expanded file at all.
+    const { messages } = run(
+      `
+export syntax named:item {
+  rule { named($name:ident) } => { export const #join($name, prefix: "1-x ") = 1; }
+}
+`,
+      'import { named } from "./macros.sts" for syntax;\nnamed(thing)\n',
+    );
+    expect(messages.join("\n")).toContain(
+      "Invalid argument for template operation #join",
+    );
+    expect(messages.join("\n")).not.toContain("Project expansion failed");
+  });
+
+  test("#join affixes that do form an identifier still join", () => {
+    const { generated, messages } = run(
+      `
+export syntax named:item {
+  rule { named($name:ident) } => {
+    export const #join($name, prefix: "get", suffix: "Value", casing: "upper-first") = 1;
+  }
+}
+`,
+      'import { named } from "./macros.sts" for syntax;\nnamed(thing)\n',
+    );
+    expect(messages).toEqual([]);
+    expect(generated).toContain("getThingValue");
+  });
+
+  test("a #fresh hint that is not an identifier is reported", () => {
+    // The hint becomes the introduced name. Only its emptiness was checked, so
+    // a hint of two words printed a name that was two, reported by TypeScript
+    // as a syntax error in generated code.
+    const { messages } = run(
+      'export syntax f:item { rule { f() } => { const #fresh("has space") = 1; } }',
+      'import { f } from "./macros.sts" for syntax;\nf()\n',
+    );
+    expect(messages.join("\n")).toContain(
+      "Invalid argument for template operation #fresh",
+    );
+  });
+
   test("#core still reaches the expander", () => {
     const { generated, messages } = run(
       `
