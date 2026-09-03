@@ -33,6 +33,26 @@ function parse(source: string) {
 }
 
 describe("macro-definition parser", () => {
+  it("recognizes captures in JSX tag and attribute-name positions", () => {
+    const read = readSyntax(
+      `export syntax jsx:expr {
+        rule { jsx(<$component:token $prop:token={$value:expr} />) }
+        => { <$component $prop={$value} /> }
+      }`,
+      { sourceId, scopes, variant: "jsx" },
+    );
+    expect(read.diagnostics).toEqual([]);
+    const result = parseMacroDefinitions(read.root, { sourceId });
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.unparsed).toEqual([]);
+    expect(result.definitions).toHaveLength(1);
+    expect(result.definitions[0]).toMatchObject({
+      kind: "syntax",
+      rules: [{ pattern: { kind: "sequence" } }],
+    });
+  });
+
   it("parses syntax classes, fields, recursive macros, clauses, and templates", () => {
     const result = parse(`
       export syntax class BindClause {

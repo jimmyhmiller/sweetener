@@ -757,7 +757,7 @@ class TemplateParser {
       }
       if (
         token(current) &&
-        current.kind === "identifier" &&
+        (current.kind === "identifier" || current.kind === "jsx-identifier") &&
         current.raw.startsWith("$") &&
         current.raw.length > 1
       ) {
@@ -880,7 +880,7 @@ class TemplateParser {
     const current = nodes[index];
     if (
       !token(current) ||
-      current.kind !== "identifier" ||
+      (current.kind !== "identifier" && current.kind !== "jsx-identifier") ||
       !current.raw.startsWith("$") ||
       current.raw.length < 2
     ) {

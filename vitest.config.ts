@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    include: ["packages/*/test/**/*.test.ts"],
+    include: ["packages/*/test/**/*.test.ts", "playground/src/**/*.test.ts"],
     reporters: ["default"],
     // Acceptance tests construct, check, and execute whole TypeScript programs.
     // Vitest's five-second default is close enough to their real cost that

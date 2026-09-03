@@ -77,6 +77,12 @@ Without that marker, reserved built-in forms dispatch before ordinary macro
 bindings. Punctuation operators use the operator table rather than core-form
 dispatch.
 
+`#core(...)` suppresses macro dispatch only for the first syntactic head in its
+body (after item prefixes such as `export`). It does not make the resulting form
+opaque. Captured syntax nested beneath that head MUST continue expansion using
+the macro environment of its source module; literal template syntax continues
+using the macro definition's module.
+
 ## 5. Macro invocation algorithm
 
 ```text

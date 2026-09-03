@@ -1,0 +1,17 @@
+import { memoized } from "./fine-jsx.stsx" for syntax;
+
+const DISPLAY = true;
+const styles = { a: "a", b: "b", c: "c", d: "d" };
+
+function identity(value: string, ..._rest: readonly unknown[]): string {
+  return value;
+}
+
+interface FixtureProps {
+  readonly cond?: boolean;
+  readonly id: number;
+}
+
+memoized function Component({ cond = false, id }: FixtureProps) {
+  return (<><div className={identity(styles.a, id !== null ? styles.b : {})}></div>{cond === false && (<div className={identity(styles.c, DISPLAY ? styles.d : {})} />)}</>);
+}

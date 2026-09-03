@@ -230,6 +230,19 @@ ul.examples span {
   background: var(--paper);
 }
 
+.gist-loader {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.gist-loader input {
+  width: 12rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+}
+
 .toolbar .state {
   margin-left: auto;
   font-size: 0.875rem;

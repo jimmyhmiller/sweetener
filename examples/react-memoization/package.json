@@ -1,0 +1,24 @@
+{
+  "name": "@sweetener-example/react-memoization",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "expand": "sweetener emit src/fine-jsx-implementation.stsx src/fine-jsx.stsx src/memoized.stsx src/function-shadow.stsx --out-dir .sweetener",
+    "check": "sweetener check --project sweetener.json",
+    "build": "pnpm check && vite build"
+  },
+  "dependencies": {
+    "@sweetener/unplugin": "workspace:*",
+    "@vitejs/plugin-react": "latest",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@sweetener/cli": "workspace:*",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "typescript": "^6.0.2",
+    "vite": "^8.2.2"
+  }
+}

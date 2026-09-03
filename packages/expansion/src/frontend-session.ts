@@ -815,6 +815,7 @@ export function createExpansionFrontendSession(
       operatorDiagnostics.length = 0;
       const result = expandMacroSyntax({
         module: options.module,
+        sourceId: options.sourceId,
         modules,
         syntax: prepareInput(syntax, category),
         category,

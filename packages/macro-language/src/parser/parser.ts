@@ -87,7 +87,12 @@ function group(
 }
 
 function word(node: Syntax | undefined): node is TokenSyntax {
-  return token(node) && (node.kind === "identifier" || node.kind === "keyword");
+  return (
+    token(node) &&
+    (node.kind === "identifier" ||
+      node.kind === "keyword" ||
+      node.kind === "jsx-identifier")
+  );
 }
 
 function frozen<T>(value: T): T {
@@ -638,24 +643,39 @@ class Parser {
       }
       if (
         token(current) &&
-        current.kind === "identifier" &&
+        (current.kind === "identifier" || current.kind === "jsx-identifier") &&
         current.raw.startsWith("$")
       ) {
+        // TypeScript scans a JSX namespace-shaped name such as
+        // `$component:ident` as one JSX identifier, while ordinary macro
+        // captures arrive as the three tokens `$component`, `:`, `ident`.
+        const inlineColon =
+          current.kind === "jsx-identifier" ? current.raw.indexOf(":") : -1;
         const possibleClassName = nodes[index + 2];
-        if (
-          current.raw.length === 1 ||
-          !token(nodes[index + 1], ":") ||
-          !word(possibleClassName)
-        ) {
-          this.#malformed(current, "capture requires $name:class");
-          alternatives
-            .at(-1)
-            ?.push(this.#parsePatternAtom(current, depth, captures));
-          index += 1;
-          continue;
+        let captureName: string;
+        let className: string;
+        let captureWidth: number;
+        if (inlineColon > 1 && inlineColon < current.raw.length - 1) {
+          captureName = current.raw.slice(1, inlineColon);
+          className = current.raw.slice(inlineColon + 1);
+          captureWidth = 1;
+        } else {
+          if (
+            current.raw.length === 1 ||
+            !token(nodes[index + 1], ":") ||
+            !word(possibleClassName)
+          ) {
+            this.#malformed(current, "capture requires $name:class");
+            alternatives
+              .at(-1)
+              ?.push(this.#parsePatternAtom(current, depth, captures));
+            index += 1;
+            continue;
+          }
+          captureName = current.raw.slice(1);
+          className = possibleClassName.raw;
+          captureWidth = 3;
         }
-        const className = possibleClassName;
-        const captureName = current.raw.slice(1);
         let capture = captures.get(captureName);
         if (capture === undefined) {
           capture = this.#captureIds.allocate();
@@ -666,10 +686,10 @@ class Parser {
             origin: current.origin,
             capture,
             name: captureName,
-            classId: this.#classId(className.raw),
+            classId: this.#classId(className),
           }),
         );
-        index += 3;
+        index += captureWidth;
         continue;
       }
       if (current !== undefined)

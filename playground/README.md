@@ -12,6 +12,26 @@ pnpm playground
 
 Open `http://localhost:4173`.
 
+## Loading a GitHub Gist
+
+Open `#/gist/<gist-id>` directly, or paste a public Gist URL or ID into the
+playground toolbar. A playground Gist contains a `sweetener-playground.json`
+manifest and one or more source files:
+
+```json
+{
+  "version": 1,
+  "name": "My macro",
+  "summary": "What the project demonstrates.",
+  "entryFileName": "main.sts"
+}
+```
+
+Source filenames must be flat, safe names ending in `.sts`, `.stsx`, `.ts`,
+`.tsx`, or `.d.ts`. The loader accepts at most 32 files, 256 KiB per file, and
+512 KiB for the project. It rejects truncated files and never executes Gist
+JavaScript; sources are only passed to the sandboxed browser compiler.
+
 The example selector loads the same twelve macro families used by the
 production acceptance suite. Both `macros.sts` and `main.sts` are editable;
 every edit recompiles the complete virtual project and updates the generated

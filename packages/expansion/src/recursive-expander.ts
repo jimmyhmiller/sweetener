@@ -58,6 +58,8 @@ export interface ExpandMacroSyntaxOptions extends Omit<
   | "expandReplacement"
 > {
   readonly module: CompileParsedMacrosResult;
+  /** Source whose syntax is being expanded and whose imports form the call site. */
+  readonly sourceId?: SourceId | undefined;
   /** Additional statically imported modules, in source lookup order. */
   readonly modules?: readonly CompileParsedMacrosResult[] | undefined;
   readonly syntax: SyntaxSequence;
@@ -598,7 +600,6 @@ export function expandMacroSyntax(
     let currentEnvironment = environment;
     let index = 0;
     let suppressPending = suppressHead;
-    const suppressEveryHead = suppressHead && category === "item";
     let suppressedHeadIndex: number | undefined;
     while (index < input.length) {
       const node = input[index]!;
@@ -620,13 +621,20 @@ export function expandMacroSyntax(
             ? separatedCoreBody
             : undefined;
       if (coreBody !== undefined) {
+        const protectedCapture =
+          coreBody.children.length === 1 &&
+          coreBody.children[0]?.tag === "protected"
+            ? coreBody.children[0]
+            : undefined;
         const nested = visit(
-          createSyntaxSequence(coreBody.children),
+          createSyntaxSequence(protectedCapture?.children ?? coreBody.children),
           currentEnvironment,
-          category,
+          protectedCapture?.category ?? category,
           parentInvocation,
           lexicalModule,
-          contexts,
+          protectedCapture === undefined
+            ? contexts
+            : contextsForContainer(protectedCapture, contexts),
           true,
           recursiveBinding,
         );
@@ -674,7 +682,18 @@ export function expandMacroSyntax(
         lookupCategory: SyntaxCategory = category,
       ) => {
         const category = lookupCategory;
-        const recursiveMacro = lexicalModule.get(spelling, category);
+        // Template literals use the defining module, but a capture spliced
+        // into that template keeps the lexical macro imports of the source in
+        // which it was written. Without this, a captured function body inside
+        // `#core(function ... $body)` can only see macros imported by the
+        // function-shadow definition, not macros imported at its call site.
+        const lookupModule =
+          positionSourceId !== undefined &&
+          positionSourceId === options.sourceId &&
+          !options.scopeStore.hasUnmatchedIntroduction(node.scopes)
+            ? options.module
+            : lexicalModule;
+        const recursiveMacro = lookupModule.get(spelling, category);
         if (
           recursiveBinding !== undefined &&
           recursiveMacro?.binding.id === recursiveBinding
@@ -691,7 +710,7 @@ export function expandMacroSyntax(
             spelling,
             category,
             modules: activeModules,
-            lexicalModule,
+            lexicalModule: lookupModule,
             position,
             positionSourceId,
           });
@@ -948,19 +967,25 @@ export function expandMacroSyntax(
         }
       }
       const macro =
-        (suppressEveryHead ||
-          suppressPending ||
-          suppressedHeadIndex === index) &&
+        (suppressPending || suppressedHeadIndex === index) &&
         resolvedMacro !== undefined
           ? undefined
           : resolvedMacro;
-      if (
-        !suppressEveryHead &&
-        suppressPending &&
-        resolvedMacro !== undefined
-      ) {
+      if (suppressPending && resolvedMacro !== undefined) {
         suppressPending = false;
         if (resolvedHeadIndex > index) suppressedHeadIndex = resolvedHeadIndex;
+      }
+      // A generated core head is commonly definition-scoped, so it may not
+      // resolve to the caller's shadow at all. The escape still applies only
+      // to that syntactic head: do not carry its pending suppression into the
+      // first macro nested in the emitted form. Item prefixes keep it pending
+      // until the actual declaration keyword (`export function`, for example).
+      if (
+        suppressPending &&
+        node.tag === "token" &&
+        !(category === "item" && itemDispatchPrefixes.has(node.raw))
+      ) {
+        suppressPending = false;
       }
       if (suppressedHeadIndex === index) suppressedHeadIndex = undefined;
       if (macro !== undefined) {

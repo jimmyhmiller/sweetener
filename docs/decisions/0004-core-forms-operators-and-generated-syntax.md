@@ -54,6 +54,8 @@ the same declarative validation required for source definitions.
 
 - Enforestation consults lexical syntax bindings before the corresponding core
   parser branch only when both opt-ins exist.
+- `#core(...)` selects built-in dispatch for the emitted head only. Captured
+  subtrees retain their call-site macro environment and expand normally.
 - Import conflicts and equal-precedence operator conflicts produce structured
   diagnostics.
 - The trace records interception, operator grouping, and generated binding

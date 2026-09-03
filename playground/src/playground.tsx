@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import CompilerWorker from "./compiler-worker?worker";
 import type { CompileResponse } from "./compiler-worker";
 import { examples, type PlaygroundFile } from "./examples";
+import { loadGistProject, parseGistReference, type GistProject } from "./gist";
 import { sweetHighlighting } from "./sweet-syntax";
 
 const worker = new CompilerWorker();
@@ -86,11 +87,15 @@ function copyFiles(files: PlaygroundFile[]) {
 
 export function Playground({
   exampleId: requested,
+  gistId,
   onExample,
+  onGist,
   onHome,
 }: {
   exampleId: string;
+  gistId: string;
   onExample: (id: string) => void;
+  onGist: (id: string) => void;
   onHome: () => void;
 }) {
   const initial = examples.find((item) => item.id === requested) ?? examples[0];
@@ -104,8 +109,17 @@ export function Playground({
   );
   const [diagnostics, setDiagnostics] = useState<string[]>(["Compiling…"]);
   const [compiling, setCompiling] = useState(true);
+  const [gistName, setGistName] = useState("");
+  const [gistSummary, setGistSummary] = useState("");
+  const [gistProject, setGistProject] = useState<GistProject>();
+  const [gistReference, setGistReference] = useState("");
+  const [gistLoading, setGistLoading] = useState(Boolean(gistId));
+  const [gistError, setGistError] = useState("");
 
-  const summary = examples.find((item) => item.id === exampleId)?.summary ?? "";
+  const summary =
+    exampleId === "gist"
+      ? gistSummary
+      : (examples.find((item) => item.id === exampleId)?.summary ?? "");
   const source =
     files.find((file) => file.fileName === sourceTab)?.source ?? "";
   const output =
@@ -156,14 +170,68 @@ export function Playground({
     [compile, entryFileName, files],
   );
 
+  useEffect(() => {
+    if (!gistId) return;
+    const controller = new AbortController();
+    setGistLoading(true);
+    setGistError("");
+    loadGistProject(gistId, controller.signal)
+      .then((project) => {
+        setGistProject(project);
+        setExampleId("gist");
+        setGistName(project.name);
+        setGistSummary(project.summary);
+        setEntryFileName(project.entryFileName);
+        setFiles(copyFiles(project.files));
+        setSourceTab(project.entryFileName);
+        setOutputTab(
+          project.entryFileName.endsWith("x") ? "main.tsx" : "main.ts",
+        );
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted)
+          setGistError(error instanceof Error ? error.message : String(error));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setGistLoading(false);
+      });
+    return () => controller.abort();
+  }, [gistId]);
+
   const selectExample = (id: string) => {
     const next = examples.find((item) => item.id === id)!;
     setExampleId(id);
+    setGistName("");
+    setGistSummary("");
+    setGistProject(undefined);
     onExample(id);
     setEntryFileName(next.entryFileName);
     setFiles(copyFiles(next.files));
     setSourceTab(next.entryFileName);
     setOutputTab(next.entryFileName.endsWith("x") ? "main.tsx" : "main.ts");
+  };
+
+  const submitGist = (event: React.FormEvent) => {
+    event.preventDefault();
+    const id = parseGistReference(gistReference);
+    if (id === undefined) {
+      setGistError("Enter a GitHub Gist URL or ID.");
+      return;
+    }
+    onGist(id);
+  };
+
+  const resetCurrent = () => {
+    if (exampleId !== "gist" || gistProject === undefined) {
+      selectExample(exampleId);
+      return;
+    }
+    setEntryFileName(gistProject.entryFileName);
+    setFiles(copyFiles(gistProject.files));
+    setSourceTab(gistProject.entryFileName);
+    setOutputTab(
+      gistProject.entryFileName.endsWith("x") ? "main.tsx" : "main.ts",
+    );
   };
 
   const updateSource = (nextSource: string) => {
@@ -186,28 +254,44 @@ export function Playground({
           value={exampleId}
           onChange={(event) => selectExample(event.target.value)}
         >
+          {exampleId === "gist" ? (
+            <option value="gist">{gistName}</option>
+          ) : null}
           {examples.map((item) => (
             <option value={item.id} key={item.id}>
               {item.name}
             </option>
           ))}
         </select>
+        <form className="gist-loader" onSubmit={submitGist}>
+          <input
+            aria-label="GitHub Gist URL or ID"
+            placeholder="Gist URL or ID"
+            value={gistReference}
+            onChange={(event) => setGistReference(event.target.value)}
+          />
+          <button type="submit">Load Gist</button>
+        </form>
         <span
           className={
-            compiling
+            gistLoading || compiling
               ? "state working"
-              : diagnostics.length
+              : gistError || diagnostics.length
                 ? "state error"
                 : "state ok"
           }
         >
-          {compiling
-            ? "Compiling…"
-            : diagnostics.length
-              ? `${diagnostics.length} diagnostic${diagnostics.length === 1 ? "" : "s"}`
-              : "No diagnostics"}
+          {gistLoading
+            ? "Loading Gist…"
+            : gistError
+              ? "Gist error"
+              : compiling
+                ? "Compiling…"
+                : diagnostics.length
+                  ? `${diagnostics.length} diagnostic${diagnostics.length === 1 ? "" : "s"}`
+                  : "No diagnostics"}
         </span>
-        <button onClick={() => selectExample(exampleId)}>Reset</button>
+        <button onClick={resetCurrent}>Reset</button>
       </header>
       <section className="workspace">
         <section className="pane">
@@ -224,14 +308,22 @@ export function Playground({
             ))}
           </div>
           <Editor value={source} onChange={updateSource} />
-          <footer className={diagnostics.length ? "details errors" : "details"}>
+          <footer
+            className={
+              gistError || diagnostics.length ? "details errors" : "details"
+            }
+          >
             <b>Diagnostics</b>
             <pre>
-              {compiling
-                ? "Compiling…"
-                : diagnostics.length
-                  ? diagnostics.join("\n")
-                  : "No diagnostics."}
+              {gistLoading
+                ? "Loading Gist…"
+                : gistError
+                  ? gistError
+                  : compiling
+                    ? "Compiling…"
+                    : diagnostics.length
+                      ? diagnostics.join("\n")
+                      : "No diagnostics."}
             </pre>
           </footer>
         </section>

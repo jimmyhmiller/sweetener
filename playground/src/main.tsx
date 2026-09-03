@@ -10,11 +10,18 @@ import "./site.css";
  * `#/play/<example>` opens the playground on one example, which is what makes
  * an example worth linking to from anywhere else.
  */
-function route(hash: string): { view: "home" | "play"; exampleId: string } {
+type Route =
+  | { view: "home"; exampleId: ""; gistId: "" }
+  | { view: "play"; exampleId: string; gistId: "" }
+  | { view: "gist"; exampleId: ""; gistId: string };
+
+export function route(hash: string): Route {
   const parts = hash.replace(/^#\/?/u, "").split("/").filter(Boolean);
-  return parts[0] === "play"
-    ? { view: "play", exampleId: parts[1] ?? "" }
-    : { view: "home", exampleId: "" };
+  if (parts[0] === "play")
+    return { view: "play", exampleId: parts[1] ?? "", gistId: "" };
+  if (parts[0] === "gist")
+    return { view: "gist", exampleId: "", gistId: parts[1] ?? "" };
+  return { view: "home", exampleId: "", gistId: "" };
 }
 
 function App() {
@@ -32,12 +39,14 @@ function App() {
     window.scrollTo(0, 0);
   };
 
-  return location.view === "play" ? (
+  return location.view === "play" || location.view === "gist" ? (
     <Playground
       exampleId={location.exampleId}
+      gistId={location.gistId}
       onExample={(id) => {
         window.history.replaceState(null, "", `#/play/${id}`);
       }}
+      onGist={(id) => go(`#/gist/${id}`)}
       onHome={() => go("#/")}
     />
   ) : (

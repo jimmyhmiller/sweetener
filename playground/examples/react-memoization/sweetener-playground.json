@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "name": "React Compiler memoization",
+  "summary": "The repro-separate-scopes-for-divs fixture lowered to React's exact nine-slot cache topology.",
+  "entryFileName": "main.stsx"
+}
