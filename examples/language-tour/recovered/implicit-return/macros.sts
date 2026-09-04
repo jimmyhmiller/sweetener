@@ -30,8 +30,8 @@ export syntax function:expr shadows core {
   bind $parameter in $body as lexical value;
   => {
     #core(function($($parameter: $parameterType),*) {
-      $($body.statements)*
-      return #trim($body.result);
-    })
+        $($body.statements)*
+        return #trim($body.result);
+      })
   }
 }

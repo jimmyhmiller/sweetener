@@ -12,6 +12,13 @@ interface FixtureProps {
   readonly id: number;
 }
 
-memoized function Component({ cond = false, id }: FixtureProps) {
-  return (<><div className={identity(styles.a, id !== null ? styles.b : {})}></div>{cond === false && (<div className={identity(styles.c, DISPLAY ? styles.d : {})} />)}</>);
+memoized function Component({
+  cond = false,
+  id
+}: FixtureProps) {
+  return (
+    <><div className={identity(styles.a, id !== null ? styles.b : {})}></div>{cond === false && (
+        <div className={identity(styles.c, DISPLAY ? styles.d : {})} />
+      )}</>
+  );
 }

@@ -16,7 +16,7 @@ syntax class CurryParameters {
 export syntax function:item shadows core {
   rule {
     export function $name:binding $parameters:CurryParameters:
-      $resultType:type { $($body:stmt)* }
+    $resultType:type { $($body:stmt)* }
   }
   bind $name in following as recursive value;
   bind $parameters.first in $body as lexical value;
@@ -24,20 +24,20 @@ export syntax function:item shadows core {
   expect "two typed parameters";
   => {
     #core(export function $name(
-      $parameters.first: $parameters.firstType
-    ): ($parameters.second: $parameters.secondType) => $resultType;)
+        $parameters.first: $parameters.firstType
+      ): ($parameters.second: $parameters.secondType) => $resultType;)
     #core(export function $name(
-      $parameters.first: $parameters.firstType,
-      $parameters.second: $parameters.secondType
-    ): $resultType;)
+        $parameters.first: $parameters.firstType,
+        $parameters.second: $parameters.secondType
+      ): $resultType;)
     #core(export function $name(
-      $parameters.first: $parameters.firstType,
-      $parameters.second?: $parameters.secondType,
-    ): $resultType | (($parameters.second: $parameters.secondType) => $resultType) {
-      if ($parameters.second === undefined) {
-        return ($parameters.second: $parameters.secondType): $resultType => { $($body)* };
-      }
-      $($body)*
-    })
+        $parameters.first: $parameters.firstType,
+        $parameters.second?: $parameters.secondType,
+      ): $resultType | (($parameters.second: $parameters.secondType) => $resultType) {
+        if ($parameters.second === undefined) {
+          return ($parameters.second: $parameters.secondType): $resultType => { $($body)* };
+        }
+        $($body)*
+      })
   }
 }

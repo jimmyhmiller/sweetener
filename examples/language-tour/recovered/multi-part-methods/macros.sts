@@ -1,10 +1,10 @@
 export syntax method:item {
   rule {
     method $head:binding($($headParameter:binding: $headType:type),*)
-      $($segment:ident($($parameter:binding: $parameterType:type),*))+:
-      $result:type {
-        $($body:stmt)*
-      }
+    $($segment:ident($($parameter:binding: $parameterType:type),*))+:
+    $result:type {
+      $($body:stmt)*
+    }
   }
   bind $headParameter in $body as lexical value;
   bind $parameter in $body as lexical value;
@@ -18,9 +18,9 @@ export syntax method:item {
         expect "upper argument segment";
         => {
           ((
-            $($headParameter: $headType),*,
-            $($($parameter: $parameterType),*),*
-          ): $result => { $($body)* })(
+              $($headParameter: $headType),*,
+              $($($parameter: $parameterType),*),*
+            ): $result => { $($body)* })(
             $(#metavar("headArgument", $headParameter)),*,
             $($(#metavar("argument", $parameter)),*),*
           )

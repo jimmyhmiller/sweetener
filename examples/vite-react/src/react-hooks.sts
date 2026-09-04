@@ -51,14 +51,14 @@ export syntax memo:stmt {
 export syntax callback:stmt {
   rule {
     callback $name:binding [$($dependency:expr),*]
-      $parameters:tt $body:stmt
+    $parameters:tt $body:stmt
   }
   bind $name in following as lexical value;
   => { const $name = useCallback($parameters => $body, [$($dependency),*]); }
 
   rule {
     callback async $name:binding [$($dependency:expr),*]
-      $parameters:tt $body:stmt
+    $parameters:tt $body:stmt
   }
   bind $name in following as lexical value;
   => {
@@ -80,7 +80,7 @@ export syntax effect:stmt {
 export syntax reducer:stmt {
   rule {
     reducer $state:binding with $dispatch:binding
-      using $reducer:expr initially $initial:expr;
+    using $reducer:expr initially $initial:expr;
   }
   bind $state in following as lexical value;
   bind $dispatch in following as lexical value;
@@ -137,8 +137,8 @@ export syntax latestRef:stmt {
   => {
     const $name = useRef($value);
     useEffect(() => {
-      $name.current = $value;
-    }, [$value]);
+        $name.current = $value;
+      }, [$value]);
   }
 }
 

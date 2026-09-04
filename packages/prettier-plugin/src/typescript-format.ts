@@ -12,6 +12,79 @@ interface Mask {
   readonly end: number;
 }
 
+interface TokenFingerprint {
+  readonly kind: string;
+  readonly raw: string;
+}
+
+function isMultilineJsxLayout(syntax: Syntax): boolean {
+  return (
+    syntax.tag === "token" &&
+    syntax.kind === "jsx-text" &&
+    /^[\t\n\r\u2028\u2029 ]+$/u.test(syntax.raw) &&
+    /[\n\r\u2028\u2029]/u.test(syntax.raw)
+  );
+}
+
+function jsxLayoutSpans(syntax: Syntax): readonly Syntax["span"][] {
+  if (isMultilineJsxLayout(syntax)) return [syntax.span];
+  switch (syntax.tag) {
+    case "token":
+      return [];
+    case "group":
+    case "protected":
+    case "root":
+      return syntax.children.flatMap(jsxLayoutSpans);
+  }
+}
+
+function removeInsertedJsxLayout(
+  source: string,
+  before: RootSyntax,
+  after: RootSyntax,
+): string {
+  // If the source has no JSX layout text, any such tokens in Prettier's output
+  // came solely from line wrapping. Remove them so literal macro patterns see
+  // the same tree. Existing JSX text is never rewritten or guessed at.
+  if (jsxLayoutSpans(before).length > 0) return source;
+  let result = source;
+  for (const span of [...jsxLayoutSpans(after)].sort(
+    (left, right) => right.start - left.start,
+  ))
+    result = result.slice(0, span.start) + result.slice(span.end);
+  return result;
+}
+
+function tokenFingerprint(syntax: Syntax): readonly TokenFingerprint[] {
+  switch (syntax.tag) {
+    case "token":
+      return [{ kind: syntax.kind, raw: syntax.raw }];
+    case "group":
+      return [
+        { kind: syntax.open.kind, raw: syntax.open.raw },
+        ...syntax.children.flatMap(tokenFingerprint),
+        ...(syntax.close.tag === "token"
+          ? [{ kind: syntax.close.kind, raw: syntax.close.raw }]
+          : []),
+      ];
+    case "protected":
+    case "root":
+      return syntax.children.flatMap(tokenFingerprint);
+  }
+}
+
+function preservesTokens(before: RootSyntax, after: RootSyntax): boolean {
+  const left = tokenFingerprint(before);
+  const right = tokenFingerprint(after);
+  return (
+    left.length === right.length &&
+    left.every(
+      (token, index) =>
+        token.kind === right[index]?.kind && token.raw === right[index]?.raw,
+    )
+  );
+}
+
 function tokenRaw(syntax: Syntax | undefined): string | undefined {
   return syntax?.tag === "token" ? syntax.raw : undefined;
 }
@@ -144,6 +217,10 @@ export async function formatSweetenerWithPrettier(
     const formatted = await format(masked.source, {
       parser: "typescript",
       plugins: [typescriptPlugin, estreePlugin],
+      // A trailing comma is a real token to a macro matcher. Prettier's
+      // default (`all`) would therefore change which macro rules accept an
+      // invocation even though it appears to be a layout-only operation.
+      trailingComma: "none",
       ...(options.filepath === undefined ? {} : { filepath: options.filepath }),
       ...(options.tabWidth === undefined ? {} : { tabWidth: options.tabWidth }),
       ...(options.useTabs === undefined ? {} : { useTabs: options.useTabs }),
@@ -151,9 +228,23 @@ export async function formatSweetenerWithPrettier(
         ? {}
         : { endOfLine: options.endOfLine }),
     });
-    return (
-      restoreSweetenerSyntax(formatted, masked.masks) ?? structurallyFormatted
+    const restored = restoreSweetenerSyntax(formatted, masked.masks);
+    if (restored === undefined) return structurallyFormatted;
+
+    // Sweetener macros match token trees, so formatting is allowed to change
+    // trivia only. Guard against every other token-generating Prettier option
+    // too (quote normalization, inserted parentheses, semicolons, and future
+    // printer changes), rather than relying on a growing list of exceptions.
+    const formattedRoot = readSweetenerSyntax(restored, options);
+    const withoutInsertedJsxLayout = removeInsertedJsxLayout(
+      restored,
+      root,
+      formattedRoot,
     );
+    const safeRoot = readSweetenerSyntax(withoutInsertedJsxLayout, options);
+    return preservesTokens(root, safeRoot)
+      ? withoutInsertedJsxLayout
+      : structurallyFormatted;
   } catch {
     return structurallyFormatted;
   }

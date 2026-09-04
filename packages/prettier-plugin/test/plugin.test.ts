@@ -56,6 +56,19 @@ if (!($condition)) $body
     expect(formatSweetener(source, { filepath: "view.stsx" })).toBe(source);
   });
 
+  test("does not indent otherwise blank lines", () => {
+    const source = `export syntax class Example {
+  fields {
+    name: binding;
+  }
+
+  rule { $name:binding }
+}
+`;
+
+    expect(formatSweetener(source, { filepath: "macros.sts" })).toBe(source);
+  });
+
   test("formats TypeScript and JSX inside an imported item macro", async () => {
     const source = `import { memoized } from "./fine-jsx.stsx" for syntax;
 
@@ -73,11 +86,25 @@ memoized function Component({ cond = false, id }: FixtureProps) {
       `import { memoized } from "./fine-jsx.stsx" for syntax;`,
     );
     expect(formatted).toContain(`memoized function Component(`);
+    expect(formatted).toContain("cond = false,\n  id\n");
+    expect(formatted).not.toContain("id,\n}: FixtureProps");
     expect(formatted).toContain("return (\n    <>");
     expect(formatted).toContain("{cond === false && (");
     await expect(
       formatSweetenerWithPrettier(formatted, { filepath: "main.stsx" }),
     ).resolves.toBe(formatted);
+  });
+
+  test("never changes the token stream seen by macro matchers", async () => {
+    const source = `import { wrapped } from "./macros.sts" for syntax;
+
+wrapped const example = { single: 'quoted' };
+`;
+    const formatted = await formatSweetenerWithPrettier(source, {
+      filepath: "main.sts",
+    });
+
+    expect(formatted).toContain("{ single: 'quoted' }");
   });
 
   test("rejects structurally malformed input", () => {

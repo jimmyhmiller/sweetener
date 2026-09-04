@@ -1,7 +1,7 @@
 import { (->), (->>) } from "./macros.sts" for syntax;
 
 const map = <A, B>(values: readonly A[], fn: (value: A) => B): B[] =>
-  values.map(fn);
+values.map(fn);
 const filter = <A>(
   values: readonly A[],
   predicate: (value: A) => boolean,
@@ -18,7 +18,7 @@ const append = <A>(suffix: readonly A[], values: readonly A[]): A[] => [
   ...suffix,
 ];
 const mapLast = <A, B>(fn: (value: A) => B, values: readonly A[]): B[] =>
-  values.map(fn);
+values.map(fn);
 const filterLast = <A>(
   predicate: (value: A) => boolean,
   values: readonly A[],

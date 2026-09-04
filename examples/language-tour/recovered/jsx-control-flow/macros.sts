@@ -1,7 +1,7 @@
 export syntax each:jsxChild {
   rule {
     {each ($items:expr as $item:binding $(, $index:binding)?)}
-      $body:jsxChild
+    $body:jsxChild
     {end}
   }
   bind $item in $body as lexical value;

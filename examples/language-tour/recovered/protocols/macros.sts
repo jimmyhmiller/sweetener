@@ -33,42 +33,42 @@ export syntax protocol:item {
   expect ": followed by a return type";
   => {
     #core(interface $name<$subject> {
-      $($method.name(
-        $($method.parameters.name: $method.parameters.valueType),*
-      ): $method.resultType;)+
-    })
+        $($method.name(
+            $($method.parameters.name: $method.parameters.valueType),*
+          ): $method.resultType;)+
+      })
 
     #core(const $name = (() => {
-      const implementations = new globalThis.WeakMap<object, $name<unknown>>();
-      return {
-        register<ImplementationSubject>(
-          prototype: object,
-          implementation: $name<ImplementationSubject>,
-        ): void {
-          implementations.set(
-            prototype,
-            implementation as $name<unknown>,
-          );
-        },
-        $($method.name<$subject extends object>(
-          $($method.parameters.name: $method.parameters.valueType),*
-        ): $method.resultType {
-          const implementation = implementations.get(
-            globalThis.Object.getPrototypeOf([
-              $($method.parameters.name),*
-            ][0]!)
-          ) as $name<$subject> | undefined;
-          if (implementation === undefined) {
-            throw new globalThis.Error(
-              "Missing " + #text($name) + " implementation"
-            );
-          }
-          return implementation.$method.name(
-            $($method.parameters.name),*
-          );
-        },)+
-      };
-    })();)
+          const implementations = new globalThis.WeakMap<object, $name<unknown>>();
+          return {
+            register<ImplementationSubject>(
+              prototype: object,
+              implementation: $name<ImplementationSubject>,
+            ): void {
+              implementations.set(
+                prototype,
+                implementation as $name<unknown>,
+              );
+            },
+            $($method.name<$subject extends object>(
+                $($method.parameters.name: $method.parameters.valueType),*
+              ): $method.resultType {
+                const implementation = implementations.get(
+                  globalThis.Object.getPrototypeOf([
+                      $($method.parameters.name),*
+                    ][0]!)
+                ) as $name<$subject> | undefined;
+                if (implementation === undefined) {
+                  throw new globalThis.Error(
+                    "Missing " + #text($name) + " implementation"
+                  );
+                }
+                return implementation.$method.name(
+                  $($method.parameters.name),*
+                );
+              },)+
+          };
+        })();)
   }
 }
 
@@ -109,9 +109,9 @@ export operator implements:item {
   expect "protocol implementation body";
   => {
     #core($protocol.register($class.prototype, {
-      $($method.name(
-        $($method.parameters.name: $method.parameters.valueType),*
-      ): $method.resultType { $($method.body)* }),+
-    });)
+          $($method.name(
+              $($method.parameters.name: $method.parameters.valueType),*
+            ): $method.resultType { $($method.body)* }),+
+        });)
   }
 }

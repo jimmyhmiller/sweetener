@@ -23,14 +23,14 @@ export syntax function:item shadows core {
   expect "function body";
   => {
     #core(export function $name(
-      $($parameter: $parameterType),*
-    ): $result {
-      if (arguments.length !== globalThis.Number(#count($parameter))) {
-        throw new globalThis.Error(
-          #text($name) + " requires " + globalThis.Number(#count($parameter)) + " argument(s)",
-        );
-      }
-      $($body)*
-    })
+        $($parameter: $parameterType),*
+      ): $result {
+        if (arguments.length !== globalThis.Number(#count($parameter))) {
+          throw new globalThis.Error(
+            #text($name) + " requires " + globalThis.Number(#count($parameter)) + " argument(s)",
+          );
+        }
+        $($body)*
+      })
   }
 }

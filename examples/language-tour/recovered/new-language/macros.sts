@@ -9,8 +9,8 @@ export syntax module:item {
   expect "module item";
   => {
     #core(namespace $name {
-      $($body)*
-    })
+        $($body)*
+      })
   }
 }
 
@@ -41,11 +41,11 @@ export syntax record:item {
   expect "field type after colon";
   => {
     #core(export class $name {
-      $($field.name: $field.valueType;)*
-      constructor($($field.name: $field.valueType),*) {
-        $(this.$field.name = $field.name;)*
-      }
-    })
+        $($field.name: $field.valueType;)*
+        constructor($($field.name: $field.valueType),*) {
+          $(this.$field.name = $field.name;)*
+        }
+      })
   }
 }
 

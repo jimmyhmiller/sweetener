@@ -68,13 +68,29 @@ function collectTrivia(
   replacements: Replacement[],
 ): void {
   let followsLineBreak = false;
-  for (const item of trivia) {
+  for (let index = 0; index < trivia.length; index += 1) {
+    const item = trivia[index]!;
     if (item.kind === "whitespace") {
       if (item.hasLineBreak) {
+        let anotherLineBreakFollows = false;
+        for (const following of trivia.slice(index + 1)) {
+          if (following.kind !== "whitespace") break;
+          if (following.hasLineBreak) {
+            anotherLineBreakFollows = true;
+            break;
+          }
+        }
         replacements.push({
           start: item.span.start,
           end: item.span.end,
-          text: formatMultilineWhitespace(item.raw, depth, options, eol),
+          text: anotherLineBreakFollows
+            ? eol.repeat(
+                Math.min(
+                  item.raw.match(/\r\n|[\n\r\u2028\u2029]/gu)?.length ?? 0,
+                  2,
+                ),
+              )
+            : formatMultilineWhitespace(item.raw, depth, options, eol),
         });
         followsLineBreak = true;
       } else if (followsLineBreak) {

@@ -23,8 +23,8 @@ export rec syntax matchTest:expr {
 
   rule { matchTest($subject:expr, [$($element:tt),*]) } => {
     globalThis.Array.isArray($subject)
-      && ($subject).length === #count($element)
-      $(&& matchTest(($subject)[#index()], $element))*
+    && ($subject).length === #count($element)
+    $(&& matchTest(($subject)[#index()], $element))*
   }
 
   rule { matchTest($subject:expr, $name:ident) }
@@ -75,38 +75,38 @@ export syntax match:expr {
   rule { match ($subject:expr) { $($arm:MatchArm),+ , _ => $fallback:expr } }
   => {
     ((matched) => {
-      $(if (matchTest(matched, $arm.pattern)) {
-        matchBind(matched, $arm.pattern);
-        #if(present $arm.guard) {
-          if ($arm.guard) { return $arm.body; }
-        } #else {
-          return $arm.body;
-        }
-      })+
-      return $fallback;
-    })($subject)
+        $(if (matchTest(matched, $arm.pattern)) {
+            matchBind(matched, $arm.pattern);
+            #if(present $arm.guard) {
+              if ($arm.guard) { return $arm.body; }
+            } #else {
+              return $arm.body;
+            }
+          })+
+        return $fallback;
+      })($subject)
   }
 
   rule { match ($subject:expr) { _ => $fallback:expr } } => {
     ((matched) => {
-      matched;
-      return $fallback;
-    })($subject)
+        matched;
+        return $fallback;
+      })($subject)
   }
 
   rule { match ($subject:expr) { $($arm:MatchArm),+ } } => {
     ((matched) => {
-      $(if (matchTest(matched, $arm.pattern)) {
-        matchBind(matched, $arm.pattern);
-        #if(present $arm.guard) {
-          if ($arm.guard) { return $arm.body; }
-        } #else {
-          return $arm.body;
-        }
-      })+
-      throw new globalThis.Error(
-        `no arm matched ${globalThis.JSON.stringify(matched)}`,
-      );
-    })($subject)
+        $(if (matchTest(matched, $arm.pattern)) {
+            matchBind(matched, $arm.pattern);
+            #if(present $arm.guard) {
+              if ($arm.guard) { return $arm.body; }
+            } #else {
+              return $arm.body;
+            }
+          })+
+        throw new globalThis.Error(
+          `no arm matched ${globalThis.JSON.stringify(matched)}`,
+        );
+      })($subject)
   }
 }

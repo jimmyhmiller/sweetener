@@ -28,7 +28,7 @@ export syntax class ConstructorDeclaration {
 export syntax data:item {
   rule {
     data $name:binding<$typeParameter:binding> =
-      $($constructor:ConstructorDeclaration)|+;
+    $($constructor:ConstructorDeclaration)|+;
   }
   bind $name in following as recursive type;
   bind $constructor.name in following as recursive value;
@@ -38,18 +38,18 @@ export syntax data:item {
   => {
     #core(type $name<$typeParameter> =
       $({
-        readonly tag: #text($constructor.name);
-        $($constructor.fields.name: $constructor.fields.valueType;)*
-      })|+;)
+          readonly tag: #text($constructor.name);
+          $($constructor.fields.name: $constructor.fields.valueType;)*
+        })|+;)
 
     $(#core(const $constructor.name = <$typeParameter>(
-      $($constructor.fields.name: $constructor.fields.valueType),*
-    ): $name<$typeParameter> => ({
-      tag: #text($constructor.name)
-      #if(present $constructor.fields) {
-        , $($constructor.fields.name),*
-      }
-    });))*
+          $($constructor.fields.name: $constructor.fields.valueType),*
+        ): $name<$typeParameter> => ({
+            tag: #text($constructor.name)
+            #if(present $constructor.fields) {
+              , $($constructor.fields.name),*
+            }
+          });))*
   }
 }
 
@@ -73,18 +73,18 @@ export syntax match:expr {
   expect "constructor match arm";
   => {
     ({
-      value: $value,
-      run() {
-        $(if (this.value.tag === #text($arm.name)) {
-          #if(present $arm.binders) {
-            const { $($arm.binders),* } = this.value;
-          }
-          return $result;
-        })*
-        throw new globalThis.Error(
-          "No match for " + globalThis.JSON.stringify(this.value),
-        );
-      },
-    }).run()
+        value: $value,
+        run() {
+          $(if (this.value.tag === #text($arm.name)) {
+              #if(present $arm.binders) {
+                const { $($arm.binders),* } = this.value;
+              }
+              return $result;
+            })*
+          throw new globalThis.Error(
+            "No match for " + globalThis.JSON.stringify(this.value),
+          );
+        },
+      }).run()
   }
 }
