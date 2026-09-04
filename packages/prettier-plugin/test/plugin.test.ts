@@ -2,7 +2,10 @@ import { readFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { format } from "prettier";
 import { describe, expect, test } from "vitest";
-import plugin, { formatSweetener } from "../src/index.js";
+import plugin, {
+  formatSweetener,
+  formatSweetenerWithPrettier,
+} from "../src/index.js";
 
 const repositoryRoot = resolve(import.meta.dirname, "../../..");
 
@@ -51,6 +54,30 @@ if (!($condition)) $body
     const source =
       "const template = `first\\n  second`;\nconst view = <pre>  exact  </pre>;\n";
     expect(formatSweetener(source, { filepath: "view.stsx" })).toBe(source);
+  });
+
+  test("formats TypeScript and JSX inside an imported item macro", async () => {
+    const source = `import { memoized } from "./fine-jsx.stsx" for syntax;
+
+interface FixtureProps { readonly cond?: boolean; readonly id: number; }
+
+memoized function Component({ cond = false, id }: FixtureProps) {
+  return (<><div className={identity(styles.a, id !== null ? styles.b : {})}></div>{cond === false && (<div className={identity(styles.c, DISPLAY ? styles.d : {})} />)}</>);
+}
+`;
+    const formatted = await formatSweetenerWithPrettier(source, {
+      filepath: "main.stsx",
+    });
+
+    expect(formatted).toContain(
+      `import { memoized } from "./fine-jsx.stsx" for syntax;`,
+    );
+    expect(formatted).toContain(`memoized function Component(`);
+    expect(formatted).toContain("return (\n    <>");
+    expect(formatted).toContain("{cond === false && (");
+    await expect(
+      formatSweetenerWithPrettier(formatted, { filepath: "main.stsx" }),
+    ).resolves.toBe(formatted);
   });
 
   test("rejects structurally malformed input", () => {

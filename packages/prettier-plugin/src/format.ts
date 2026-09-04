@@ -151,7 +151,10 @@ function applyReplacements(
   return result;
 }
 
-function parse(source: string, options: SweetenerFormatOptions): RootSyntax {
+export function readSweetenerSyntax(
+  source: string,
+  options: SweetenerFormatOptions,
+): RootSyntax {
   const result = readSyntax(source, {
     sourceId,
     scopes,
@@ -175,7 +178,7 @@ export function formatSweetener(
   options: SweetenerFormatOptions = {},
 ): string {
   if (source.length === 0) return "";
-  const root = parse(source, options);
+  const root = readSweetenerSyntax(source, options);
   const eol = lineEnding(source, options.endOfLine);
   const replacements: Replacement[] = [];
   collectSyntax(root, 0, options, eol, replacements);

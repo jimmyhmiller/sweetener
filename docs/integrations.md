@@ -16,10 +16,12 @@ export default { plugins: [sweetener] };
 ```
 
 The formatter reads delimiter structure with `@sweetener/reader`, so it accepts
-user-defined syntax without teaching Prettier every macro invocation. It
-normalizes indentation and file-level whitespace conservatively. It preserves
-inline spelling, template literal contents, and JSX trees; those regions can
-carry whitespace with runtime meaning.
+user-defined syntax without teaching Prettier every macro invocation. For
+application files, it masks compile-time imports and imported item-macro
+prefixes while Prettier formats the surrounding TypeScript and JSX, then
+restores the Sweetener syntax. Files that cannot be represented this way use a
+conservative delimiter-based fallback; that fallback preserves template and
+JSX whitespace because it can have runtime meaning.
 
 ## Universal plugin
 

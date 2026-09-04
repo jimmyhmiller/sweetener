@@ -1,4 +1,4 @@
-import { formatSweetener } from "@sweetener/prettier-plugin";
+import { formatSweetenerWithPrettier } from "@sweetener/prettier-plugin";
 
 const sweetenerExtension = /\.stsx?$/u;
 
@@ -7,7 +7,7 @@ export async function formatPlaygroundFile(
   source: string,
 ): Promise<string> {
   if (sweetenerExtension.test(fileName))
-    return formatSweetener(source, { filepath: fileName });
+    return formatSweetenerWithPrettier(source, { filepath: fileName });
 
   const [{ format }, typescriptPlugin, estreePlugin] = await Promise.all([
     import("prettier/standalone"),

@@ -1,5 +1,6 @@
 import type { Parser, Plugin, Printer } from "prettier";
-import { formatSweetener, type SweetenerFormatOptions } from "./format.js";
+import type { SweetenerFormatOptions } from "./format.js";
+import { formatSweetenerWithPrettier } from "./typescript-format.js";
 
 interface SweetenerAst {
   readonly type: "SweetenerDocument";
@@ -8,8 +9,14 @@ interface SweetenerAst {
 
 const parser: Parser<SweetenerAst> = {
   astFormat: "sweetener-document",
-  parse(text) {
-    return { type: "SweetenerDocument", source: text };
+  async parse(text, options) {
+    return {
+      type: "SweetenerDocument",
+      source: await formatSweetenerWithPrettier(
+        text,
+        options as SweetenerFormatOptions,
+      ),
+    };
   },
   locStart() {
     return 0;
@@ -20,8 +27,8 @@ const parser: Parser<SweetenerAst> = {
 };
 
 const printer: Printer<SweetenerAst> = {
-  print(path, options) {
-    return formatSweetener(path.node.source, options as SweetenerFormatOptions);
+  print(path) {
+    return path.node.source;
   },
 };
 
@@ -50,4 +57,5 @@ const plugin: Plugin<SweetenerAst> = {
 };
 
 export { formatSweetener } from "./format.js";
+export { formatSweetenerWithPrettier } from "./typescript-format.js";
 export default plugin;
