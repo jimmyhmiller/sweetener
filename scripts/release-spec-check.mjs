@@ -30,6 +30,7 @@ const requiredPackages = [
   "enforestation",
   "expansion",
   "printer",
+  "prettier-plugin",
   "typescript-host",
   "cli",
   "test-support",

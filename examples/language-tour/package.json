@@ -1,0 +1,11 @@
+{
+  "name": "@sweetener-example/language-tour",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "sweetener build -p sweetener.json"
+  },
+  "dependencies": {
+    "@sweetener/cli": "workspace:*"
+  }
+}

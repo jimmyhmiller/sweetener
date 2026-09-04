@@ -101,6 +101,13 @@
           ]
         }
       },
+      "packages/prettier-plugin": {
+        "packageJson": {
+          "dependencies": [
+            "npm:prettier@3.9.6"
+          ]
+        }
+      },
       "packages/reader": {
         "packageJson": {
           "dependencies": [

@@ -4,6 +4,23 @@ Sweetener expands source before TypeScript, JSX, minification, and bundling.
 Every adapter delegates to `@sweetener/compiler`; compile-time macro imports
 never enter the runtime module graph.
 
+## Prettier
+
+`@sweetener/prettier-plugin` registers `.sts` and `.stsx` with Prettier 3:
+
+```js
+// prettier.config.mjs
+import sweetener from "@sweetener/prettier-plugin";
+
+export default { plugins: [sweetener] };
+```
+
+The formatter reads delimiter structure with `@sweetener/reader`, so it accepts
+user-defined syntax without teaching Prettier every macro invocation. It
+normalizes indentation and file-level whitespace conservatively. It preserves
+inline spelling, template literal contents, and JSX trees; those regions can
+carry whitespace with runtime meaning.
+
 ## Universal plugin
 
 `@sweetener/unplugin` provides these entry points:

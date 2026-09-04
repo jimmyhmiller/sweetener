@@ -61,6 +61,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/deno
 
+  examples/language-tour:
+    dependencies:
+      '@sweetener/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+
   examples/next:
     dependencies:
       '@sweetener/webpack-loader':
@@ -267,7 +273,7 @@ importers:
         version: 7.1.1(eslint@10.8.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
       eslint-plugin-react-refresh:
         specifier: latest
-        version: 0.5.5(eslint@10.8.0(jiti@2.7.0)(supports-color@10.2.2))
+        version: 0.5.6(eslint@10.8.0(jiti@2.7.0)(supports-color@10.2.2))
       typescript:
         specifier: ^6.0.2
         version: 6.0.3
@@ -595,6 +601,22 @@ importers:
         specifier: workspace:*
         version: link:../syntax
 
+  packages/prettier-plugin:
+    dependencies:
+      '@sweetener/reader':
+        specifier: workspace:*
+        version: link:../reader
+      '@sweetener/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@sweetener/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+    devDependencies:
+      prettier:
+        specifier: 3.9.6
+        version: 3.9.6
+
   packages/printer:
     dependencies:
       '@sweetener/hygiene':
@@ -776,12 +798,18 @@ importers:
       '@lezer/highlight':
         specifier: 1.2.3
         version: 1.2.3
+      '@sweetener/prettier-plugin':
+        specifier: workspace:*
+        version: link:../packages/prettier-plugin
       '@typescript/typescript6':
         specifier: 6.0.2
         version: 6.0.2
       codemirror:
         specifier: 6.0.2
         version: 6.0.2
+      prettier:
+        specifier: 3.9.6
+        version: 3.9.6
       react:
         specifier: 19.2.4
         version: 19.2.4
@@ -5601,8 +5629,8 @@ packages:
     peerDependencies:
       eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0 || ^10.0.0
 
-  eslint-plugin-react-refresh@0.5.5:
-    resolution: {integrity: sha512-vG7yLURXNvCHy0FBdbZRwIu0BLPJMlUUJS2Ep7ud9w1YCLftFZtuEjyjhym0Qq9yuZ6LJUitNlu/hMk0gakXAw==}
+  eslint-plugin-react-refresh@0.5.6:
+    resolution: {integrity: sha512-uZnh24On2bk478AkaDAKcpRiYhS3qFSaSNvpXxV6/Ek/BBDICkWGG7MnBSfjnIlCVBei5vsLlIeQYxbF22+Udg==}
     peerDependencies:
       eslint: ^9 || ^10
 
@@ -12970,7 +12998,7 @@ snapshots:
 
   '@types/http-proxy@1.17.17':
     dependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.4.1
 
   '@types/istanbul-lib-coverage@2.0.6': {}
 
@@ -14691,7 +14719,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-react-refresh@0.5.5(eslint@10.8.0(jiti@2.7.0)(supports-color@10.2.2)):
+  eslint-plugin-react-refresh@0.5.6(eslint@10.8.0(jiti@2.7.0)(supports-color@10.2.2)):
     dependencies:
       eslint: 10.8.0(jiti@2.7.0)(supports-color@10.2.2)
 
@@ -15822,7 +15850,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 24.13.3
+      '@types/node': 26.4.1
       merge-stream: 2.0.0
       supports-color: 8.1.1
 

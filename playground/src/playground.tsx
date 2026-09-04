@@ -8,6 +8,7 @@ import CompilerWorker from "./compiler-worker?worker";
 import type { CompileResponse } from "./compiler-worker";
 import { examples, type PlaygroundFile } from "./examples";
 import { loadGistProject, parseGistReference, type GistProject } from "./gist";
+import { formatPlaygroundFile } from "./format";
 import { sweetHighlighting } from "./sweet-syntax";
 
 const worker = new CompilerWorker();
@@ -115,6 +116,7 @@ export function Playground({
   const [gistReference, setGistReference] = useState("");
   const [gistLoading, setGistLoading] = useState(Boolean(gistId));
   const [gistError, setGistError] = useState("");
+  const [formatError, setFormatError] = useState("");
 
   const summary =
     exampleId === "gist"
@@ -177,6 +179,7 @@ export function Playground({
     setGistError("");
     loadGistProject(gistId, controller.signal)
       .then((project) => {
+        setFormatError("");
         setGistProject(project);
         setExampleId("gist");
         setGistName(project.name);
@@ -200,6 +203,7 @@ export function Playground({
 
   const selectExample = (id: string) => {
     const next = examples.find((item) => item.id === id)!;
+    setFormatError("");
     setExampleId(id);
     setGistName("");
     setGistSummary("");
@@ -235,11 +239,34 @@ export function Playground({
   };
 
   const updateSource = (nextSource: string) => {
+    setFormatError("");
     setFiles((current) =>
       current.map((file) =>
         file.fileName === sourceTab ? { ...file, source: nextSource } : file,
       ),
     );
+  };
+
+  const formatSource = async () => {
+    try {
+      updateSource(await formatPlaygroundFile(sourceTab, source));
+    } catch (error) {
+      setFormatError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const formatOutput = async () => {
+    try {
+      const formatted = await formatPlaygroundFile(outputTab, output);
+      setOutputs((current) =>
+        current.map((file) =>
+          file.fileName === outputTab ? { ...file, source: formatted } : file,
+        ),
+      );
+      setFormatError("");
+    } catch (error) {
+      setFormatError(error instanceof Error ? error.message : String(error));
+    }
   };
 
   return (
@@ -276,7 +303,7 @@ export function Playground({
           className={
             gistLoading || compiling
               ? "state working"
-              : gistError || diagnostics.length
+              : gistError || formatError || diagnostics.length
                 ? "state error"
                 : "state ok"
           }
@@ -285,17 +312,28 @@ export function Playground({
             ? "Loading Gist…"
             : gistError
               ? "Gist error"
-              : compiling
-                ? "Compiling…"
-                : diagnostics.length
-                  ? `${diagnostics.length} diagnostic${diagnostics.length === 1 ? "" : "s"}`
-                  : "No diagnostics"}
+              : formatError
+                ? "Format error"
+                : compiling
+                  ? "Compiling…"
+                  : diagnostics.length
+                    ? `${diagnostics.length} diagnostic${diagnostics.length === 1 ? "" : "s"}`
+                    : "No diagnostics"}
         </span>
         <button onClick={resetCurrent}>Reset</button>
       </header>
       <section className="workspace">
         <section className="pane">
-          <div className="pane-title">Source</div>
+          <div className="pane-heading">
+            <div className="pane-title">Source</div>
+            <button
+              aria-label={`Format ${sourceTab}`}
+              onClick={() => void formatSource()}
+              disabled={!source}
+            >
+              Format
+            </button>
+          </div>
           <div className="tabs" role="tablist">
             {files.map((file) => (
               <button
@@ -310,25 +348,38 @@ export function Playground({
           <Editor value={source} onChange={updateSource} />
           <footer
             className={
-              gistError || diagnostics.length ? "details errors" : "details"
+              gistError || formatError || diagnostics.length
+                ? "details errors"
+                : "details"
             }
           >
             <b>Diagnostics</b>
             <pre>
               {gistLoading
                 ? "Loading Gist…"
-                : gistError
-                  ? gistError
-                  : compiling
-                    ? "Compiling…"
-                    : diagnostics.length
-                      ? diagnostics.join("\n")
-                      : "No diagnostics."}
+                : formatError
+                  ? formatError
+                  : gistError
+                    ? gistError
+                    : compiling
+                      ? "Compiling…"
+                      : diagnostics.length
+                        ? diagnostics.join("\n")
+                        : "No diagnostics."}
             </pre>
           </footer>
         </section>
         <section className="pane">
-          <div className="pane-title">Generated TypeScript</div>
+          <div className="pane-heading">
+            <div className="pane-title">Generated TypeScript</div>
+            <button
+              aria-label={`Format ${outputTab}`}
+              onClick={() => void formatOutput()}
+              disabled={compiling || !output}
+            >
+              Format
+            </button>
+          </div>
           <div className="tabs" role="tablist">
             {outputs.map((file) => (
               <button

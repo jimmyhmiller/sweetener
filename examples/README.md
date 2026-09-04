@@ -12,6 +12,7 @@ pnpm examples:build
 
 | Example          | Framework/build path               |
 | ---------------- | ---------------------------------- |
+| `language-tour`  | 41 runnable language examples      |
 | `next`           | Next App Router + Turbopack loader |
 | `tanstack-start` | TanStack Start + Vite plugin       |
 | `astro`          | Astro + Vite plugin                |

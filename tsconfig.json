@@ -11,6 +11,7 @@
     { "path": "packages/enforestation" },
     { "path": "packages/expansion" },
     { "path": "packages/printer" },
+    { "path": "packages/prettier-plugin" },
     { "path": "packages/typescript-host" },
     { "path": "packages/test-support" },
     { "path": "packages/compiler" },

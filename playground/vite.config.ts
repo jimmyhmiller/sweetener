@@ -45,6 +45,7 @@ export default defineConfig({
         "enforestation",
         "expansion",
         "printer",
+        "prettier-plugin",
         "typescript-host",
       ].map((name) => ({
         find: `@sweetener/${name}`,

@@ -128,6 +128,7 @@ not use it.
 | `enforestation`   | category consumers, Pratt operators, protected syntax           |
 | `expansion`       | modules, invocation, recursion, generated definitions, traces   |
 | `printer`         | hygienic names, generated TypeScript, origins, query indexes    |
+| `prettier-plugin` | conservative, syntax-safe formatting for `.sts` and `.stsx`     |
 | `typescript-host` | manifests, resolution, hosts, maps, caches, tooling reads       |
 | `cli`             | configuration and check/build/watch/expand/explain commands     |
 | `test-support`    | fixture, golden, conformance, and benchmark protocols           |
