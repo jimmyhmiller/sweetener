@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "name": "Civet-inspired syntax layer",
+  "summary": "Declarations, functions, pipelines, modulo, control flow, comprehensions, ranges, slicing, object helpers, async, comparisons, and structural matching.",
+  "entryFileName": "main.sts"
+}

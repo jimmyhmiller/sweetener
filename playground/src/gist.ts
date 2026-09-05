@@ -46,9 +46,12 @@ export function parseGistReference(reference: string): string | undefined {
   }
 }
 
-function parseManifest(file: GistFile | undefined): PlaygroundManifest {
-  if (file?.content === undefined)
-    throw new Error(`Gist is missing ${manifestName}.`);
+function parseManifest(
+  file: GistFile | undefined,
+): PlaygroundManifest | undefined {
+  if (file === undefined) return undefined;
+  if (file.content === undefined)
+    throw new Error(`${manifestName} is truncated or unavailable.`);
   let value: unknown;
   try {
     value = JSON.parse(file.content);
@@ -65,6 +68,28 @@ function parseManifest(file: GistFile | undefined): PlaygroundManifest {
       `${manifestName} must declare version 1 and entryFileName.`,
     );
   return value as PlaygroundManifest;
+}
+
+function inferEntryFileName(files: readonly PlaygroundFile[]): string {
+  for (const conventionalName of [
+    "main.sts",
+    "main.stsx",
+    "index.sts",
+    "index.stsx",
+  ]) {
+    if (files.some(({ fileName }) => fileName === conventionalName))
+      return conventionalName;
+  }
+
+  const macroSources = files.filter(({ fileName }) =>
+    /\.stsx?$/u.test(fileName),
+  );
+  if (macroSources.length === 1) return macroSources[0]!.fileName;
+  if (files.length === 1) return files[0]!.fileName;
+
+  throw new Error(
+    `Gist has multiple possible entry files. Add ${manifestName} to choose one.`,
+  );
 }
 
 export function projectFromGist(id: string, gist: GistResponse): GistProject {
@@ -92,17 +117,18 @@ export function projectFromGist(id: string, gist: GistResponse): GistProject {
     throw new Error(`Gist exceeds the ${maximumFiles}-file limit.`);
   if (projectBytes > maximumProjectBytes)
     throw new Error("Gist exceeds the 512 KiB project limit.");
-  if (!files.some((file) => file.fileName === manifest.entryFileName))
-    throw new Error(`Entry file ${manifest.entryFileName} is missing.`);
+  const entryFileName = manifest?.entryFileName ?? inferEntryFileName(files);
+  if (!files.some((file) => file.fileName === entryFileName))
+    throw new Error(`Entry file ${entryFileName} is missing.`);
 
   return {
     id,
-    name: manifest.name?.trim() || `Gist ${id.slice(0, 8)}`,
+    name: manifest?.name?.trim() || `Gist ${id.slice(0, 8)}`,
     summary:
-      manifest.summary?.trim() ||
+      manifest?.summary?.trim() ||
       gist.description?.trim() ||
       "Loaded from a GitHub Gist.",
-    entryFileName: manifest.entryFileName,
+    entryFileName,
     files,
   };
 }

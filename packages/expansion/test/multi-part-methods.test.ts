@@ -275,6 +275,75 @@ const call = `between(3)
   upper(5)`;
 
 describe("multi-part method acceptance", () => {
+  test("generates a method from a generalised request grammar", () => {
+    const harness = createHarness();
+    const declared = harness.declare(`method query {
+      request {
+        query($source:expr)
+        $(Where($filter:expr))+
+        $(OrderBy($ordering:expr) $(ThenBy($tiebreak:expr))*)?
+        Select($projection:expr)
+      }
+      expect "a query ending in Select(...) or GroupBy(...)";
+      => {
+        ({
+          source: $source,
+          filters: [$($filter),*],
+          projection: $projection,
+        })
+      }
+      request {
+        query($source:expr)
+        $(Where($filter:expr))*
+        GroupBy($projection:expr)
+      }
+      expect "a query ending in Select(...) or GroupBy(...)";
+      => {
+        ({
+          source: $source,
+          filters: [$($filter),*],
+          projection: $projection,
+        })
+      }
+    }`);
+    expect(declared.diagnostics).toEqual([]);
+    const generated = declared.generatedModules[0]!;
+
+    const result = harness.expand(
+      generated,
+      `query(students)
+        Where(isEnrolled)
+        Where(isAdult)
+        OrderBy(byGpa)
+        ThenBy(byName)
+        Select(toName)`,
+      "expr",
+      declared.environment,
+      declared.expansionEnvironment!,
+    );
+
+    expect(result.diagnostics).toEqual([]);
+    expect(compact(result.syntax)).toBe(
+      compact(`({
+        source: students,
+        filters: [isEnrolled, isAdult],
+        projection: toName,
+      })`),
+    );
+
+    const zeroAndOptionalResult = harness.expand(
+      generated,
+      "query(students) GroupBy(byCourse)",
+      "expr",
+      result.environment,
+      result.expansionEnvironment!,
+    );
+    expect(zeroAndOptionalResult.diagnostics).toEqual([]);
+    expect(compact(zeroAndOptionalResult.syntax)).toBe(
+      compact(`({ source: students, filters: [], projection: byCourse, })`),
+    );
+  });
+
   test("registers and invokes the generated newline-spanning syntax binding", () => {
     const harness = createHarness();
     const declared = harness.declare(declaration);

@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "entryFileName": "main.sts",
+  "name": "Generalised method names",
+  "summary": "Regular-language method requests with optional, repeated, grouped, and alternative name parts."
+}

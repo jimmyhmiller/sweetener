@@ -1,0 +1,304 @@
+// A Civet-inspired convenience layer implemented entirely with Sweetener's
+// declarative macro language. The forms deliberately keep TypeScript's braces
+// and semicolons while borrowing Civet's most useful ideas.
+
+// Civet's `:=` declaration shorthand, with an explicit `civet` marker so the
+// form remains unambiguous in ordinary TypeScript tooling.
+export syntax civet:item {
+  rule { civet $name:binding := $value:expr; }
+  bind $name in following as lexical value;
+  expect "a name, :=, and an initializer";
+  => { const $name = $value; }
+}
+
+// Civet-style left-to-right pipelines.
+export operator (|>):expr {
+  fixity infix;
+  associativity left;
+  precedence 40;
+
+  rule { $value:expr |> $callee:ident } => { $callee($value) }
+}
+
+// Civet's mathematical modulo, which differs from JavaScript remainder for
+// negative dividends.
+export operator (%%):expr {
+  fixity infix;
+  associativity left;
+  precedence 70;
+
+  rule { $left:expr %% $right:expr } => {
+    ((dividend, divisor) =>
+      ((dividend % divisor) + divisor) % divisor
+    )($left, $right)
+  }
+}
+
+export syntax unless:stmt {
+  rule { unless ($condition:expr) $body:stmt } => {
+    if (!($condition)) $body
+  }
+}
+
+export syntax until:stmt {
+  rule { until ($condition:expr) $body:stmt } => {
+    while (!($condition)) $body
+  }
+}
+
+// Expression-valued blocks, one of Civet's central conveniences.
+export syntax civetDo:expr {
+  rule {
+    civetDo {
+      $($body:stmt)*
+      yield $value:expr;
+    }
+  } => {
+    (() => {
+        $($body)*
+        return $value;
+      })()
+  }
+}
+
+// A Civet-style expression comprehension with an optional filter.
+export syntax collect:expr {
+  rule {
+    collect {
+      for $item:binding of $items:expr;
+      when $condition:expr;
+      yield $value:expr;
+    }
+  }
+  bind $item in $condition as lexical value;
+  bind $item in $value as lexical value;
+  => {
+    (() => {
+        const results = [];
+        for (const $item of $items) {
+          if ($condition) results.push($value);
+        }
+        return results;
+      })()
+  }
+
+  rule {
+    collect {
+      for $item:binding of $items:expr;
+      yield $value:expr;
+    }
+  }
+  bind $item in $value as lexical value;
+  => {
+    (() => {
+        const results = [];
+        for (const $item of $items) results.push($value);
+        return results;
+      })()
+  }
+}
+
+// Inclusive ranges. Civet spells these with `..`; the wrapper avoids claiming
+// punctuation that could be mistaken for ordinary TypeScript property access.
+export syntax range:expr {
+  rule { range($from:expr, $through:expr) } => {
+    ((start, end) =>
+      globalThis.Array.from(
+        { length: end - start + 1 },
+        (_, offset) => start + offset,
+      )
+    )($from, $through)
+  }
+}
+
+// Object-glob-like selection and +flag/-flag object construction.
+export syntax pick:expr {
+  rule { pick($source:expr, { $($field:ident),+ , }) } => {
+    ((object) => ({ $($field: object.$field),* }))($source)
+  }
+
+  rule { pick($source:expr, { $($field:ident),+ }) } => {
+    ((object) => ({ $($field: object.$field),* }))($source)
+  }
+}
+
+export syntax flags:expr {
+  rule { flags { $(+$enabled:ident),*; $(-$disabled:ident),* } } => {
+    ({ $($enabled: true),*, $($disabled: false),* })
+  }
+}
+
+// Chained comparison with single evaluation of the middle expression.
+export syntax between:expr {
+  rule { between($minimum:expr <= $value:expr < $maximum:expr) } => {
+    ((middle) => $minimum <= middle && middle < $maximum)($value)
+  }
+}
+
+// Single-argument function shorthand without an ambient placeholder name.
+export syntax mapWith:expr {
+  rule { mapWith($items:expr, $item:binding => $value:expr) }
+  bind $item in $value as lexical value;
+  => { ($items).map(($item) => $value) }
+}
+
+// Civet's thick pipes expose a value for side effects and then preserve it.
+export syntax tap:expr {
+  rule {
+    tap($value:expr) {
+      $name:binding => $($body:stmt)*
+    }
+  }
+  bind $name in $body as lexical value;
+  => {
+    (($name) => {
+        $($body)*
+        return ($name);
+      })($value)
+  }
+}
+
+// Range slicing and negative indexing, while evaluating the receiver once.
+export syntax takeSlice:expr {
+  rule { takeSlice($items:expr, $bounds:expr) } => {
+    ((values, bounds) => values.slice(bounds[0], bounds[1]))(
+      $items,
+      $bounds,
+    )
+  }
+}
+
+export syntax last:expr {
+  rule { last($items:expr) } => {
+    ((values) => values[values.length - 1])($items)
+  }
+}
+
+// Expression-valued conditional, typeof shorthand, and await combinator.
+export syntax ifElse:expr {
+  rule { ifElse($condition:expr) { $yes:expr } else { $no:expr } } => {
+    ($condition ? $yes : $no)
+  }
+}
+
+export syntax isType:expr {
+  rule { isType($value:expr, $kind:expr) } => {
+    typeof $value === $kind
+  }
+}
+
+export syntax awaitAll:expr {
+  rule { awaitAll($values:expr) } => {
+    await globalThis.Promise.all($values)
+  }
+}
+
+export syntax class MatchField {
+  fields {
+    name: ident;
+    pattern: tt?;
+  }
+
+  rule { $name:ident: $pattern:tt }
+  rule { $name:ident }
+}
+
+export rec syntax matchTest:expr {
+  rule { matchTest($subject:expr, _) } => { true }
+
+  rule { matchTest($subject:expr, { $($field:MatchField),* }) } => {
+    typeof $subject === "object" && $subject !== null
+    $(#if(present $field.pattern) {
+        && matchTest(($subject)[#text($field.name)], $field.pattern)
+      })*
+  }
+
+  rule { matchTest($subject:expr, [$($element:tt),*]) } => {
+    globalThis.Array.isArray($subject)
+    && ($subject).length === #count($element)
+    $(&& matchTest(($subject)[#index()], $element))*
+  }
+
+  rule { matchTest($subject:expr, $name:ident) }
+  refine $name spelling starts-with-lowercase;
+  => { true }
+
+  rule { matchTest($subject:expr, $value:tt) } => {
+    ($subject) === $value
+  }
+}
+
+export rec syntax matchBind:stmt {
+  rule { matchBind($subject:expr, _); } => { }
+
+  rule { matchBind($subject:expr, { $($field:MatchField),* }); } => {
+    $(#if(present $field.pattern) {
+        matchBind(($subject)[#text($field.name)], $field.pattern);
+      } #else {
+        const $field.name = ($subject)[#text($field.name)];
+      })*
+  }
+
+  rule { matchBind($subject:expr, [$($element:tt),*]); } => {
+    $(matchBind(($subject)[#index()], $element);)*
+  }
+
+  rule { matchBind($subject:expr, $name:binding); }
+  refine $name spelling starts-with-lowercase;
+  bind $name in following as lexical value;
+  => { const $name = $subject; }
+
+  rule { matchBind($subject:expr, $value:tt); } => { }
+}
+
+export syntax class MatchArm {
+  fields {
+    pattern: tt;
+    guard: expr?;
+    body: expr;
+  }
+
+  rule { $pattern:tt if ($guard:expr) => $body:expr }
+  rule { $pattern:tt => $body:expr }
+}
+
+// Civet's `switch`-style pattern matching, named `match` so importing the suite
+// never changes TypeScript's core switch statement.
+export syntax match:expr {
+  rule { match ($subject:expr) { $($arm:MatchArm),+ , _ => $fallback:expr } } => {
+    ((matched) => {
+        $(if (matchTest(matched, $arm.pattern)) {
+            matchBind(matched, $arm.pattern);
+            #if(present $arm.guard) {
+              if ($arm.guard) return ($arm.body);
+            } #else {
+              return ($arm.body);
+            }
+          })+
+        return ($fallback);
+      })($subject)
+  }
+
+  rule { match ($subject:expr) { _ => $fallback:expr } } => {
+    ((matched) => {
+        matched;
+        return ($fallback);
+      })($subject)
+  }
+
+  rule { match ($subject:expr) { $($arm:MatchArm),+ } } => {
+    ((matched) => {
+        $(if (matchTest(matched, $arm.pattern)) {
+            matchBind(matched, $arm.pattern);
+            #if(present $arm.guard) {
+              if ($arm.guard) return ($arm.body);
+            } #else {
+              return ($arm.body);
+            }
+          })+
+        throw new globalThis.Error(
+          `no pattern matched ${globalThis.JSON.stringify(matched)}`,
+        );
+      })($subject)
+  }
+}

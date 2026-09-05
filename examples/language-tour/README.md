@@ -21,7 +21,7 @@ pnpm --dir examples/language-tour build
 | `currying`            | Generated curried functions                                     |
 | `do-notation`         | Sequencing computations with recursive syntax                   |
 | `implicit-return`     | Function bodies whose final expression is returned              |
-| `multi-part-methods`  | Methods with several named argument segments                    |
+| `multi-part-methods`  | Linear and regular-grammar generalised method names             |
 | `new-language`        | Records, extension methods, optional types, and a call operator |
 | `operators`           | Prefix, infix, and core-shadowing operators                     |
 | `protocols`           | Protocol declarations and implementations                       |
@@ -37,7 +37,7 @@ pnpm --dir examples/language-tour build
 | `jsx-control-flow`    | `when` and `each` blocks spanning JSX children                  |
 | `reactive-signals`    | A macro that generates lexical read/write macros                |
 
-## Twenty additional examples
+## Twenty-one additional examples
 
 | Example                | Demonstrates                                   |
 | ---------------------- | ---------------------------------------------- |
@@ -61,6 +61,7 @@ pnpm --dir examples/language-tour build
 | `generated-function`   | A macro-generated callable binding             |
 | `conditional-log`      | A statement macro with multiple expressions    |
 | `invariant-expression` | An expression macro that can throw             |
+| `civet-inspired`       | A broad Civet-inspired syntax layer            |
 
 The recovered combined-language example keeps its records, extension method,
 optional type, and method-call operator. Its old `module` wrapper is omitted

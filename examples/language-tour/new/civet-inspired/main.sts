@@ -1,0 +1,105 @@
+import {
+  awaitAll,
+  between,
+  civet,
+  civetDo,
+  collect,
+  flags,
+  ifElse,
+  isType,
+  last,
+  mapWith,
+  match,
+  pick,
+  range,
+  takeSlice,
+  tap,
+  unless,
+  until,
+  (%%),
+  (|>),
+} from "./macros.sts" for syntax;
+
+type Event =
+| { kind: "move"; point: { x: number; y: number } }
+| { kind: "key"; key: string }
+| { kind: "idle" };
+
+const sum = (values: readonly number[]): number =>
+values.reduce((left, right) => left + right, 0);
+const label = (value: number): string => `total:${String(value)}`;
+
+civet source := range(-2, 5);
+civet wrappedIndex := -5 %% 3;
+civet evenSquares := collect {
+  for value of source;
+  when value % 2 === 0;
+  yield value * value;
+};
+
+const summary = evenSquares |> sum |> label;
+const doubled = mapWith(evenSquares, value => value * 2);
+const middle = takeSlice(doubled, [1, -1]);
+const finalValue = last(doubled);
+const inspected = tap([...middle]) {
+  values => values.push(finalValue);
+};
+const sizeLabel = ifElse(inspected.length > 2) { "many" } else { "few" };
+const summaryIsText = isType(summary, "string");
+const awaited = awaitAll([
+    globalThis.Promise.resolve("ready"),
+    globalThis.Promise.resolve("set"),
+  ]);
+const selected = pick({ name: "Ada", role: "programmer", year: 1843 }, {
+    name,
+    year,
+  });
+const modes = flags { +debug, +typed; -legacy, -verbose };
+
+let attempts = 0;
+until (attempts === 3) {
+  attempts += 1;
+}
+
+const messages: string[] = [];
+unless (between(0 <= attempts < 3)) {
+  messages.push("attempt limit reached");
+}
+const audit = civetDo {
+  const copy = [...messages];
+  yield copy;
+};
+
+export function describe(event: Event): string {
+  return match (event) {
+    { kind: "move", point: { x: x, y: y } } if (x === y) =>
+    `diagonal:${String(x)}`,
+    { kind: "move", point: { x: x, y: y } } =>
+    `move:${String(x)},${String(y)}`,
+    { kind: "key", key: key } => `key:${key}`,
+    _ => "idle"
+  } ?? "idle";
+}
+
+export const result = {
+  source,
+  wrappedIndex,
+  evenSquares,
+  summary,
+  doubled,
+  middle,
+  finalValue,
+  inspected,
+  sizeLabel,
+  summaryIsText,
+  awaited,
+  selected,
+  modes,
+  attempts,
+  audit,
+  descriptions: [
+    describe({ kind: "move", point: { x: 4, y: 4 } }),
+    describe({ kind: "key", key: "Enter" }),
+    describe({ kind: "idle" }),
+  ],
+} as const;
