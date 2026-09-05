@@ -35,6 +35,7 @@ describe("playground Gists", () => {
         },
         "main.sts": { content: "const answer = 42;" },
         "macros.sts": { content: "export syntax answer:expr {}" },
+        "README.md": { content: "# Demo documentation" },
       },
     });
     expect(project).toMatchObject({
@@ -102,7 +103,7 @@ describe("playground Gists", () => {
           "../main.sts": { content: "" },
         },
       }),
-    ).toThrow("unsafe");
+    ).toThrow(/unsafe/iu);
     expect(() =>
       projectFromGist("abc123", {
         files: {

@@ -2,6 +2,8 @@ import type { PlaygroundFile } from "./examples";
 
 const manifestName = "sweetener-playground.json";
 const allowedFileName = /^[A-Za-z0-9][A-Za-z0-9._-]*\.(?:d\.ts|stsx?|tsx?)$/u;
+const ignoredFileNames = new Set(["README.md"]);
+const safeFileName = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
 const gistId = /^[0-9a-f]{5,64}$/iu;
 const maximumFiles = 32;
 const maximumFileBytes = 256 * 1024;
@@ -109,8 +111,11 @@ export function projectFromGist(id: string, gist: GistResponse): GistProject {
   for (const [key, file] of Object.entries(sourceFiles)) {
     if (key === manifestName) continue;
     const fileName = file.filename ?? key;
+    if (!safeFileName.test(fileName))
+      throw new Error(`Unsafe Gist filename: ${fileName}`);
+    if (ignoredFileNames.has(fileName)) continue;
     if (!allowedFileName.test(fileName))
-      throw new Error(`Unsupported or unsafe Gist filename: ${fileName}`);
+      throw new Error(`Unsupported Gist source filename: ${fileName}`);
     if (file.truncated || file.content === undefined)
       throw new Error(`${fileName} is truncated or unavailable.`);
     const bytes = new TextEncoder().encode(file.content).byteLength;

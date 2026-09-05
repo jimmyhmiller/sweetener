@@ -199,6 +199,10 @@ ul.examples span {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
+.playground-header {
+  min-width: 0;
+}
+
 .toolbar {
   min-height: 52px;
   padding: 0 1rem;

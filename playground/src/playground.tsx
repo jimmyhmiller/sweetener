@@ -274,65 +274,67 @@ export function Playground({
 
   return (
     <main className="shell">
-      <header className="toolbar">
-        <button className="home" onClick={onHome}>
-          Sweetener
-        </button>
-        <label htmlFor="examples">Example</label>
-        <select
-          id="examples"
-          value={exampleId}
-          onChange={(event) => selectExample(event.target.value)}
-        >
-          {exampleId === "gist" ? (
-            <option value="gist">{gistName}</option>
-          ) : null}
-          {examples.map((item) => (
-            <option value={item.id} key={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-        <form className="gist-loader" onSubmit={submitGist}>
-          <input
-            aria-label="GitHub Gist URL or ID"
-            placeholder="Gist URL or ID"
-            value={gistReference}
-            onChange={(event) => {
-              setGistReference(event.target.value);
-              setGistError("");
-            }}
-          />
-          <button type="submit">Load Gist</button>
-        </form>
-        <span
-          className={
-            gistLoading || compiling
-              ? "state working"
-              : gistError || formatError || diagnostics.length
-                ? "state error"
-                : "state ok"
-          }
-        >
-          {gistLoading
-            ? "Loading Gist…"
-            : gistError
-              ? "Gist error"
-              : formatError
-                ? "Format error"
-                : compiling
-                  ? "Compiling…"
-                  : diagnostics.length
-                    ? `${diagnostics.length} diagnostic${diagnostics.length === 1 ? "" : "s"}`
-                    : "No diagnostics"}
-        </span>
-        <button onClick={resetCurrent}>Reset</button>
-      </header>
-      {gistError ? (
-        <div className="gist-error" role="alert">
-          <b>Could not load Gist.</b> {gistError}
-        </div>
-      ) : null}
+      <div className="playground-header">
+        <header className="toolbar">
+          <button className="home" onClick={onHome}>
+            Sweetener
+          </button>
+          <label htmlFor="examples">Example</label>
+          <select
+            id="examples"
+            value={exampleId}
+            onChange={(event) => selectExample(event.target.value)}
+          >
+            {exampleId === "gist" ? (
+              <option value="gist">{gistName}</option>
+            ) : null}
+            {examples.map((item) => (
+              <option value={item.id} key={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          <form className="gist-loader" onSubmit={submitGist}>
+            <input
+              aria-label="GitHub Gist URL or ID"
+              placeholder="Gist URL or ID"
+              value={gistReference}
+              onChange={(event) => {
+                setGistReference(event.target.value);
+                setGistError("");
+              }}
+            />
+            <button type="submit">Load Gist</button>
+          </form>
+          <span
+            className={
+              gistLoading || compiling
+                ? "state working"
+                : gistError || formatError || diagnostics.length
+                  ? "state error"
+                  : "state ok"
+            }
+          >
+            {gistLoading
+              ? "Loading Gist…"
+              : gistError
+                ? "Gist error"
+                : formatError
+                  ? "Format error"
+                  : compiling
+                    ? "Compiling…"
+                    : diagnostics.length
+                      ? `${diagnostics.length} diagnostic${diagnostics.length === 1 ? "" : "s"}`
+                      : "No diagnostics"}
+          </span>
+          <button onClick={resetCurrent}>Reset</button>
+        </header>
+        {gistError ? (
+          <div className="gist-error" role="alert">
+            <b>Could not load Gist.</b> {gistError}
+          </div>
+        ) : null}
+      </div>
       <section className="workspace">
         <section className="pane">
           <div className="pane-heading">
