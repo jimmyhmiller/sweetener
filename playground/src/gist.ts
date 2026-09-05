@@ -46,6 +46,14 @@ export function parseGistReference(reference: string): string | undefined {
   }
 }
 
+export function resolveGistLoad(
+  reference: string,
+  currentGistId: string,
+): { id: string; reload: boolean } | undefined {
+  const id = parseGistReference(reference);
+  return id === undefined ? undefined : { id, reload: id === currentGistId };
+}
+
 function parseManifest(
   file: GistFile | undefined,
 ): PlaygroundManifest | undefined {

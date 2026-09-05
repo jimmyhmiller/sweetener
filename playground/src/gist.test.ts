@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { parseGistReference, projectFromGist } from "./gist";
+import { parseGistReference, projectFromGist, resolveGistLoad } from "./gist";
 
 describe("playground Gists", () => {
   test("accepts IDs and canonical Gist URLs", () => {
@@ -8,6 +8,18 @@ describe("playground Gists", () => {
       "abc123",
     );
     expect(parseGistReference("https://example.com/abc123")).toBeUndefined();
+  });
+
+  test("retries a Gist when the submitted ID is already routed", () => {
+    expect(resolveGistLoad("abc123", "abc123")).toEqual({
+      id: "abc123",
+      reload: true,
+    });
+    expect(resolveGistLoad("def456", "abc123")).toEqual({
+      id: "def456",
+      reload: false,
+    });
+    expect(resolveGistLoad("not a gist", "abc123")).toBeUndefined();
   });
 
   test("loads the manifest and source files", () => {

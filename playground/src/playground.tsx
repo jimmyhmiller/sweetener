@@ -7,7 +7,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import CompilerWorker from "./compiler-worker?worker";
 import type { CompileResponse } from "./compiler-worker";
 import { examples, type PlaygroundFile } from "./examples";
-import { loadGistProject, parseGistReference, type GistProject } from "./gist";
+import { loadGistProject, resolveGistLoad, type GistProject } from "./gist";
 import { formatPlaygroundFile } from "./format";
 import { sweetHighlighting } from "./sweet-syntax";
 
@@ -116,6 +116,7 @@ export function Playground({
   const [gistReference, setGistReference] = useState("");
   const [gistLoading, setGistLoading] = useState(Boolean(gistId));
   const [gistError, setGistError] = useState("");
+  const [gistReload, setGistReload] = useState(0);
   const [formatError, setFormatError] = useState("");
 
   const summary =
@@ -199,7 +200,7 @@ export function Playground({
         if (!controller.signal.aborted) setGistLoading(false);
       });
     return () => controller.abort();
-  }, [gistId]);
+  }, [gistId, gistReload]);
 
   const selectExample = (id: string) => {
     const next = examples.find((item) => item.id === id)!;
@@ -217,12 +218,14 @@ export function Playground({
 
   const submitGist = (event: React.FormEvent) => {
     event.preventDefault();
-    const id = parseGistReference(gistReference);
-    if (id === undefined) {
+    const request = resolveGistLoad(gistReference, gistId);
+    if (request === undefined) {
       setGistError("Enter a GitHub Gist URL or ID.");
       return;
     }
-    onGist(id);
+    setGistError("");
+    if (request.reload) setGistReload((current) => current + 1);
+    else onGist(request.id);
   };
 
   const resetCurrent = () => {
@@ -295,7 +298,10 @@ export function Playground({
             aria-label="GitHub Gist URL or ID"
             placeholder="Gist URL or ID"
             value={gistReference}
-            onChange={(event) => setGistReference(event.target.value)}
+            onChange={(event) => {
+              setGistReference(event.target.value);
+              setGistError("");
+            }}
           />
           <button type="submit">Load Gist</button>
         </form>
@@ -322,6 +328,11 @@ export function Playground({
         </span>
         <button onClick={resetCurrent}>Reset</button>
       </header>
+      {gistError ? (
+        <div className="gist-error" role="alert">
+          <b>Could not load Gist.</b> {gistError}
+        </div>
+      ) : null}
       <section className="workspace">
         <section className="pane">
           <div className="pane-heading">

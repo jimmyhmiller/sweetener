@@ -243,6 +243,14 @@ ul.examples span {
   background: var(--paper);
 }
 
+.gist-error {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid #f2b8b5;
+  background: #fff1f0;
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
 .toolbar .state {
   margin-left: auto;
   font-size: 0.875rem;
