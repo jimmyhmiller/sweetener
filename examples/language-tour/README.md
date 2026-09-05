@@ -37,7 +37,7 @@ pnpm --dir examples/language-tour build
 | `jsx-control-flow`    | `when` and `each` blocks spanning JSX children                  |
 | `reactive-signals`    | A macro that generates lexical read/write macros                |
 
-## Twenty-one additional examples
+## Twenty additional examples
 
 | Example                | Demonstrates                                   |
 | ---------------------- | ---------------------------------------------- |
@@ -61,7 +61,6 @@ pnpm --dir examples/language-tour build
 | `generated-function`   | A macro-generated callable binding             |
 | `conditional-log`      | A statement macro with multiple expressions    |
 | `invariant-expression` | An expression macro that can throw             |
-| `civet-inspired`       | A broad Civet-inspired syntax layer            |
 
 The recovered combined-language example keeps its records, extension method,
 optional type, and method-call operator. Its old `module` wrapper is omitted
